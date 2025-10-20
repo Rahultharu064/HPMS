@@ -140,6 +140,65 @@ export const getRoomById = async (req, res) => {
     res.status(500).json({ success: false, error: "Failed to fetch room" });
   }
 };
+// GET /api/rooms/featured → Featured rooms (top 6 rooms by price)
+export const getFeaturedRooms = async (req, res) => {
+  try {
+    const featuredRooms = await prisma.room.findMany({
+      where: { status: "available" },
+      include: { 
+        amenity: true, 
+        image: true, 
+        video: true 
+      },
+      orderBy: { price: "desc" },
+      take: 6
+    });
+    res.json({ success: true, data: featuredRooms });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: "Failed to fetch featured rooms" });
+  }
+};
+
+// GET /api/rooms/:id/similar → Similar rooms (same type, different room)
+export const getSimilarRooms = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    
+    // First get the current room to find its type
+    const currentRoom = await prisma.room.findUnique({
+      where: { id },
+      select: { roomType: true }
+    });
+    
+    if (!currentRoom) {
+      return res.status(404).json({ success: false, error: "Room not found" });
+    }
+    
+    // Find similar rooms (same type, different room, available)
+    const similarRooms = await prisma.room.findMany({
+      where: { 
+        roomType: currentRoom.roomType,
+        id: { not: id },
+        status: "available"
+      },
+      include: { 
+        amenity: true, 
+        image: true, 
+        video: true 
+      },
+      orderBy: { price: "asc" },
+      take: 4
+    });
+    
+    res.json({ success: true, data: similarRooms });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: "Failed to fetch similar rooms" });
+  }
+};
+
+
 
 // Update room (replace amenities/images/videos if provided)
 export const updateRoom = async (req, res) => {

@@ -7,7 +7,9 @@ import {
   getAllRooms,
   getRoomById,
   updateRoom,
-  deleteRoom
+  deleteRoom,
+  getFeaturedRooms,
+  getSimilarRooms
 } from "../controllers/roomController.js";
 
 const router = express.Router();
@@ -26,8 +28,14 @@ router.post(
 // Get all (search/filter/pagination)
 router.get("/", getAllRooms);
 
+// Get featured rooms
+router.get("/featured", getFeaturedRooms);
+
 // Get by id
 router.get("/:id", getRoomById);
+
+// Get similar rooms
+router.get("/:id/similar", getSimilarRooms);
 
 // Update (optionally upload new images/videos to replace)
 router.put(

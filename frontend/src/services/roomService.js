@@ -27,6 +27,26 @@ export const roomService = {
     }
   },
 
+  // Get featured rooms
+  async getFeaturedRooms() {
+    try {
+      return await apiRequest('/api/rooms/featured')
+    } catch (error) {
+      apiDebug.error('Error fetching featured rooms:', error)
+      throw error
+    }
+  },
+
+  // Get similar rooms
+  async getSimilarRooms(id) {
+    try {
+      return await apiRequest(`/api/rooms/${id}/similar`)
+    } catch (error) {
+      apiDebug.error('Error fetching similar rooms:', error)
+      throw error
+    }
+  },
+
   // Delete room
   async deleteRoom(id) {
     try {
