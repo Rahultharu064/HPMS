@@ -1,0 +1,78 @@
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+
+// API Debug Helper
+export const apiDebug = {
+  log: (message, data = null) => {
+    if (import.meta.env.DEV) {
+      console.log(`[API Debug] ${message}`, data)
+    }
+  },
+  
+  error: (message, error = null) => {
+    console.error(`[API Error] ${message}`, error)
+  },
+  
+  testConnection: async () => {
+    try {
+      apiDebug.log('Testing API connection to:', API_BASE_URL)
+      const response = await fetch(`${API_BASE_URL}/api/rooms`)
+      apiDebug.log('Connection test response:', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText
+      })
+      return { success: response.ok, status: response.status }
+    } catch (error) {
+      apiDebug.error('Connection test failed:', error)
+      return { success: false, error: error.message }
+    }
+  }
+}
+
+// Enhanced fetch wrapper with better error handling
+export const apiRequest = async (url, options = {}) => {
+  const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`
+  
+  apiDebug.log(`Making ${options.method || 'GET'} request to:`, fullUrl)
+  
+  try {
+    const response = await fetch(fullUrl, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+      },
+      ...options
+    })
+    
+    apiDebug.log('Response received:', {
+      status: response.status,
+      ok: response.ok,
+      statusText: response.statusText
+    })
+    
+    const data = await response.json()
+    
+    if (!response.ok) {
+      const errorMessage = data.error || `HTTP ${response.status}: ${response.statusText}`
+      apiDebug.error('API request failed:', {
+        status: response.status,
+        error: errorMessage,
+        data: data
+      })
+      throw new Error(errorMessage)
+    }
+    
+    apiDebug.log('Request successful:', data)
+    return data
+    
+  } catch (error) {
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      const networkError = new Error('Network error: Cannot connect to server. Please check if the backend is running.')
+      apiDebug.error('Network error detected:', networkError)
+      throw networkError
+    }
+    
+    apiDebug.error('Request failed:', error)
+    throw error
+  }
+}

@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model amenity {
+  id     Int    @id @default(autoincrement())
+  name   String
+  roomId Int
+  room   room   @relation(fields: [roomId], references: [id], map: "Amenity_roomId_fkey")
+
+  @@index([roomId], map: "Amenity_roomId_fkey")
+}
+
+model image {
+  id     Int    @id @default(autoincrement())
+  name   String
+  size   Int
+  type   String
+  url    String  @default("")
+  roomId Int
+  room   room   @relation(fields: [roomId], references: [id], map: "Image_roomId_fkey")
+
+  @@index([roomId], map: "Image_roomId_fkey")
+}
+
+model room {
+  id            Int       @id @default(autoincrement())
+  name          String
+  roomType      String
+  roomNumber    String    @unique(map: "Room_roomNumber_key")
+  floor         Int
+  price         Float
+  size          Float
+  maxAdults     Int
+  maxChildren   Int       @default(0)
+  numBeds       Int
+  description   String
+  allowChildren Boolean   @default(false)
+  status        String    @default("available")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  amenity       amenity[]
+  image         image[]
+  video         video[]
+}
+
+model video {
+  id     Int    @id @default(autoincrement())
+  name   String
+  size   Int
+  type   String
+  url    String  @default("")
+  roomId Int
+  room   room   @relation(fields: [roomId], references: [id], map: "Video_roomId_fkey")
+
+  @@index([roomId], map: "Video_roomId_fkey")
+}

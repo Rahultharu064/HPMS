@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE `image` ADD COLUMN `url` VARCHAR(191) NOT NULL DEFAULT '';
+
+-- AlterTable
+ALTER TABLE `video` ADD COLUMN `url` VARCHAR(191) NOT NULL DEFAULT '';
