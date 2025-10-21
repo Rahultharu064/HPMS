@@ -21,15 +21,14 @@ export const getAllBookings = async (req, res) => {
     if (checkIn) where.checkIn = { gte: new Date(checkIn) };
     if (checkOut) where.checkOut = { lte: new Date(checkOut) };
 
-    // Guest name search
+    // Guest name/email search (relation filter)
     if (guestName) {
-      where.guest = {
-        OR: [
-          { firstName: { contains: guestName, mode: "insensitive" } },
-          { lastName: { contains: guestName, mode: "insensitive" } },
-          { email: { contains: guestName, mode: "insensitive" } }
-        ]
-      };
+      const q = String(guestName)
+      where.OR = [
+        { guest: { is: { firstName: { contains: q } } } },
+        { guest: { is: { lastName: { contains: q } } } },
+        { guest: { is: { email: { contains: q } } } }
+      ]
     }
 
     const [bookings, total] = await Promise.all([

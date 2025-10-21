@@ -1,142 +1,271 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Search, Filter, Plus, Eye, Edit, Trash2, Calendar, Bed, Download } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { bookingService } from '../../../services/bookingService'
+
+const STATUS_OPTIONS = [
+  { label: 'All', value: '' },
+  { label: 'Pending', value: 'pending' },
+  { label: 'Confirmed', value: 'confirmed' },
+  { label: 'Cancelled', value: 'cancelled' },
+  { label: 'Completed', value: 'completed' }
+]
 
 const Reservations = () => {
-  const [reservations, setReservations] = useState([])
-  const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [dateFilter, setDateFilter] = useState('')
-  const [showModal, setShowModal] = useState(false)
-  const [modalType, setModalType] = useState('')
-  const [selected, setSelected] = useState(null)
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [items, setItems] = useState([])
+  const [page, setPage] = useState(1)
+  const [limit] = useState(10)
+  const [totalPages, setTotalPages] = useState(1)
+  const [stats, setStats] = useState(null)
+
+  const [filters, setFilters] = useState({
+    status: '',
+    guestName: '',
+    roomId: '',
+    startDate: '',
+    endDate: ''
+  })
+
+  const queryParams = useMemo(() => {
+    const q = {
+      page: String(page),
+      limit: String(limit)
+    }
+    if (filters.status) q.status = filters.status
+    if (filters.guestName) q.guestName = filters.guestName
+    if (filters.roomId) q.roomId = filters.roomId
+    if (filters.startDate) q.checkIn = filters.startDate
+    if (filters.endDate) q.checkOut = filters.endDate
+    return q
+  }, [page, limit, filters])
+
+  const loadStats = async () => {
+    try {
+      const res = await bookingService.getStats({
+        startDate: filters.startDate,
+        endDate: filters.endDate
+      })
+      setStats(res.stats)
+    } catch {
+      // soft fail
+    }
+  }
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      setError('')
+      const res = await bookingService.getAllBookings(queryParams)
+      setItems(res.data || [])
+      setTotalPages(res.totalPages || 1)
+    } catch (e) {
+      setError(e.message || 'Failed to load reservations')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    // TODO: Replace with GET /api/bookings with filters
-    setReservations([
-      { id: 1, guestName: 'John Doe', email: 'john@example.com', phone: '+977-984...', room: '201', roomType: 'Deluxe', checkIn: '2025-10-22', checkOut: '2025-10-25', adults: 2, children: 0, status: 'confirmed', totalAmount: 15000, paymentStatus: 'paid', createdAt: '2025-10-20', bookingSource: 'Direct' },
-      { id: 2, guestName: 'Jane Smith', email: 'jane@example.com', phone: '+977-985...', room: '305', roomType: 'Suite', checkIn: '2025-10-23', checkOut: '2025-10-28', adults: 2, children: 1, status: 'pending', totalAmount: 25000, paymentStatus: 'pending', createdAt: '2025-10-20', bookingSource: 'OTA' }
-    ])
-  }, [])
+    loadData()
+    loadStats()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryParams])
 
-  const filtered = useMemo(() => reservations.filter(r => {
-    const s = searchQuery.toLowerCase()
-    const matchesSearch = r.guestName.toLowerCase().includes(s) || r.email.toLowerCase().includes(s) || r.phone.includes(searchQuery)
-    const matchesStatus = statusFilter === 'all' || r.status === statusFilter
-    const matchesDate = !dateFilter || r.checkIn === dateFilter
-    return matchesSearch && matchesStatus && matchesDate
-  }), [reservations, searchQuery, statusFilter, dateFilter])
+  // Sync global search (?q=) to guestName filter
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const q = params.get('q') || ''
+    setFilters(s => ({ ...s, guestName: q }))
+    setPage(1)
+  }, [location.search])
 
-  const statusBadge = (status) => ({
-    confirmed: 'bg-green-100 text-green-700',
-    pending: 'bg-yellow-100 text-yellow-700',
-    cancelled: 'bg-red-100 text-red-700',
-    'checked-in': 'bg-blue-100 text-blue-700',
-    'checked-out': 'bg-gray-100 text-gray-700'
-  }[status] || 'bg-gray-100 text-gray-700')
+  const resetFilters = () => {
+    setFilters({ status: '', guestName: '', roomId: '', startDate: '', endDate: '' })
+    setPage(1)
+  }
 
-  const paymentBadge = (status) => ({
-    paid: 'bg-green-100 text-green-700',
-    pending: 'bg-yellow-100 text-yellow-700',
-    refunded: 'bg-red-100 text-red-700'
-  }[status] || 'bg-gray-100 text-gray-700')
+  const onCancel = async (id) => {
+    if (!confirm('Cancel this booking?')) return
+    try {
+      await bookingService.cancelBooking(id, 'Front desk action')
+      await loadData()
+      await loadStats()
+    } catch (e) {
+      alert(e.message || 'Failed to cancel booking')
+    }
+  }
 
-  const open = (type, item=null) => { setModalType(type); setSelected(item); setShowModal(true) }
-  const close = () => { setShowModal(false); setModalType(''); setSelected(null) }
+  const onDelete = async (id) => {
+    if (!confirm('Permanently delete this booking?')) return
+    try {
+      await bookingService.deleteBooking(id)
+      await loadData()
+      await loadStats()
+    } catch (e) {
+      alert(e.message || 'Failed to delete booking')
+    }
+  }
+
+  const StatusBadge = ({ status }) => {
+    const color = {
+      pending: 'bg-yellow-100 text-yellow-800',
+      confirmed: 'bg-green-100 text-green-800',
+      cancelled: 'bg-red-100 text-red-800',
+      completed: 'bg-blue-100 text-blue-800'
+    }[status] || 'bg-gray-100 text-gray-800'
+    return <span className={`px-2 py-1 rounded-full text-xs font-medium ${color}`}>{status}</span>
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Reservations</h2>
-        <div className="flex gap-3">
-          <button onClick={() => open('create')} className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 flex items-center gap-2"><Plus size={18}/>New</button>
-          <button className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Download size={18}/>Export</button>
+        <h3 className="text-2xl font-bold">Reservations</h3>
+        <button
+          className="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+          onClick={() => navigate('/front-office/new-reservation')}
+        >
+          New Reservation
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="rounded-2xl border bg-white p-4">
+          <div className="text-sm text-gray-500">Total Bookings</div>
+          <div className="text-2xl font-bold">{stats?.totalBookings ?? '—'}</div>
+        </div>
+        <div className="rounded-2xl border bg-white p-4">
+          <div className="text-sm text-gray-500">Confirmed</div>
+          <div className="text-2xl font-bold text-green-600">{stats?.confirmedBookings ?? '—'}</div>
+        </div>
+        <div className="rounded-2xl border bg-white p-4">
+          <div className="text-sm text-gray-500">Pending</div>
+          <div className="text-2xl font-bold text-yellow-600">{stats?.pendingBookings ?? '—'}</div>
+        </div>
+        <div className="rounded-2xl border bg-white p-4">
+          <div className="text-sm text-gray-500">Revenue</div>
+          <div className="text-2xl font-bold text-blue-600">₹{(stats?.totalRevenue ?? 0).toLocaleString()}</div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-4 grid grid-cols-1 md:grid-cols-5 gap-4">
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Search</label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
-            <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Name, email, phone" className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+      {/* Filters */}
+      <div className="rounded-2xl border bg-white p-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Status</label>
+            <select
+              value={filters.status}
+              onChange={(e) => { setFilters(s => ({ ...s, status: e.target.value })); setPage(1) }}
+              className="w-full border rounded-xl px-3 py-2"
+            >
+              {STATUS_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Guest</label>
+            <input
+              value={filters.guestName}
+              onChange={(e) => setFilters(s => ({ ...s, guestName: e.target.value }))}
+              placeholder="Name or email"
+              className="w-full border rounded-xl px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Room ID</label>
+            <input
+              value={filters.roomId}
+              onChange={(e) => setFilters(s => ({ ...s, roomId: e.target.value }))}
+              placeholder="e.g., 101"
+              className="w-full border rounded-xl px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">From</label>
+            <input
+              type="date"
+              value={filters.startDate}
+              onChange={(e) => setFilters(s => ({ ...s, startDate: e.target.value }))}
+              className="w-full border rounded-xl px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">To</label>
+            <input
+              type="date"
+              value={filters.endDate}
+              onChange={(e) => setFilters(s => ({ ...s, endDate: e.target.value }))}
+              className="w-full border rounded-xl px-3 py-2"
+            />
           </div>
         </div>
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Room Type</label>
-          <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option>All</option>
-            <option>Standard</option>
-            <option>Deluxe</option>
-            <option>Suite</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Date Range</label>
-          <input type="date" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"/>
-        </div>
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
-          <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="all">All</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="pending">Pending</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="checked-in">Checked-in</option>
-            <option value="checked-out">Checked-out</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Check-in Date</label>
-          <input type="date" value={dateFilter} onChange={e=>setDateFilter(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"/>
-        </div>
-        <div className="flex items-end">
-          <button onClick={()=>{setSearchQuery('');setStatusFilter('all');setDateFilter('')}} className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Filter size={18}/>Clear</button>
+        <div className="mt-3 flex gap-2">
+          <button onClick={() => { setPage(1); loadData(); loadStats(); }} className="px-4 py-2 rounded-xl border">Apply</button>
+          <button onClick={resetFilters} className="px-4 py-2 rounded-xl border">Reset</button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      {/* Table */}
+      <div className="rounded-2xl border bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50 text-gray-600">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Guest</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Room</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dates</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="text-left p-3">Booking</th>
+                <th className="text-left p-3">Guest</th>
+                <th className="text-left p-3">Room</th>
+                <th className="text-left p-3">Dates</th>
+                <th className="text-left p-3">Status</th>
+                <th className="text-left p-3">Amount</th>
+                <th className="text-left p-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filtered.map(r => (
-                <tr key={r.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{r.guestName}</div>
-                    <div className="text-xs text-gray-500">{r.email} • {r.phone}</div>
+            <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan={7} className="p-6 text-center text-gray-500">Loading...</td>
+                </tr>
+              )}
+              {!loading && error && (
+                <tr>
+                  <td colSpan={7} className="p-6 text-center text-red-600">{error}</td>
+                </tr>
+              )}
+              {!loading && !error && items.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="p-6 text-center text-gray-500">No reservations found</td>
+                </tr>
+              )}
+              {!loading && !error && items.map(b => (
+                <tr key={b.id} className="border-t">
+                  <td className="p-3">#{b.id}</td>
+                  <td className="p-3">
+                    <div className="font-medium">{b.guest?.firstName} {b.guest?.lastName}</div>
+                    <div className="text-gray-500 text-xs">{b.guest?.email}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center"><Bed className="text-gray-400 mr-2" size={16}/> <span className="text-sm text-gray-900">{r.room}</span></div>
-                    <div className="text-xs text-gray-500">{r.roomType}</div>
+                  <td className="p-3">
+                    <div className="font-medium">Room #{b.roomId}</div>
+                    <div className="text-gray-500 text-xs">{b.room?.name}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center"><Calendar className="text-gray-400 mr-2" size={16}/> <span className="text-sm text-gray-900">{r.checkIn}</span></div>
-                    <div className="text-xs text-gray-500">to {r.checkOut}</div>
+                  <td className="p-3">
+                    <div>{new Date(b.checkIn).toLocaleDateString()} → {new Date(b.checkOut).toLocaleDateString()}</div>
+                    <div className="text-gray-500 text-xs">{b.adults} Adults · {b.children} Children</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusBadge(r.status)}`}>{r.status}</span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${paymentBadge(r.paymentStatus)}`}>{r.paymentStatus}</span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹{r.totalAmount.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{r.bookingSource}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex items-center gap-2">
-                      <button onClick={()=>open('view', r)} className="text-blue-600 hover:text-blue-900"><Eye size={16}/></button>
-                      <button onClick={()=>open('edit', r)} className="text-green-600 hover:text-green-900"><Edit size={16}/></button>
-                      <button onClick={()=>open('delete', r)} className="text-red-600 hover:text-red-900"><Trash2 size={16}/></button>
+                  <td className="p-3"><StatusBadge status={b.status} /></td>
+                  <td className="p-3 font-semibold">₹{(b.totalAmount ?? 0).toLocaleString()}</td>
+                  <td className="p-3">
+                    <div className="flex gap-2">
+                      <button className="px-3 py-1 rounded-lg border text-blue-600" onClick={() => navigate(`/front-office/reservations/${b.id}`)}>View</button>
+                      <button className="px-3 py-1 rounded-lg border" onClick={() => navigate(`/frontoffice/guests/${b.guestId}`)}>Guest</button>
+                      <button className="px-3 py-1 rounded-lg border" onClick={() => navigate(`/rooms/${b.roomId}`)}>Room</button>
+                      {b.status !== 'cancelled' && (
+                        <button className="px-3 py-1 rounded-lg border text-red-600" onClick={() => onCancel(b.id)}>Cancel</button>
+                      )}
+                      <button className="px-3 py-1 rounded-lg border text-gray-600" onClick={() => onDelete(b.id)}>Delete</button>
                     </div>
                   </td>
                 </tr>
@@ -144,31 +273,19 @@ const Reservations = () => {
             </tbody>
           </table>
         </div>
-      </div>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-2xl mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 capitalize">{modalType} reservation</h3>
-              <button onClick={close} className="text-gray-400 hover:text-gray-600">
-                <XCircle size={24}/>
-              </button>
-            </div>
-            <div className="text-gray-600 text-sm">Form and details go here.</div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button onClick={close} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Close</button>
-              {modalType !== 'view' && (
-                <button className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Save</button>
-              )}
-            </div>
+        {/* Pagination */}
+        <div className="flex items-center justify-between p-3 border-t">
+          <div className="text-sm text-gray-600">Page {page} of {totalPages}</div>
+          <div className="flex gap-2">
+            <button disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))} className="px-3 py-1 rounded-lg border disabled:opacity-50">Prev</button>
+            <button disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} className="px-3 py-1 rounded-lg border disabled:opacity-50">Next</button>
           </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }
 
 export default Reservations
-
 

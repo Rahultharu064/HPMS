@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Search, CreditCard, DollarSign, Clock, CheckCircle, XCircle, AlertCircle, Download, Filter, Eye } from 'lucide-react'
+import { bookingService } from '../../../services/bookingService'
+import { exportToCsv } from '../../../utils/exportCsv'
 
 const Billing = () => {
   const [payments, setPayments] = useState([])
@@ -9,11 +11,38 @@ const Billing = () => {
   const [selected, setSelected] = useState(null)
 
   useEffect(() => {
-    // TODO: Replace with /api/payments/history or admin list
-    setPayments([
-      { id: 1, bookingId: 'BK001', guest: 'John Doe', room: '201', amount: 15000, method: 'khalti', status: 'completed', txn: 'TXN123', createdAt: '10:30' },
-      { id: 2, bookingId: 'BK002', guest: 'Jane Smith', room: '305', amount: 25000, method: 'esewa', status: 'pending', txn: 'TXN124', createdAt: '11:15' }
-    ])
+    const load = async () => {
+      try {
+        const res = await bookingService.getAllBookings({ page: 1, limit: 100 })
+        if (!res?.success) return
+        const rows = []
+        const seen = new Set()
+        for (const b of (res.data || [])) {
+          const guestName = [b.guest?.firstName, b.guest?.lastName].filter(Boolean).join(' ')
+          const bookingCode = `BK-${String(b.id).padStart(4,'0')}`
+          const roomLabel = b.room?.roomNumber || b.room?.id || ''
+          for (const p of (b.payments || [])) {
+            if (p?.id == null || seen.has(p.id)) continue
+            seen.add(p.id)
+            rows.push({
+              id: p.id,
+              bookingId: bookingCode,
+              guest: guestName || '—',
+              room: roomLabel,
+              amount: p.amount || 0,
+              method: String(p.method || '').toLowerCase(),
+              status: String(p.status || '').toLowerCase(),
+              txn: p.transactionId || `PMT-${p.id}`,
+              createdAt: new Date(p.createdAt).toLocaleString()
+            })
+          }
+        }
+        setPayments(rows)
+      } catch (e) {
+        console.error('Failed to load payments', e)
+      }
+    }
+    load()
   }, [])
 
   const filtered = useMemo(() => payments.filter(p => {
@@ -31,7 +60,7 @@ const Billing = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Billing & Payments</h2>
-        <button className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Download size={18}/>Export</button>
+        <button onClick={() => exportToCsv('payments.csv', filtered)} className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Download size={18}/>Export</button>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -91,7 +120,7 @@ const Billing = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{p.bookingId}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹{p.amount.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap"><span className={`px-2 py-1 rounded-full text-xs font-medium ${methodBadge(p.method)}`}>{p.method.toUpperCase()}</span></td>
+                  <td className="px-6 py-4 whitespace-nowrap"><span className={`px-2 py-1 rounded-full text-xs font-medium ${methodBadge(p.method)}`}>{p.method?.toUpperCase()}</span></td>
                   <td className="px-6 py-4 whitespace-nowrap"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusBadge(p.status)}`}>{p.status}</span></td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{p.txn}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{p.createdAt}</td>

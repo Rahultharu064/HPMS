@@ -9,14 +9,27 @@ import BookingConfirmation from './pages/Publicwebsite/BookingConfirmation'
 import About from './pages/Publicwebsite/About'
 import Contact from './pages/Publicwebsite/Contact'
 import FrontOffice from './pages/frontoffice/FrontOffice'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import Guests from './components/frontoffice/sections/Guests'
 import GuestProfilePage from './components/frontoffice/sections/GuestProfilePage'
+import Dashboard from './components/frontoffice/sections/Dashboard'
+import Reservations from './components/frontoffice/sections/Reservations'
+import OfflineReservation from './components/frontoffice/sections/OfflineReservation'
+import RoomStatus from './components/frontoffice/sections/RoomStatus'
+import CheckInOut from './components/frontoffice/sections/CheckInOut'
+import Billing from './components/frontoffice/sections/Billing'
+import Reports from './components/frontoffice/sections/Reports'
+import ReservationDetail from './components/frontoffice/sections/ReservationDetail'
 
 
 
 const App = () => {
+  const RedirectLegacyFrontOffice = () => {
+    const location = useLocation()
+    const to = location.pathname.replace(/^\/frontoffice/, '/front-office') + location.search
+    return <Navigate to={to} replace />
+  }
   const router = createBrowserRouter([
     // Public Website Routes
     {
@@ -62,8 +75,23 @@ const App = () => {
     },
     {
       path: "/front-office",
-      element: <FrontOffice />
+      element: <FrontOffice />,
+      children: [
+        { index: true, element: <Navigate to="/front-office/dashboard" replace /> },
+        { path: "dashboard", element: <Dashboard /> },
+        { path: "reservations", element: <Reservations /> },
+        { path: "reservations/:id", element: <ReservationDetail /> },
+        { path: "new-reservation", element: <OfflineReservation /> },
+        { path: "rooms", element: <RoomStatus /> },
+        { path: "checkin", element: <CheckInOut /> },
+        { path: "billing", element: <Billing /> },
+        { path: "guests", element: <Guests /> },
+        { path: "reports", element: <Reports /> }
+      ]
     },
+    // Legacy alias: /frontoffice -> /front-office (with subpaths)
+    { path: "/frontoffice", element: <Navigate to="/front-office" replace /> },
+    { path: "/frontoffice/*", element: <RedirectLegacyFrontOffice /> },
     {
       path: "/frontoffice/guests/:id",
       element: <GuestProfilePage />

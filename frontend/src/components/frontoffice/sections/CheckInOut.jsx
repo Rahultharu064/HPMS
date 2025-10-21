@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Search, Users, Bed, Clock, CheckCircle, XCircle, Download } from 'lucide-react'
+import { bookingService } from '../../../services/bookingService'
+import { exportToCsv } from '../../../utils/exportCsv'
 
 const CheckInOut = () => {
   const [tab, setTab] = useState('checkin')
@@ -8,11 +10,50 @@ const CheckInOut = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [modal, setModal] = useState({ open: false, type: '', item: null })
 
-  useEffect(() => {
-    // TODO: Replace with APIs
-    setCheckIns([{ id: 1, guest: 'John Doe', room: '201', type: 'Deluxe', checkIn: '2025-10-22', checkOut: '2025-10-25', status: 'pending', bookingId: 'BK001', amount: 15000 }])
-    setCheckOuts([{ id: 1, guest: 'Sarah Wilson', room: '205', type: 'Standard', checkIn: '2025-10-20', checkOut: '2025-10-22', status: 'pending', bookingId: 'BK002', amount: 12000, balance: 0 }])
+  const loadData = useCallback(async () => {
+    const today = new Date().toISOString().slice(0,10)
+    try {
+      // Today check-ins (arrivals): include status pending or confirmed
+      const [ciPending, ciConfirmed] = await Promise.all([
+        bookingService.getAllBookings({ checkIn: today, status: 'pending', limit: 100 }),
+        bookingService.getAllBookings({ checkIn: today, status: 'confirmed', limit: 100 })
+      ])
+      const ciMerged = [...(ciPending?.data || []), ...(ciConfirmed?.data || [])]
+      const ciSeen = new Set()
+      const ciData = ciMerged.filter(b => (ciSeen.has(b.id) ? false : (ciSeen.add(b.id), true))).map(b => ({
+        id: b.id,
+        guest: [b.guest?.firstName, b.guest?.lastName].filter(Boolean).join(' ') || '—',
+        room: b.room?.roomNumber || b.room?.id,
+        type: b.room?.roomType,
+        checkIn: (b.checkIn||'').slice(0,10),
+        checkOut: (b.checkOut||'').slice(0,10),
+        status: b.status,
+        bookingId: `BK-${String(b.id).padStart(4,'0')}`,
+        amount: b.totalAmount || 0
+      }))
+      setCheckIns(ciData)
+
+      // Today check-outs (departures): guests currently confirmed and leaving today
+      const co = await bookingService.getAllBookings({ checkOut: today, status: 'confirmed', limit: 100 })
+      const coData = (co?.data || []).map(b => ({
+        id: b.id,
+        guest: [b.guest?.firstName, b.guest?.lastName].filter(Boolean).join(' ') || '—',
+        room: b.room?.roomNumber || b.room?.id,
+        type: b.room?.roomType,
+        checkIn: (b.checkIn||'').slice(0,10),
+        checkOut: (b.checkOut||'').slice(0,10),
+        status: b.status,
+        bookingId: `BK-${String(b.id).padStart(4,'0')}`,
+        amount: b.totalAmount || 0,
+        balance: 0
+      }))
+      setCheckOuts(coData)
+    } catch (e) {
+      console.error('Failed to load check-in/out', e)
+    }
   }, [])
+
+  useEffect(() => { loadData() }, [loadData])
 
   const filteredCheckIns = checkIns.filter(g => g.guest.toLowerCase().includes(searchQuery.toLowerCase()) || g.room.includes(searchQuery) || g.bookingId.toLowerCase().includes(searchQuery.toLowerCase()))
   const filteredCheckOuts = checkOuts.filter(g => g.guest.toLowerCase().includes(searchQuery.toLowerCase()) || g.room.includes(searchQuery))
@@ -20,7 +61,36 @@ const CheckInOut = () => {
   const open = (type, item) => setModal({ open: true, type, item })
   const close = () => setModal({ open: false, type: '', item: null })
 
-  const complete = () => close()
+  const complete = async () => {
+    try {
+      if (modal.type === 'checkin') {
+        await bookingService.updateBooking(modal.item.id, { status: 'confirmed' })
+      }
+      if (modal.type === 'checkout') {
+        await bookingService.updateBooking(modal.item.id, { status: 'completed' })
+      }
+      close()
+      // Auto-refresh lists after status update
+      await loadData()
+    } catch (e) {
+      console.error(e)
+      close()
+    }
+  }
+
+  const exportCurrent = () => {
+    const rows = (tab === 'checkin' ? filteredCheckIns : filteredCheckOuts).map(r => ({
+      id: r.id,
+      guest: r.guest,
+      room: r.room,
+      checkIn: r.checkIn,
+      checkOut: r.checkOut,
+      amount: r.amount,
+      status: r.status
+    }))
+    const name = tab === 'checkin' ? 'arrivals_today.csv' : 'departures_today.csv'
+    exportToCsv(name, rows)
+  }
 
   return (
     <div className="space-y-6">
@@ -29,7 +99,7 @@ const CheckInOut = () => {
           <h2 className="text-2xl font-bold text-gray-900">Check-in & Check-out</h2>
           <p className="text-gray-600">Manage guest arrivals and departures</p>
         </div>
-        <button className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Download size={18}/>Export</button>
+        <button onClick={exportCurrent} className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Download size={18}/>Export</button>
       </div>
 
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">

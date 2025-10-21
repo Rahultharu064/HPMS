@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Bed, Users, Clock, CheckCircle, XCircle, AlertCircle, Search, Filter, Eye, Edit, Plus, RefreshCw } from 'lucide-react'
+import { roomService } from '../../../services/roomService'
 
 const RoomStatus = () => {
   const [rooms, setRooms] = useState([])
@@ -9,13 +10,43 @@ const RoomStatus = () => {
   const [viewMode, setViewMode] = useState('grid')
 
   useEffect(() => {
-    // TODO: Replace with GET /api/rooms with status
-    setRooms([
-      { id: 1, number: '101', floor: 1, type: 'Standard', status: 'VC', guest: null, lastCleaned: '10:00' },
-      { id: 2, number: '102', floor: 1, type: 'Deluxe', status: 'OC', guest: 'John Doe', lastCleaned: '09:00' },
-      { id: 3, number: '201', floor: 2, type: 'Suite', status: 'VD', guest: null, lastCleaned: '11:00' },
-      { id: 4, number: '202', floor: 2, type: 'Deluxe', status: 'OOO', guest: null, lastCleaned: '08:00' }
-    ])
+    let mounted = true
+
+    const loadRooms = async () => {
+      try {
+        const res = await roomService.getRooms(1, 500)
+        const data = res?.data || []
+
+        const normalize = (s = '') => String(s).toLowerCase()
+        const mapStatus = (s) => {
+          const v = normalize(s)
+          if (['occupied', 'oc', 'od'].includes(v)) return 'OC'
+          if (['ooo', 'out_of_order', 'out of order'].includes(v)) return 'OOO'
+          if (['vd', 'vacant_dirty'].includes(v)) return 'VD'
+          // default treat available as vacant clean
+          return 'VC'
+        }
+
+        const mapped = data.map(r => ({
+          id: r.id,
+          number: r.roomNumber,
+          floor: r.floor,
+          type: r.roomType,
+          status: mapStatus(r.status),
+          guest: null,
+          lastCleaned: '-'
+        }))
+
+        if (!mounted) return
+        setRooms(mapped)
+      } catch {
+        if (!mounted) return
+        setRooms([])
+      }
+    }
+
+    loadRooms()
+    return () => { mounted = false }
   }, [])
 
   const statusInfo = (s) => ({

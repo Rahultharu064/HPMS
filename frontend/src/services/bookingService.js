@@ -1,44 +1,48 @@
-import { apiRequest, apiDebug } from '../utils/api'
+import { apiRequest } from '../utils/api'
 
 export const bookingService = {
-  async createBooking({ roomId, checkIn, checkOut, adults, children = 0, firstName, lastName, email, phone, paymentMethod = 'Cash' }) {
-    try {
-      const methodMap = {
-        khalti: 'Khalti',
-        esewa: 'eSewa',
-        cash: 'Cash',
-        card: 'Card'
-      }
-      const normalizedMethod = methodMap[String(paymentMethod).toLowerCase()] || 'Cash'
-      const payload = {
-        roomId,
-        checkIn,
-        checkOut,
-        adults,
-        children,
-        firstName,
-        lastName,
-        email,
-        phone,
-        paymentMethod: normalizedMethod
-      }
-      apiDebug.log('Creating booking with payload:', payload)
-      return await apiRequest('/api/bookings', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      })
-    } catch (error) {
-      apiDebug.error('Error creating booking:', error)
-      throw error
-    }
-  }
-  ,
+  async getStats(params = {}) {
+    const query = new URLSearchParams(params).toString()
+    const url = query ? `/api/bookings/stats?${query}` : '/api/bookings/stats'
+    return await apiRequest(url)
+  },
+
+  async createBooking(bookingData) {
+    return await apiRequest('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bookingData)
+    })
+  },
+
   async getBookingById(id) {
-    try {
-      return await apiRequest(`/api/bookings/${id}`)
-    } catch (error) {
-      apiDebug.error('Error fetching booking by id:', error)
-      throw error
-    }
+    return await apiRequest(`/api/bookings/${id}`)
+  },
+
+  async getAllBookings(params = {}) {
+    const query = new URLSearchParams(params).toString()
+    const url = query ? `/api/bookings?${query}` : '/api/bookings'
+    return await apiRequest(url)
+  },
+
+  async updateBooking(id, data) {
+    return await apiRequest(`/api/bookings/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+  },
+
+  async cancelBooking(id, reason = '') {
+    return await apiRequest(`/api/bookings/${id}/cancel`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason })
+    })
+  },
+
+  async deleteBooking(id) {
+    return await apiRequest(`/api/bookings/${id}`, { method: 'DELETE' })
   }
 }
+

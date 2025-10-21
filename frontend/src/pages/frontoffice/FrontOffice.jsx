@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import Header from '../../components/frontoffice/Layout/Header'
 import Sidebar from '../../components/frontoffice/Layout/Sidebar'
 import Dashboard from '../../components/frontoffice/sections/Dashboard'
@@ -7,23 +7,36 @@ import RoomStatus from '../../components/frontoffice/sections/RoomStatus'
 import CheckInOut from '../../components/frontoffice/sections/CheckInOut'
 import Billing from '../../components/frontoffice/sections/Billing'
 import Guests from '../../components/frontoffice/sections/Guests'
-import NewReservation from '../../components/frontoffice/sections/NewReservation'
+import OfflineReservation from '../../components/frontoffice/sections/OfflineReservation'
 import Reports from '../../components/frontoffice/sections/Reports'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 const FrontOffice = () => {
   const [darkMode, setDarkMode] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const sidebarItems = [
-    { icon: 'LayoutDashboard', label: 'Dashboard', key: 'dashboard' },
-    { icon: 'Users', label: 'Reservations', key: 'reservations' },
-    { icon: 'Plus', label: 'New Reservation', key: 'new-reservation' },
-    { icon: 'Bed', label: 'Room Status', key: 'rooms' },
-    { icon: 'CheckCircle', label: 'Check-in/out', key: 'checkin' },
-    { icon: 'CreditCard', label: 'Billing & Payment', key: 'billing' },
-    { icon: 'Users', label: 'Guest Profiles', key: 'guests' },
-    { icon: 'BarChart3', label: 'Reports', key: 'reports' }
-  ]
-  const [activeTab, setActiveTab] = useState('dashboard')
+  const [searchQuery, setSearchQuery] = useState('')
+  const navigate = useNavigate()
+  const location = useLocation()
+  const sidebarItems = useMemo(() => ([
+    { icon: 'LayoutDashboard', label: 'Dashboard', key: 'dashboard', path: '/front-office/dashboard' },
+    { icon: 'Users', label: 'Reservations', key: 'reservations', path: '/front-office/reservations' },
+    { icon: 'Plus', label: 'Offline Reservation', key: 'new-reservation', path: '/front-office/new-reservation' },
+    { icon: 'Bed', label: 'Room Status', key: 'rooms', path: '/front-office/rooms' },
+    { icon: 'CheckCircle', label: 'Check-in/out', key: 'checkin', path: '/front-office/checkin' },
+    { icon: 'CreditCard', label: 'Billing & Payment', key: 'billing', path: '/front-office/billing' },
+    { icon: 'Users', label: 'Guest Profiles', key: 'guests', path: '/front-office/guests' },
+    { icon: 'BarChart3', label: 'Reports', key: 'reports', path: '/front-office/reports' }
+  ]), [])
+
+  const activeTab = useMemo(() => {
+    const current = sidebarItems.find(i => location.pathname.startsWith(i.path))
+    return current?.key || 'dashboard'
+  }, [location.pathname, sidebarItems])
+
+  const setActiveTab = (key) => {
+    const target = sidebarItems.find(i => i.key === key)
+    if (target) navigate(target.path)
+  }
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gradient-to-br from-gray-900 to-gray-800' : 'bg-gradient-to-br from-gray-50 to-blue-50'} font-sans transition-colors duration-300`}>
@@ -33,8 +46,16 @@ const FrontOffice = () => {
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
         notifications={0}
-        searchQuery={''}
-        setSearchQuery={() => {}}
+        searchQuery={searchQuery}
+        setSearchQuery={(val) => {
+          setSearchQuery(val)
+          const q = val?.trim()
+          if (q) {
+            navigate(`/front-office/reservations?q=${encodeURIComponent(q)}`)
+          } else if (location.pathname.startsWith('/front-office/reservations')) {
+            navigate('/front-office/reservations')
+          }
+        }}
       />
 
       <div className="flex">
@@ -67,15 +88,7 @@ const FrontOffice = () => {
               </div>
             </div>
           </div>
-
-          {activeTab==='dashboard' && <Dashboard darkMode={darkMode} />}
-          {activeTab==='reservations' && <Reservations />}
-          {activeTab==='rooms' && <RoomStatus />}
-          {activeTab==='checkin' && <CheckInOut />}
-          {activeTab==='billing' && <Billing />}
-          {activeTab==='guests' && <Guests />}
-          {activeTab==='new-reservation' && <NewReservation />}
-          {activeTab==='reports' && <Reports />}
+          <Outlet />
         </main>
       </div>
     </div>

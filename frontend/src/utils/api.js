@@ -50,10 +50,24 @@ export const apiRequest = async (url, options = {}) => {
       statusText: response.statusText
     })
     
-    const data = await response.json()
+    // Handle 204 No Content or non-JSON responses safely
+    let data = null
+    const contentType = response.headers.get('content-type') || ''
+    if (response.status === 204) {
+      data = {}
+    } else if (contentType.includes('application/json')) {
+      data = await response.json()
+    } else {
+      const text = await response.text()
+      try {
+        data = JSON.parse(text)
+      } catch {
+        data = { raw: text }
+      }
+    }
     
     if (!response.ok) {
-      const errorMessage = data.error || `HTTP ${response.status}: ${response.statusText}`
+      const errorMessage = (data && (data.error || data.message)) || `HTTP ${response.status}: ${response.statusText}`
       apiDebug.error('API request failed:', {
         status: response.status,
         error: errorMessage,

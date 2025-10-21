@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Users, ArrowUp, ArrowDown, TrendingUp, Calendar as CalIcon, Plus, CheckCircle, XCircle } from 'lucide-react'
+import { roomService } from '../../../services/roomService'
+import { bookingService } from '../../../services/bookingService'
 
 const Dashboard = ({ darkMode = false }) => {
   const [stats, setStats] = useState({ arrivals: 0, departures: 0, inHouse: 0, occupancy: 0, revenue: 0 })
@@ -7,23 +9,86 @@ const Dashboard = ({ darkMode = false }) => {
   const [departures, setDepartures] = useState([])
 
   useEffect(() => {
-    // TODO: Replace with API calls
-    setStats({ arrivals: 12, departures: 8, inHouse: 48, occupancy: 76, revenue: 185000 })
-    setArrivals([
-      { id: 1, guest: 'John Doe', room: '201', time: '14:00', status: 'confirmed' },
-      { id: 2, guest: 'Jane Smith', room: '305', time: '15:30', status: 'pending' }
-    ])
-    setDepartures([
-      { id: 1, guest: 'Sarah Wilson', room: '205', time: '11:00', status: 'checked-out' },
-      { id: 2, guest: 'David Brown', room: '301', time: '12:00', status: 'pending' }
-    ])
+    let mounted = true
+
+    const loadRoomStatus = async () => {
+      try {
+        const res = await roomService.getRooms(1, 1000)
+        const rooms = res?.data || []
+
+        const totalRooms = rooms.length
+        const normalize = (s = '') => String(s).toLowerCase()
+        const occupiedStatuses = new Set(['occupied', 'oc', 'od'])
+
+        let occupied = 0
+        rooms.forEach(r => {
+          const s = normalize(r.status)
+          if (occupiedStatuses.has(s)) occupied++
+        })
+
+        const occupancyPct = totalRooms > 0 ? Math.round((occupied / totalRooms) * 100) : 0
+
+        if (!mounted) return
+        setStats(prev => ({
+          ...prev,
+          occupancy: occupancyPct,
+          inHouse: occupied,
+          revenue: prev.revenue
+        }))
+
+        // Today arrivals/departures
+        const today = new Date().toISOString().slice(0,10)
+        const [ciPending, ciConfirmed, coConfirmed, coCompleted] = await Promise.all([
+          bookingService.getAllBookings({ checkIn: today, status: 'pending', limit: 100 }),
+          bookingService.getAllBookings({ checkIn: today, status: 'confirmed', limit: 100 }),
+          bookingService.getAllBookings({ checkOut: today, status: 'confirmed', limit: 100 }),
+          bookingService.getAllBookings({ checkOut: today, status: 'completed', limit: 100 })
+        ])
+
+        const mergeUnique = (lists) => {
+          const map = new Map()
+          for (const l of lists) {
+            for (const b of (l?.data || [])) map.set(b.id, b)
+          }
+          return Array.from(map.values())
+        }
+
+        const arrivalsRaw = mergeUnique([ciPending, ciConfirmed])
+        const departuresRaw = mergeUnique([coConfirmed, coCompleted])
+
+        const toCard = (b) => ({
+          id: b.id,
+          guest: [b.guest?.firstName, b.guest?.lastName].filter(Boolean).join(' ') || '—',
+          room: b.room?.roomNumber || b.roomId,
+          time: `${(b.checkIn||'').slice(11,16)}-${(b.checkOut||'').slice(11,16)}`.replace(/^-/,'') || '—',
+          status: b.status
+        })
+
+        if (!mounted) return
+        setArrivals(arrivalsRaw.map(toCard))
+        setDepartures(departuresRaw.map(toCard))
+        setStats(prev => ({
+          ...prev,
+          arrivals: arrivalsRaw.length,
+          departures: departuresRaw.length
+        }))
+      } catch {
+        // Keep dashboard resilient if API fails
+        if (!mounted) return
+        setStats(prev => ({ ...prev, occupancy: 0, inHouse: 0 }))
+      }
+    }
+
+    loadRoomStatus()
+    return () => { mounted = false }
   }, [])
 
   const badge = (status) => {
     const map = {
       confirmed: 'bg-green-100 text-green-700',
       pending: 'bg-yellow-100 text-yellow-700',
-      'checked-out': 'bg-blue-100 text-blue-700'
+      completed: 'bg-blue-100 text-blue-700',
+      cancelled: 'bg-red-100 text-red-700'
     }
     return map[status] || 'bg-gray-100 text-gray-700'
   }
