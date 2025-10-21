@@ -47,6 +47,7 @@ model room {
   amenity       amenity[]
   image         image[]
   video         video[]
+  bookings      booking[]
 }
 
 model video {
@@ -60,3 +61,61 @@ model video {
 
   @@index([roomId], map: "Video_roomId_fkey")
 }
+
+model guest {
+  id        Int       @id @default(autoincrement())
+  firstName String
+  lastName  String
+  email     String    @unique(map: "Guest_email_key")
+  phone     String    @unique(map: "Guest_phone_key")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now())
+
+  // Extended profile fields
+  nationality String?   @db.VarChar(191)
+  idType      String?   @db.VarChar(191)
+  idNumber    String?   @db.VarChar(191)
+  address     String?   @db.VarChar(512)
+  photoUrl    String    @default("")
+  vip         Boolean   @default(false)
+  loyaltyLevel String   @default("silver")
+  notes       String?   @db.Text
+
+  bookings  booking[]
+}
+
+model booking {
+  id          Int       @id @default(autoincrement())
+  guestId     Int
+  roomId      Int
+  checkIn     DateTime
+  checkOut    DateTime
+  adults      Int
+  children    Int       @default(0)
+  totalAmount Float
+  status      String    @default("pending")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now())
+
+  guest       guest     @relation(fields: [guestId], references: [id], map: "Booking_guestId_fkey")
+  room        room      @relation(fields: [roomId], references: [id], map: "Booking_roomId_fkey")
+  payments    payment[]
+
+  @@index([guestId], map: "Booking_guestId_fkey")
+  @@index([roomId], map: "Booking_roomId_fkey")
+}
+
+model payment {
+  id        Int       @id @default(autoincrement())
+  bookingId Int
+  method    String
+  amount    Float
+  status    String    @default("pending")
+  createdAt DateTime  @default(now())
+
+  booking   booking   @relation(fields: [bookingId], references: [id], map: "Payment_bookingId_fkey")
+
+  @@index([bookingId], map: "Payment_bookingId_fkey")
+}
+
+

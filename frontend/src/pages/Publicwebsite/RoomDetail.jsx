@@ -9,6 +9,8 @@ import {
 import Header from '../../components/publicwebsite/Layout/Header'
 import Footer from '../../components/publicwebsite/Layout/Footer'
 import { roomService } from '../../services/roomService'
+import { bookingService } from '../../services/bookingService'
+import { buildMediaUrl } from '../../utils/media'
 
 const RoomDetail = () => {
   const { id } = useParams()
@@ -40,6 +42,18 @@ const RoomDetail = () => {
     taxes: 0,
     total: 0
   })
+
+  // Guest + booking submission state
+  const [guestData, setGuestData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    paymentMethod: 'Cash'
+  })
+  const [showBookingModal, setShowBookingModal] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [bookingError, setBookingError] = useState(null)
 
   // Fetch room details and similar rooms
   useEffect(() => {
@@ -104,6 +118,45 @@ const RoomDetail = () => {
     }
   }
 
+  const handleGuestChange = (field, value) => {
+    setGuestData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const submitBooking = async () => {
+    try {
+      setSubmitting(true)
+      setBookingError(null)
+
+      if (!room) throw new Error('Room not loaded')
+      if (!bookingData.checkIn || !bookingData.checkOut) throw new Error('Please select check-in and check-out dates')
+      const checkInDate = new Date(bookingData.checkIn)
+      const checkOutDate = new Date(bookingData.checkOut)
+      if (!(checkOutDate > checkInDate)) throw new Error('Check-out must be after check-in')
+
+      const payload = {
+        roomId: room.id,
+        checkIn: bookingData.checkIn,
+        checkOut: bookingData.checkOut,
+        adults: bookingData.adults,
+        children: bookingData.children,
+        firstName: guestData.firstName,
+        lastName: guestData.lastName,
+        email: guestData.email,
+        phone: guestData.phone,
+        paymentMethod: guestData.paymentMethod || 'Cash'
+      }
+
+      await bookingService.createBooking(payload)
+      // Optionally navigate or show confirmation
+      // navigate(`/booking/${res.booking.id}`)
+      setShowBookingModal(false)
+    } catch (err) {
+      setBookingError(err.message || 'Failed to create booking')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   // Get amenity icon
   const getAmenityIcon = (amenity) => {
     const icons = {
@@ -122,9 +175,7 @@ const RoomDetail = () => {
   // Get room image
   const getRoomImage = (image) => {
     if (image && image.url) {
-      return image.url.startsWith('http') 
-        ? image.url 
-        : `http://localhost:5000/${image.url}`
+      return buildMediaUrl(image.url)
     }
     return 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'
   }
@@ -233,6 +284,11 @@ const RoomDetail = () => {
               <div className="text-right">
                 <div className="text-3xl font-bold text-blue-600">₹{room.price.toLocaleString()}</div>
                 <div className="text-gray-500">per night</div>
+                <div className="mt-3">
+                  <button onClick={() => navigate(`/rooms/${room.id}/book`)} className="px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+                    Book Now
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -513,13 +569,61 @@ const RoomDetail = () => {
                   <Plus size={16} />
                 </button>
               </div>
-              <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg transition-all hover:scale-105">
+              <button onClick={() => navigate(`/rooms/${room.id}/book`)} className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg transition-all hover:scale-105">
                 Book Now
               </button>
             </div>
           </div>
         </div>
       </div>
+      {showBookingModal && (
+        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-xl p-6 relative">
+            <button onClick={() => setShowBookingModal(false)} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+              <X size={20} />
+            </button>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Complete your booking</h3>
+
+            {bookingError && (
+              <div className="mb-4 text-sm text-red-600">{bookingError}</div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">First Name</label>
+                <input value={guestData.firstName} onChange={(e) => handleGuestChange('firstName', e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Last Name</label>
+                <input value={guestData.lastName} onChange={(e) => handleGuestChange('lastName', e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                <input type="email" value={guestData.email} onChange={(e) => handleGuestChange('email', e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
+                <input value={guestData.phone} onChange={(e) => handleGuestChange('phone', e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Payment Method</label>
+                <select value={guestData.paymentMethod} onChange={(e) => handleGuestChange('paymentMethod', e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="Cash">Cash</option>
+                  <option value="Card">Card</option>
+                  <option value="Online">Online</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={() => setShowBookingModal(false)} className="px-4 py-2 rounded-lg border border-gray-300">Cancel</button>
+              <button onClick={submitBooking} disabled={submitting} className="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
+                {submitting ? 'Booking...' : 'Confirm Booking'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lightbox Modal */}
       {showLightbox && (
@@ -571,7 +675,7 @@ const RoomDetail = () => {
               className="max-w-full max-h-full"
               poster={getRoomImage(images[0])}
             >
-              <source src={getRoomImage(videos[0])} type="video/mp4" />
+              <source src={buildMediaUrl(videos[0]?.url || '')} type="video/mp4" />
               Your browser does not support the video tag.
             </video>
           </div>

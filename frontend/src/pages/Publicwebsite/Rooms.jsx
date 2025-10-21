@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import Header from '../../components/publicwebsite/Layout/Header'
 import Footer from '../../components/publicwebsite/Layout/Footer'
 import { Star, Users, Wifi, Car, Coffee, Dumbbell, Heart, Search, Filter, Grid, List, Loader2 } from 'lucide-react'
 import { roomService } from '../../services/roomService'
+import { buildMediaUrl } from '../../utils/media'
 
 const Rooms = () => {
   const [rooms, setRooms] = useState([])
@@ -20,24 +21,28 @@ const Rooms = () => {
     roomType: 'all',
     minPrice: '',
     maxPrice: '',
-    status: 'available'
+    status: 'available',
+    adults: '',
+    children: '',
+    amenities: ''
   })
   const [sortBy, setSortBy] = useState('price_asc')
 
   // Fetch rooms from backend
-  const fetchRooms = async (page = 1, limit = 12) => {
+  const fetchRooms = useCallback(async (page = 1, limit = 12) => {
     try {
       setLoading(true)
       setError(null)
-      
-      // Clean filters - remove empty values
+        // Clean filters - remove empty values
       const cleanFilters = Object.fromEntries(
-        Object.entries(filters).filter(([_, value]) => value !== '' && value !== 'all')
+        Object.entries(filters).filter(([, value]) => value !== '' && value !== 'all')
       )
-      
+
+      const queryFilters = { ...cleanFilters, sort: sortBy }
+
       console.log('Fetching rooms with filters:', cleanFilters)
       
-      const response = await roomService.getRooms(page, limit, cleanFilters)
+      const response = await roomService.getRooms(page, limit, queryFilters)
       
       console.log('API Response:', response)
       
@@ -127,12 +132,12 @@ const Rooms = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters, sortBy])
 
   // Fetch rooms on component mount and when filters change
   useEffect(() => {
     fetchRooms(1)
-  }, [filters])
+  }, [fetchRooms])
 
   // Handle filter changes
   const handleFilterChange = (field, value) => {
@@ -164,10 +169,9 @@ const Rooms = () => {
 
   // Helper function to get room image
   const getRoomImage = (room) => {
-    if (room.image && room.image.length > 0) {
-      return room.image[0].url.startsWith('http') 
-        ? room.image[0].url 
-        : `http://localhost:5000/${room.image[0].url}`
+    const val = room?.image
+    if (Array.isArray(val) && val.length > 0) {
+      return buildMediaUrl(val[0]?.url || '')
     }
     return 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'
   }
@@ -218,7 +222,7 @@ const Rooms = () => {
                 </div>
 
                 {/* Filters */}
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-4">
                   <select 
                     value={filters.roomType}
                     onChange={(e) => handleFilterChange('roomType', e.target.value)}
@@ -232,10 +236,45 @@ const Rooms = () => {
                     <option value="Presidential">Presidential</option>
                   </select>
 
-                  <button className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors">
-                    <Filter size={20} />
-                    More Filters
-                  </button>
+                  <input
+                    type="number"
+                    value={filters.minPrice}
+                    onChange={(e) => handleFilterChange('minPrice', e.target.value)}
+                    placeholder="Min Price"
+                    className="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-36"
+                  />
+                  <input
+                    type="number"
+                    value={filters.maxPrice}
+                    onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
+                    placeholder="Max Price"
+                    className="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-36"
+                  />
+
+                  <input
+                    type="number"
+                    min="0"
+                    value={filters.adults}
+                    onChange={(e) => handleFilterChange('adults', e.target.value)}
+                    placeholder="Adults"
+                    className="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-28"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    value={filters.children}
+                    onChange={(e) => handleFilterChange('children', e.target.value)}
+                    placeholder="Children"
+                    className="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-28"
+                  />
+
+                  <input
+                    type="text"
+                    value={filters.amenities}
+                    onChange={(e) => handleFilterChange('amenities', e.target.value)}
+                    placeholder="Amenities (comma separated)"
+                    className="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-72"
+                  />
                 </div>
 
                 {/* View Mode */}
@@ -384,9 +423,12 @@ const Rooms = () => {
                         >
                           View Details
                         </Link>
-                        <button className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors">
+                        <Link 
+                          to={`/rooms/${room.id}/book`} 
+                          className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+                        >
                           Book Now
-                        </button>
+                        </Link>
                       </div>
                     </div>
                   </div>

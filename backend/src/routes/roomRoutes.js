@@ -2,6 +2,7 @@ import express from "express";
 import upload from "../middleware/upload.js";
 import { validateBody } from "../middleware/validate.js";
 import { roomSchema } from "../validation/roomValidation.js";
+import { reviewSchema } from "../validation/reviewValidation.js";
 import {
   createRoom,
   getAllRooms,
@@ -9,7 +10,9 @@ import {
   updateRoom,
   deleteRoom,
   getFeaturedRooms,
-  getSimilarRooms
+  getSimilarRooms,
+  getRoomReviews,
+  addRoomReview
 } from "../controllers/roomController.js";
 
 const router = express.Router();
@@ -36,6 +39,10 @@ router.get("/:id", getRoomById);
 
 // Get similar rooms
 router.get("/:id/similar", getSimilarRooms);
+
+// Reviews
+router.get("/:id/reviews", getRoomReviews);
+router.post("/:id/reviews", validateBody(reviewSchema), addRoomReview);
 
 // Update (optionally upload new images/videos to replace)
 router.put(

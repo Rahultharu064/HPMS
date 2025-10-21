@@ -165,9 +165,10 @@ const FeaturedRooms = () => {
                       </button>
                     </div>
                     <div className="absolute bottom-4 left-4">
-                      <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
+                      <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
                         <Star className="fill-yellow-400 text-yellow-400" size={16} />
-                        <span className="text-sm font-semibold text-gray-900">4.8</span>
+                        <span className="text-sm font-semibold text-gray-900">{typeof room?.ratingAvg === 'number' ? room.ratingAvg.toFixed(1) : '0.0'}</span>
+                        <span className="text-xs text-gray-600">({room?.ratingCount ?? 0})</span>
                       </div>
                     </div>
                   </div>
@@ -217,9 +218,12 @@ const FeaturedRooms = () => {
                       >
                         View Details
                       </Link>
-                      <button className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors">
+                      <Link 
+                        to={`/rooms/${room.id}/book`} 
+                        className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+                      >
                         Book Now
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 </div>

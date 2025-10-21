@@ -11,6 +11,32 @@ const removeFileIfExists = (filePath) => {
   }
 };
 
+// List reviews for a room with summary
+export const getRoomReviews = async (req, res) => {
+  try {
+    const roomId = Number(req.params.id);
+    if (!Number.isFinite(roomId) || roomId <= 0) {
+      return res.status(400).json({ success: false, error: 'Invalid room id' });
+    }
+    // Reviews feature removed from schema; return empty result
+    res.json({ success: true, data: [], ratingAvg: 0, ratingCount: 0 });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Failed to fetch reviews' });
+  }
+};
+
+// Create a review for a room
+export const addRoomReview = async (req, res) => {
+  try {
+    // Reviews feature removed from schema; indicate not implemented
+    return res.status(501).json({ success: false, error: 'Reviews are not supported' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Failed to add review' });
+  }
+};
+
 // Create room
 export const createRoom = async (req, res) => {
   try {
@@ -80,6 +106,15 @@ export const getAllRooms = async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 10, 100);
     const skip = (page - 1) * limit;
     const { search, minPrice, maxPrice, roomType, status } = req.query;
+    const adults = req.query.adults ? parseInt(req.query.adults) : undefined;
+    const children = req.query.children ? parseInt(req.query.children) : undefined;
+    const sort = req.query.sort || "created_desc";
+    // amenities can be a comma-separated string or array
+    let amenities = [];
+    if (req.query.amenities) {
+      if (Array.isArray(req.query.amenities)) amenities = req.query.amenities;
+      else amenities = String(req.query.amenities).split(",").map(s => s.trim()).filter(Boolean);
+    }
 
     // build where clause
     const where = {};
@@ -101,13 +136,50 @@ export const getAllRooms = async (req, res) => {
       if (maxPrice) where.price.lte = parseFloat(maxPrice);
     }
 
+    // adults/children filters (capacity)
+    if (Number.isFinite(adults) && adults > 0) {
+      where.maxAdults = { gte: adults };
+    }
+    if (Number.isFinite(children) && children >= 0) {
+      // if schema has maxChildren; default rooms without children allowed may still have 0
+      where.maxChildren = { gte: children };
+    }
+
+    // amenities filter: require all provided amenities
+    if (amenities.length > 0) {
+      where.AND = (where.AND || []).concat(
+        amenities.map(name => ({ amenity: { some: { name: { equals: name } } } }))
+      );
+    }
+
+    // Sorting
+    let orderBy;
+    switch (sort) {
+      case "price_asc":
+        orderBy = { price: "asc" };
+        break;
+      case "price_desc":
+        orderBy = { price: "desc" };
+        break;
+      case "name_asc":
+        orderBy = { name: "asc" };
+        break;
+      case "created_asc":
+        orderBy = { createdAt: "asc" };
+        break;
+      case "created_desc":
+      default:
+        orderBy = { createdAt: "desc" };
+        break;
+    }
+
     const [rooms, total] = await Promise.all([
       prisma.room.findMany({
         where,
         include: { amenity: true, image: true, video: true },
         skip,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy,
       }),
       prisma.room.count({ where })
     ]);
@@ -134,7 +206,9 @@ export const getRoomById = async (req, res) => {
       include: { amenity: true, image: true, video: true }
     });
     if (!room) return res.status(404).json({ success: false, error: "Room not found" });
-    res.json({ success: true, room });
+    const ratingCount = 0;
+    const ratingAvg = 0;
+    res.json({ success: true, room: { ...room, ratingAvg, ratingCount } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: "Failed to fetch room" });
@@ -148,15 +222,16 @@ export const getFeaturedRooms = async (req, res) => {
       include: { 
         amenity: true, 
         image: true, 
-        video: true 
+        video: true
       },
       orderBy: { price: "desc" },
       take: 6
     });
-    res.json({ success: true, data: featuredRooms });
+    const enriched = featuredRooms.map(r => ({ ...r, ratingAvg: 0, ratingCount: 0 }));
+    res.json({ success: true, data: enriched });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, error: "Failed to fetch featured rooms" });
+    res.status(500).json({ success: false, error: "Failed to fetch featured rooms", details: err.message });
   }
 };
 
@@ -185,13 +260,14 @@ export const getSimilarRooms = async (req, res) => {
       include: { 
         amenity: true, 
         image: true, 
-        video: true 
+        video: true
       },
       orderBy: { price: "asc" },
       take: 4
     });
+    const enriched = similarRooms.map(r => ({ ...r, ratingAvg: 0, ratingCount: 0 }));
     
-    res.json({ success: true, data: similarRooms });
+    res.json({ success: true, data: enriched });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: "Failed to fetch similar rooms" });

@@ -47,6 +47,30 @@ export const roomService = {
     }
   },
 
+  // Get room reviews and summary
+  async getRoomReviews(id) {
+    try {
+      return await apiRequest(`/api/rooms/${id}/reviews`)
+    } catch (error) {
+      apiDebug.error('Error fetching room reviews:', error)
+      throw error
+    }
+  },
+
+  // Add a room review
+  async addRoomReview(id, { name, rating, comment }) {
+    try {
+      return await apiRequest(`/api/rooms/${id}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, rating, comment })
+      })
+    } catch (error) {
+      apiDebug.error('Error adding room review:', error)
+      throw error
+    }
+  },
+
   // Delete room
   async deleteRoom(id) {
     try {

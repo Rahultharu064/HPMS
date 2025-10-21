@@ -1,0 +1,9 @@
+-- AlterTable
+ALTER TABLE `guest` ADD COLUMN `address` VARCHAR(512) NULL,
+    ADD COLUMN `idNumber` VARCHAR(191) NULL,
+    ADD COLUMN `idType` VARCHAR(191) NULL,
+    ADD COLUMN `loyaltyLevel` VARCHAR(191) NOT NULL DEFAULT 'silver',
+    ADD COLUMN `nationality` VARCHAR(191) NULL,
+    ADD COLUMN `notes` TEXT NULL,
+    ADD COLUMN `photoUrl` VARCHAR(191) NOT NULL DEFAULT '',
+    ADD COLUMN `vip` BOOLEAN NOT NULL DEFAULT false;
