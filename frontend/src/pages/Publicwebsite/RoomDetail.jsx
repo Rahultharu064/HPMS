@@ -19,6 +19,11 @@ const RoomDetail = () => {
   const [similarRooms, setSimilarRooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [reviews, setReviews] = useState([])
+  const [reviewsSummary, setReviewsSummary] = useState({ ratingAvg: 0, ratingCount: 0 })
+  const [reviewForm, setReviewForm] = useState({ name: '', rating: 5, comment: '' })
+  const [reviewSubmitting, setReviewSubmitting] = useState(false)
+  const [reviewError, setReviewError] = useState(null)
   
   // Image gallery state
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -62,13 +67,19 @@ const RoomDetail = () => {
         setLoading(true)
         setError(null)
         
-        const [roomResponse, similarResponse] = await Promise.all([
+        const [roomResponse, similarResponse, reviewsResponse] = await Promise.all([
           roomService.getRoomById(id),
-          roomService.getSimilarRooms(id)
+          roomService.getSimilarRooms(id),
+          roomService.getRoomReviews(id)
         ])
         
         setRoom(roomResponse.room)
         setSimilarRooms(similarResponse.data || [])
+        setReviews(reviewsResponse.data || [])
+        setReviewsSummary({
+          ratingAvg: Number(reviewsResponse.ratingAvg || 0),
+          ratingCount: Number(reviewsResponse.ratingCount || 0)
+        })
         
         // Calculate initial price breakdown
         if (roomResponse.room) {
@@ -86,6 +97,36 @@ const RoomDetail = () => {
       fetchRoomData()
     }
   }, [id])
+
+  const handleReviewChange = (field, value) => {
+    setReviewForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  const submitReview = async () => {
+    try {
+      setReviewSubmitting(true)
+      setReviewError(null)
+      if (!reviewForm.name || !reviewForm.comment || !reviewForm.rating) {
+        throw new Error('Please fill all fields')
+      }
+      await roomService.addRoomReview(id, {
+        name: reviewForm.name,
+        rating: Number(reviewForm.rating),
+        comment: reviewForm.comment
+      })
+      const refreshed = await roomService.getRoomReviews(id)
+      setReviews(refreshed.data || [])
+      setReviewsSummary({
+        ratingAvg: Number(refreshed.ratingAvg || 0),
+        ratingCount: Number(refreshed.ratingCount || 0)
+      })
+      setReviewForm({ name: '', rating: 5, comment: '' })
+    } catch (e) {
+      setReviewError(e.message || 'Failed to submit review')
+    } finally {
+      setReviewSubmitting(false)
+    }
+  }
 
   // Calculate price breakdown
   const calculatePriceBreakdown = (basePrice, nights) => {
@@ -267,8 +308,8 @@ const RoomDetail = () => {
                 <div className="flex items-center gap-4 text-gray-600 mb-4">
                   <div className="flex items-center gap-1">
                     <Star className="fill-yellow-400 text-yellow-400" size={20} />
-                    <span className="font-semibold">4.8</span>
-                    <span>(128 reviews)</span>
+                    <span className="font-semibold">{reviewsSummary.ratingCount > 0 ? reviewsSummary.ratingAvg.toFixed(1) : '0.0'}</span>
+                    <span>({reviewsSummary.ratingCount} reviews)</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Users size={20} />
@@ -489,6 +530,62 @@ const RoomDetail = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Reviews */}
+          <div className="mb-12">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">Guest Reviews</h3>
+            {reviewsSummary.ratingCount > 0 && (
+              <div className="flex items-center gap-3 mb-6">
+                <Star className="fill-yellow-400 text-yellow-400" size={24} />
+                <div className="text-lg font-semibold">{reviewsSummary.ratingAvg.toFixed(1)} out of 5</div>
+                <div className="text-gray-600">({reviewsSummary.ratingCount} reviews)</div>
+              </div>
+            )}
+            <div className="space-y-4 mb-8">
+              {reviews.length === 0 && (
+                <div className="text-gray-600">No reviews yet. Be the first to review this room.</div>
+              )}
+              {reviews.map(r => (
+                <div key={r.id} className="bg-white border rounded-2xl p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="font-semibold text-gray-900">{r.name}</div>
+                    <div className="flex items-center gap-2">
+                      <Star className="fill-yellow-400 text-yellow-400" size={18} />
+                      <span className="font-medium">{r.rating}</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-gray-700 leading-relaxed">{r.comment}</div>
+                  <div className="mt-1 text-xs text-gray-500">{new Date(r.createdAt).toLocaleString()}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-gray-50 rounded-2xl p-6">
+              <h4 className="text-xl font-bold text-gray-900 mb-4">Write a Review</h4>
+              {reviewError && <div className="mb-3 text-sm text-red-600">{reviewError}</div>}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Your Name</label>
+                  <input value={reviewForm.name} onChange={(e) => handleReviewChange('name', e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Rating</label>
+                  <select value={reviewForm.rating} onChange={(e) => handleReviewChange('rating', e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Comment</label>
+                  <textarea value={reviewForm.comment} onChange={(e) => handleReviewChange('comment', e.target.value)} rows={4} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button onClick={submitReview} disabled={reviewSubmitting} className="px-6 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
+                  {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
+                </button>
               </div>
             </div>
           </div>

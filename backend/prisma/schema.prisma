@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Restored from migrations to match existing application models
+model Room {
+  id            Int      @id @default(autoincrement())
+  name          String
+  roomType      String
+  roomNumber    String   @unique
+  floor         Int
+  price         Float
+  size          Float
+  maxAdults     Int
+  maxChildren   Int      @default(0)
+  numBeds       Int
+  description   String
+  allowChildren Boolean  @default(false)
+  status        String   @default("available")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+
+  amenity  Amenity[]
+  image    Image[]
+  video    Video[]
+  bookings Booking[]
+  reviews  Review[]
+
+  @@map("Room")
+}
+
+model Amenity {
+  id     Int    @id @default(autoincrement())
+  name   String
+  roomId Int
+
+  room Room @relation(fields: [roomId], references: [id])
+
+  @@map("Amenity")
+}
+
+model Image {
+  id     Int    @id @default(autoincrement())
+  name   String
+  size   Int
+  type   String
+  roomId Int
+  url    String @default("")
+
+  room Room @relation(fields: [roomId], references: [id])
+
+  @@map("Image")
+}
+
+model Video {
+  id     Int    @id @default(autoincrement())
+  name   String
+  size   Int
+  type   String
+  roomId Int
+  url    String @default("")
+
+  room Room @relation(fields: [roomId], references: [id])
+
+  @@map("Video")
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  roomId    Int
+  name      String
+  rating    Int
+  comment   String   @db.Text
+  createdAt DateTime @default(now())
+
+  room Room @relation(fields: [roomId], references: [id])
+
+  @@index([roomId])
+  @@map("review")
+}
+
+// App models used throughout controllers
+model Guest {
+  id            Int       @id @default(autoincrement())
+  firstName     String
+  lastName      String
+  email         String    @unique
+  phone         String    @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now())
+  dateOfBirth   DateTime?
+  modeOfArrival String?
+  photoUrl      String?
+  loyaltyLevel  String?
+  vip           Boolean?
+
+  bookings Booking[]
+
+  @@map("guest")
+}
+
+model Booking {
+  id          Int      @id @default(autoincrement())
+  guestId     Int
+  roomId      Int
+  checkIn     DateTime
+  checkOut    DateTime
+  adults      Int
+  children    Int      @default(0)
+  totalAmount Float
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  source      String   @default("offline")
+
+  guest    Guest     @relation(fields: [guestId], references: [id])
+  room     Room      @relation(fields: [roomId], references: [id])
+  payments Payment[]
+
+  @@map("booking")
+}
+
+model Payment {
+  id        Int      @id @default(autoincrement())
+  bookingId Int
+  method    String
+  amount    Float
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@map("payment")
+}

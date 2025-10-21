@@ -45,7 +45,15 @@ export const getPaymentGateways = async (req, res) => {
 // Create payment record
 export const createPayment = async (req, res) => {
   try {
-    const { bookingId, method, amount, gatewayData } = req.body;
+    const { bookingId, method, amount } = req.body;
+
+    if (!bookingId || !method) {
+      return res.status(400).json({ success: false, error: "bookingId and method are required" });
+    }
+    const allowed = ['khalti', 'esewa', 'cash', 'card']
+    if (!allowed.includes(String(method))) {
+      return res.status(400).json({ success: false, error: "Unsupported payment method" });
+    }
 
     // Validate booking exists
     const booking = await prisma.booking.findUnique({
@@ -57,12 +65,18 @@ export const createPayment = async (req, res) => {
       return res.status(404).json({ success: false, error: "Booking not found" });
     }
 
+    // Determine amount (fallback to booking total)
+    const amt = amount ? parseFloat(amount) : Number(booking.totalAmount || 0)
+    if (!Number.isFinite(amt) || amt <= 0) {
+      return res.status(400).json({ success: false, error: "Invalid amount" });
+    }
+
     // Create payment record
     const payment = await prisma.payment.create({
       data: {
         bookingId: bookingId,
         method: method,
-        amount: parseFloat(amount),
+        amount: amt,
         status: method === 'cash' ? 'completed' : 'pending',
         createdAt: new Date()
       }
@@ -70,12 +84,16 @@ export const createPayment = async (req, res) => {
 
     // Handle different payment methods
     if (method === 'khalti') {
-      const khaltiResponse = await initiateKhaltiPayment(booking, amount);
-      return res.json({
-        success: true,
-        payment: payment,
-        gatewayResponse: khaltiResponse
-      });
+      try {
+        const khaltiResponse = await initiateKhaltiPayment(booking, amt);
+        return res.json({
+          success: true,
+          payment: payment,
+          gatewayResponse: khaltiResponse
+        });
+      } catch (e) {
+        return res.status(400).json({ success: false, error: "Failed to initiate Khalti payment", details: e?.message || e });
+      }
     } else if (method === 'esewa') {
       const esewaResponse = await initiateEsewaPayment(booking, amount);
       return res.json({
@@ -105,10 +123,15 @@ export const createPayment = async (req, res) => {
 // Initiate Khalti payment
 const initiateKhaltiPayment = async (booking, amount) => {
   try {
+    const secret = process.env.KHALTI_SECRET_KEY
+    if (!secret) {
+      throw new Error('KHALTI_SECRET_KEY is not configured');
+    }
+
     const khaltiData = {
       return_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/booking/confirm/${booking.id}`,
       website_url: process.env.FRONTEND_URL || 'http://localhost:5173',
-      amount: (parseFloat(amount) * 100).toString(), // Convert to paisa
+      amount: (Math.round(parseFloat(amount) * 100)).toString(), // integer paisa as string
       purchase_order_id: `BOOKING_${booking.id}`,
       purchase_order_name: `Hotel Booking - ${booking.room.name}`,
       customer_info: {
@@ -123,7 +146,7 @@ const initiateKhaltiPayment = async (booking, amount) => {
         method: 'POST',
         url: 'https://dev.khalti.com/api/v2/epayment/initiate/',
         headers: {
-          'Authorization': `key ${process.env.KHALTI_SECRET_KEY || 'live_secret_key_68791341fdd94846a146f0457ff7b455'}`,
+          'Authorization': `Key ${secret}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(khaltiData)
@@ -137,7 +160,12 @@ const initiateKhaltiPayment = async (booking, amount) => {
         
         try {
           const responseData = JSON.parse(response.body);
-          resolve(responseData);
+          if (response.statusCode >= 200 && response.statusCode < 300) {
+            resolve(responseData);
+          } else {
+            const msg = responseData?.detail || responseData?.message || response.body || 'Khalti initiation failed'
+            reject(new Error(typeof msg === 'string' ? msg : JSON.stringify(msg)))
+          }
         } catch (parseError) {
           reject(parseError);
         }
@@ -249,12 +277,12 @@ const verifyKhaltiPayment = async (token, amount) => {
         method: 'POST',
         url: 'https://dev.khalti.com/api/v2/epayment/lookup/',
         headers: {
-          'Authorization': `key ${process.env.KHALTI_SECRET_KEY || 'live_secret_key_68791341fdd94846a146f0457ff7b455'}`,
+          'Authorization': `Key ${process.env.KHALTI_SECRET_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           token: token,
-          amount: amount
+          amount: Math.round(parseFloat(amount) * 100)
         })
       };
 

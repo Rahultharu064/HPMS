@@ -18,8 +18,21 @@ export const getRoomReviews = async (req, res) => {
     if (!Number.isFinite(roomId) || roomId <= 0) {
       return res.status(400).json({ success: false, error: 'Invalid room id' });
     }
-    // Reviews feature removed from schema; return empty result
-    res.json({ success: true, data: [], ratingAvg: 0, ratingCount: 0 });
+    const [reviews, aggregate] = await Promise.all([
+      prisma.review.findMany({
+        where: { roomId },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, roomId: true, name: true, rating: true, comment: true, createdAt: true }
+      }),
+      prisma.review.aggregate({
+        _avg: { rating: true },
+        _count: { _all: true },
+        where: { roomId }
+      })
+    ]);
+    const ratingAvg = Number(aggregate._avg.rating ?? 0);
+    const ratingCount = Number(aggregate._count._all ?? 0);
+    res.json({ success: true, data: reviews, ratingAvg, ratingCount });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: 'Failed to fetch reviews' });
@@ -29,8 +42,19 @@ export const getRoomReviews = async (req, res) => {
 // Create a review for a room
 export const addRoomReview = async (req, res) => {
   try {
-    // Reviews feature removed from schema; indicate not implemented
-    return res.status(501).json({ success: false, error: 'Reviews are not supported' });
+    const roomId = Number(req.params.id);
+    if (!Number.isFinite(roomId) || roomId <= 0) {
+      return res.status(400).json({ success: false, error: 'Invalid room id' });
+    }
+    const body = req.validatedBody ?? req.body;
+    const name = String(body.name);
+    const rating = Number(body.rating);
+    const comment = String(body.comment);
+    const created = await prisma.review.create({
+      data: { roomId, name, rating, comment },
+      select: { id: true, roomId: true, name: true, rating: true, comment: true, createdAt: true }
+    });
+    res.status(201).json({ success: true, review: created });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: 'Failed to add review' });
