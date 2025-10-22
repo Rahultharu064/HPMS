@@ -74,7 +74,7 @@ model Review {
   id        Int      @id @default(autoincrement())
   roomId    Int
   name      String
-  rating    Int
+  rating    Float
   comment   String   @db.Text
   createdAt DateTime @default(now())
 
@@ -136,4 +136,245 @@ model Payment {
   booking Booking @relation(fields: [bookingId], references: [id])
 
   @@map("payment")
+}
+
+// Logs for OTA sync/import operations
+model OtaSyncLog {
+  id             Int      @id @default(autoincrement())
+  provider       String
+  direction      String   // push | pull | webhook
+  status         String   // success | failed | queued
+  message        String?
+  payloadSnippet String?  @db.Text
+  createdAt      DateTime @default(now())
+  jobId          String?
+  durationMs     Int?
+  errorStack     String?  @db.Text
+
+  @@index([createdAt])
+  @@map("ota_sync_log")
+}
+
+// Idempotency for external OTA bookings
+model ExternalBooking {
+  id         Int      @id @default(autoincrement())
+  provider   String
+  externalId String
+  createdAt  DateTime @default(now())
+  note       String?
+
+  @@unique([provider, externalId])
+  @@map("external_booking")
+}
+
+// =====================
+// Housekeeping Enums
+// =====================
+
+enum HkTaskStatus {
+  NEW
+  ASSIGNED
+  IN_PROGRESS
+  DONE
+  QA_CHECK
+  CLOSED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum RequestStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum MaintenanceStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum Severity {
+  MINOR
+  MAJOR
+  CRITICAL
+}
+
+enum InspectionStatus {
+  PENDING
+  PASSED
+  FAILED
+}
+
+// =====================
+// Housekeeping Models
+// =====================
+
+model HkTask {
+  id          Int          @id @default(autoincrement())
+  roomId      Int
+  bookingId   Int?
+  type        String
+  title       String
+  description String?
+  priority    Priority     @default(MEDIUM)
+  status      HkTaskStatus @default(NEW)
+  assignedTo  String?
+  dueAt       DateTime?
+  checklist   Json?
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now())
+
+  room        Room         @relation(fields: [roomId], references: [id])
+  booking     Booking?     @relation(fields: [bookingId], references: [id])
+  attachments HkTaskAttachment[]
+
+  @@index([roomId])
+  @@index([status, priority])
+  @@map("hk_task")
+}
+
+model HkTaskAttachment {
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  fileUrl   String
+  fileType  String
+  createdAt DateTime @default(now())
+
+  task HkTask @relation(fields: [taskId], references: [id])
+
+  @@index([taskId])
+  @@map("hk_task_attachment")
+}
+
+model CleaningLog {
+  id          Int      @id @default(autoincrement())
+  roomId      Int
+  taskId      Int?
+  startedAt   DateTime
+  finishedAt  DateTime?
+  durationMin Int?
+  byUser      String?
+  outcome     String?
+  notes       String?
+
+  room Room    @relation(fields: [roomId], references: [id])
+  task HkTask? @relation(fields: [taskId], references: [id])
+
+  @@index([roomId])
+  @@map("cleaning_log")
+}
+
+model InventoryItem {
+  id           Int      @id @default(autoincrement())
+  name         String
+  sku          String?  @unique
+  unit         String
+  stock        Int      @default(0)
+  reorderLevel Int      @default(0)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
+
+  transactions InventoryTxn[]
+
+  @@index([active])
+  @@map("inventory_item")
+}
+
+model InventoryTxn {
+  id        Int      @id @default(autoincrement())
+  itemId    Int
+  qty       Int
+  direction String
+  roomId    Int?
+  taskId    Int?
+  note      String?
+  createdAt DateTime @default(now())
+
+  item InventoryItem @relation(fields: [itemId], references: [id])
+  room Room?         @relation(fields: [roomId], references: [id])
+  task HkTask?       @relation(fields: [taskId], references: [id])
+
+  @@index([itemId])
+  @@map("inventory_txn")
+}
+
+model GuestRequest {
+  id          Int           @id @default(autoincrement())
+  bookingId   Int?
+  roomId      Int?
+  requestType String
+  priority    Priority      @default(MEDIUM)
+  status      RequestStatus @default(OPEN)
+  assignedTo  String?
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now())
+
+  booking Booking? @relation(fields: [bookingId], references: [id])
+  room    Room?    @relation(fields: [roomId], references: [id])
+
+  @@index([status, priority])
+  @@map("guest_request")
+}
+
+model LostFound {
+  id          Int      @id @default(autoincrement())
+  roomId      Int?
+  foundAt     DateTime @default(now())
+  description String
+  photoUrl    String?
+  status      String   @default("logged")
+  returnedTo  String?
+  receivedBy  String?
+  notes       String?
+
+  room Room? @relation(fields: [roomId], references: [id])
+
+  @@index([status])
+  @@map("lost_found")
+}
+
+model MaintenanceTicket {
+  id         Int               @id @default(autoincrement())
+  roomId     Int?
+  issueType  String
+  severity   Severity          @default(MINOR)
+  status     MaintenanceStatus @default(OPEN)
+  assignedTo String?
+  notes      String?
+  openedAt   DateTime          @default(now())
+  closedAt   DateTime?
+
+  room Room? @relation(fields: [roomId], references: [id])
+
+  @@index([status, severity])
+  @@map("maintenance_ticket")
+}
+
+model Inspection {
+  id           Int              @id @default(autoincrement())
+  roomId       Int
+  scheduleType String
+  checklist    Json?
+  status       InspectionStatus @default(PENDING)
+  performedAt  DateTime?
+  performedBy  String?
+
+  room Room @relation(fields: [roomId], references: [id])
+
+  @@index([roomId, status])
+  @@map("inspection")
 }

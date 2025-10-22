@@ -2,7 +2,8 @@ import React from 'react'
 import CreateRoom from './components/owner/forum/createRoom'
 import OwnerAdmin from './pages/owner/OwnerAdmin'
 import Home from './pages/Publicwebsite/Home'
-import Rooms from './pages/Publicwebsite/Rooms'
+import PublicRooms from './pages/Publicwebsite/Rooms'
+import OwnerRooms from './components/owner/sections/Rooms'
 import RoomDetail from './pages/Publicwebsite/RoomDetail'
 import BookingForm from './pages/Publicwebsite/BookingForm'
 import BookingConfirmation from './pages/Publicwebsite/BookingConfirmation'
@@ -21,7 +22,13 @@ import CheckInOut from './components/frontoffice/sections/CheckInOut'
 import Billing from './components/frontoffice/sections/Billing'
 import Reports from './components/frontoffice/sections/Reports'
 import ReservationDetail from './components/frontoffice/sections/ReservationDetail'
-
+import OTA from './components/owner/sections/OTA'
+import HousekeepingDashboard from './pages/housekeeping/HousekeepingDashboard'
+import HKDashboard from './components/housekeeping/sections/Dashboard'
+import HKRooms from './components/housekeeping/sections/Rooms'
+import HKSchedule from './components/housekeeping/sections/Schedule'
+import HKStaff from './components/housekeeping/sections/Staff'
+import HKSettings from './components/housekeeping/sections/Settings'
 
 
 const App = () => {
@@ -36,9 +43,22 @@ const App = () => {
       path: "/",
       element: <Home />
     },
+    // Housekeeping Dashboard
+    {
+      path: "/housekeeping",
+      element: <HousekeepingDashboard />,
+      children: [
+        { index: true, element: <Navigate to="/housekeeping/dashboard" replace /> },
+        { path: "dashboard", element: <HKDashboard /> },
+        { path: "rooms", element: <HKRooms /> },
+        { path: "schedule", element: <HKSchedule /> },
+        { path: "staff", element: <HKStaff /> },
+        { path: "settings", element: <HKSettings /> }
+      ]
+    },
     {
       path: "/rooms",
-      element: <Rooms />
+      element: <PublicRooms />
     },
     {
       path: "/rooms/:id",
@@ -66,13 +86,17 @@ const App = () => {
     },
     // Owner Admin Routes
     {
-      path: "/create-room", 
-      element: <CreateRoom />
-    },
-    {
       path: "/owner-admin",
-      element: <OwnerAdmin />
+      element: <OwnerAdmin />,
+      
+      children: [
+        { index: true, element: <Navigate to="/owner-admin/create-room" replace /> },
+        { path: "create-room", element: <CreateRoom /> },
+        { path: "ota", element: <OTA /> },
+        { path: "owneroom", element: <OwnerRooms /> }
+      ]
     },
+    //frontoffice routes
     {
       path: "/front-office",
       element: <FrontOffice />,
@@ -106,3 +130,4 @@ const App = () => {
 }
 
 export default App
+

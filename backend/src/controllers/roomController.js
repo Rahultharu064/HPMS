@@ -11,6 +11,65 @@ const removeFileIfExists = (filePath) => {
   }
 };
 
+// GET /api/rooms/status-map → simplified list for housekeeping UI
+export const getRoomsStatusMap = async (req, res) => {
+  try {
+    const { floor, status } = req.query;
+    const where = {};
+    if (floor) where.floor = Number(floor);
+    if (status && status !== 'all') where.status = String(status);
+
+    const rooms = await prisma.room.findMany({
+      where,
+      select: {
+        id: true,
+        roomNumber: true,
+        floor: true,
+        status: true,
+        updatedAt: true,
+      },
+      orderBy: [{ floor: 'asc' }, { roomNumber: 'asc' }]
+    });
+
+    res.json({ success: true, data: rooms });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Failed to fetch room status map' });
+  }
+};
+
+// PUT /api/rooms/:id/status → update a room's housekeeping status
+export const updateRoomStatus = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const { status } = req.body;
+    const allowed = [
+      'clean',
+      'needs-cleaning',
+      'occupied',
+      'maintenance',
+      'available'
+    ];
+    if (!allowed.includes(String(status))) {
+      return res.status(400).json({ success: false, error: 'Invalid status' });
+    }
+
+    const updated = await prisma.room.update({
+      where: { id },
+      data: { status: String(status), updatedAt: new Date() },
+      select: { id: true, roomNumber: true, floor: true, status: true, updatedAt: true }
+    });
+
+    res.json({ success: true, room: updated });
+  } catch (err) {
+    console.error(err);
+    if (err.code === 'P2025') {
+      return res.status(404).json({ success: false, error: 'Room not found' });
+    }
+    res.status(500).json({ success: false, error: 'Failed to update room status' });
+  }
+};
+
 // List reviews for a room with summary
 export const getRoomReviews = async (req, res) => {
   try {
@@ -251,11 +310,34 @@ export const getFeaturedRooms = async (req, res) => {
       orderBy: { price: "desc" },
       take: 6
     });
-    const enriched = featuredRooms.map(r => ({ ...r, ratingAvg: 0, ratingCount: 0 }));
+
+    const roomIds = featuredRooms.map(r => r.id);
+    let ratingByRoom = new Map();
+    if (roomIds.length > 0) {
+      const aggregates = await prisma.review.groupBy({
+        by: ['roomId'],
+        where: { roomId: { in: roomIds } },
+        _avg: { rating: true },
+        _count: { _all: true }
+      });
+      for (const a of aggregates) {
+        ratingByRoom.set(a.roomId, {
+          ratingAvg: Number(a._avg.rating ?? 0),
+          ratingCount: Number(a._count._all ?? 0)
+        });
+      }
+    }
+
+    const enriched = featuredRooms.map(r => ({
+      ...r,
+      ratingAvg: ratingByRoom.get(r.id)?.ratingAvg ?? 0,
+      ratingCount: ratingByRoom.get(r.id)?.ratingCount ?? 0
+    }));
+
     res.json({ success: true, data: enriched });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, error: "Failed to fetch featured rooms", details: err.message });
+    res.status(500).json({ success: false, error: 'Failed to fetch featured rooms', details: err.message });
   }
 };
 

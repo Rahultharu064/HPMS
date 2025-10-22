@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Bed, Users, Clock, CheckCircle, XCircle, AlertCircle, Search, Filter, Eye, Edit, Plus, RefreshCw } from 'lucide-react'
 import { roomService } from '../../../services/roomService'
+import { mapApiToFront, mapFrontToApi } from '../../../constants/roomStatus'
+import { toast } from 'react-hot-toast'
 
 const RoomStatus = () => {
   const [rooms, setRooms] = useState([])
@@ -8,6 +10,9 @@ const RoomStatus = () => {
   const [statusFilter, setStatusFilter] = useState('all')
   const [floorFilter, setFloorFilter] = useState('all')
   const [viewMode, setViewMode] = useState('grid')
+  const [updatingKey, setUpdatingKey] = useState(null) // `${roomId}-${code}`
+
+  // mapping now centralized in constants
 
   useEffect(() => {
     let mounted = true
@@ -17,22 +22,12 @@ const RoomStatus = () => {
         const res = await roomService.getRooms(1, 500)
         const data = res?.data || []
 
-        const normalize = (s = '') => String(s).toLowerCase()
-        const mapStatus = (s) => {
-          const v = normalize(s)
-          if (['occupied', 'oc', 'od'].includes(v)) return 'OC'
-          if (['ooo', 'out_of_order', 'out of order'].includes(v)) return 'OOO'
-          if (['vd', 'vacant_dirty'].includes(v)) return 'VD'
-          // default treat available as vacant clean
-          return 'VC'
-        }
-
         const mapped = data.map(r => ({
           id: r.id,
           number: r.roomNumber,
           floor: r.floor,
           type: r.roomType,
-          status: mapStatus(r.status),
+          status: mapApiToFront(r.status),
           guest: null,
           lastCleaned: '-'
         }))
@@ -135,6 +130,7 @@ const RoomStatus = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Guest</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Cleaned</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -150,6 +146,49 @@ const RoomStatus = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{room.guest || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{room.lastCleaned}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div className="flex flex-wrap gap-2">
+                        {['VC','VD','OC','OD','OOO'].map(code => (
+                          <button
+                            key={code}
+                            onClick={async () => {
+                              const key = `${room.id}-${code}`
+                              try {
+                                setUpdatingKey(key)
+                                await roomService.updateStatus(room.id, mapFrontToApi(code))
+                                const res = await roomService.getRooms(1, 500)
+                                const data = res?.data || []
+                                setRooms(data.map(r => ({
+                                  id: r.id,
+                                  number: r.roomNumber,
+                                  floor: r.floor,
+                                  type: r.roomType,
+                                  status: mapApiToFront(r.status),
+                                  guest: null,
+                                  lastCleaned: '-'
+                                })))
+                                toast.success('Room status updated')
+                              } catch (e) {
+                                console.error(e)
+                                toast.error('Failed to update room status')
+                              } finally { setUpdatingKey(null) }
+                            }}
+                            disabled={updatingKey === `${room.id}-${code}`}
+                            className={`px-2 py-1 rounded border text-xs flex items-center gap-1 ${
+                              updatingKey === `${room.id}-${code}`
+                                ? 'bg-gray-200 text-gray-500 border-gray-300 cursor-wait'
+                                : room.status===code
+                                  ? 'bg-gray-800 text-white border-gray-800'
+                                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                            }`}
+                            title={`Set ${statusInfo(code).label}`}
+                          >
+                            {updatingKey === `${room.id}-${code}` ? <RefreshCw size={12} className="animate-spin"/> : null}
+                            {code}
+                          </button>
+                        ))}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

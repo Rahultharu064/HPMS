@@ -17,6 +17,31 @@ export const roomService = {
     }
   },
 
+  // Housekeeping: get simplified status map
+  async getStatusMap(filters = {}) {
+    try {
+      const query = new URLSearchParams({ ...filters });
+      return await apiRequest(`/api/rooms/status-map${query.toString() ? `?${query}` : ''}`)
+    } catch (error) {
+      apiDebug.error('Error fetching room status map:', error)
+      throw error
+    }
+  },
+
+  // Housekeeping: update room status
+  async updateStatus(id, status) {
+    try {
+      return await apiRequest(`/api/rooms/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      })
+    } catch (error) {
+      apiDebug.error('Error updating room status:', error)
+      throw error
+    }
+  },
+
   // Get single room by ID
   async getRoomById(id) {
     try {

@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { DollarSign, Hotel, TrendingUp, Users } from 'lucide-react'
 import Header from '../../components/owner/Layout/Header'
 import Sidebar from '../../components/owner/Layout/Sidebar'
@@ -7,6 +8,8 @@ import Rooms from '../../components/owner/sections/Rooms'
 
 const OwnerAdmin = () => {
   const [activeTab, setActiveTab] = useState('dashboard')
+  const navigate = useNavigate()
+  const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [darkMode, setDarkMode] = useState(false)
   const [showModal, setShowModal] = useState(false)
@@ -18,6 +21,7 @@ const OwnerAdmin = () => {
   const [occupancy, setOccupancy] = useState(0)
   const [avgRate, setAvgRate] = useState(0)
   const [productivity, setProductivity] = useState(0)
+  const [selectedRoom, setSelectedRoom] = useState(null)
 
   const openModal = useCallback((type) => {
     setModalType(type)
@@ -54,17 +58,32 @@ const OwnerAdmin = () => {
     }
   }, [activeTab])
 
+  // Route mapping for tabs that have dedicated routes
+  useEffect(() => {
+    if (activeTab === 'ota') {
+      navigate('/owner-admin/ota')
+    }
+    // Add more route mappings here as new child routes are introduced
+  }, [activeTab, navigate])
+
+  // Keep tab highlight in sync when navigating directly or via browser controls
+  useEffect(() => {
+    const path = location.pathname
+    if (path.startsWith('/owner-admin/ota')) setActiveTab('ota')
+    else if (path.startsWith('/owner-admin/owneroom')) setActiveTab('rooms')
+    else if (path.startsWith('/owner-admin')) setActiveTab('dashboard')
+  }, [location.pathname])
+
   const sidebarItems = useMemo(() => ([
     { icon: 'LayoutDashboard', label: 'Dashboard', key: 'dashboard' },
-    { icon: 'Hotel', label: 'Rooms', key: 'rooms' },
+    { icon: 'Hotel', label: 'Rooms', key: 'rooms', route: '/owner-admin/owneroom' },
     { icon: 'Sparkles', label: 'Facilities', key: 'facilities' },
     { icon: 'Users', label: 'Users', key: 'users' },
-    { icon: 'Globe', label: 'OTA Sync', key: 'ota' },
+    { icon: 'Globe', label: 'OTA Sync', key: 'ota', route: '/owner-admin/ota' },
     { icon: 'DollarSign', label: 'Finance', key: 'finance' },
     { icon: 'BarChart3', label: 'Reports', key: 'reports' },
     { icon: 'Settings', label: 'Settings', key: 'settings' }
   ]), [])
-
 
   const kpis = useMemo(() => ([
     { label: 'Total Revenue', value: `₹${revenue.toLocaleString()}`, icon: DollarSign, change: '+12.5%', color: 'blue' },
@@ -81,12 +100,15 @@ const OwnerAdmin = () => {
         return (
           <Rooms
             darkMode={darkMode}
+            onSelectRoom={setSelectedRoom}
           />
         )
       default:
         return <Dashboard darkMode={darkMode} kpis={kpis} />
     }
   }, [activeTab, darkMode, kpis])
+
+  const isBaseAdmin = location.pathname === '/owner-admin'
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gradient-to-br from-gray-900 to-gray-800' : 'bg-gradient-to-br from-gray-50 to-blue-50'} font-sans transition-colors duration-300`}>
@@ -119,6 +141,7 @@ const OwnerAdmin = () => {
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           items={sidebarItems}
+          selectedRoom={selectedRoom}
         />
 
         <main className="flex-1 p-6 overflow-y-auto">
@@ -150,7 +173,7 @@ const OwnerAdmin = () => {
             </div>
           </div>
 
-          {renderContent()}
+          {isBaseAdmin ? renderContent() : <Outlet />}
         </main>
       </div>
     </div>

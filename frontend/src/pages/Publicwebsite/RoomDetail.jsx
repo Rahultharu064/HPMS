@@ -21,7 +21,7 @@ const RoomDetail = () => {
   const [error, setError] = useState(null)
   const [reviews, setReviews] = useState([])
   const [reviewsSummary, setReviewsSummary] = useState({ ratingAvg: 0, ratingCount: 0 })
-  const [reviewForm, setReviewForm] = useState({ name: '', rating: 5, comment: '' })
+  const [reviewForm, setReviewForm] = useState({ name: '', rating: "", comment: '' })
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [reviewError, setReviewError] = useState(null)
   
@@ -573,9 +573,15 @@ const RoomDetail = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Rating</label>
-                  <select value={reviewForm.rating} onChange={(e) => handleReviewChange('rating', e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
-                  </select>
+                  <input
+                    type="number"
+                    min={0}
+                    max={5}
+                    step={0.1}
+                    value={reviewForm.rating}
+                    onChange={(e) => handleReviewChange('rating', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Comment</label>

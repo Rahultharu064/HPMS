@@ -12,7 +12,9 @@ import {
   getFeaturedRooms,
   getSimilarRooms,
   getRoomReviews,
-  addRoomReview
+  addRoomReview,
+  getRoomsStatusMap,
+  updateRoomStatus
 } from "../controllers/roomController.js";
 
 const router = express.Router();
@@ -31,11 +33,17 @@ router.post(
 // Get all (search/filter/pagination)
 router.get("/", getAllRooms);
 
+// Housekeeping status map (place before parameterized routes)
+router.get("/status-map", getRoomsStatusMap);
+
 // Get featured rooms
 router.get("/featured", getFeaturedRooms);
 
 // Get by id
 router.get("/:id", getRoomById);
+
+// Update room status (housekeeping)
+router.put("/:id/status", updateRoomStatus);
 
 // Get similar rooms
 router.get("/:id/similar", getSimilarRooms);
