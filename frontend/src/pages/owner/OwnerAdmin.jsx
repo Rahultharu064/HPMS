@@ -5,6 +5,7 @@ import Header from '../../components/owner/Layout/Header'
 import Sidebar from '../../components/owner/Layout/Sidebar'
 import Dashboard from '../../components/owner/sections/Dashboard'
 import Rooms from '../../components/owner/sections/Rooms'
+import Facilities from '../../components/owner/sections/Facilities'
 
 const OwnerAdmin = () => {
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -62,6 +63,8 @@ const OwnerAdmin = () => {
   useEffect(() => {
     if (activeTab === 'ota') {
       navigate('/owner-admin/ota')
+    } else if (activeTab === 'facilities') {
+      navigate('/owner-admin/facilities')
     }
     // Add more route mappings here as new child routes are introduced
   }, [activeTab, navigate])
@@ -71,13 +74,14 @@ const OwnerAdmin = () => {
     const path = location.pathname
     if (path.startsWith('/owner-admin/ota')) setActiveTab('ota')
     else if (path.startsWith('/owner-admin/owneroom')) setActiveTab('rooms')
+    else if (path.startsWith('/owner-admin/facilities')) setActiveTab('facilities')
     else if (path.startsWith('/owner-admin')) setActiveTab('dashboard')
   }, [location.pathname])
 
   const sidebarItems = useMemo(() => ([
     { icon: 'LayoutDashboard', label: 'Dashboard', key: 'dashboard' },
     { icon: 'Hotel', label: 'Rooms', key: 'rooms', route: '/owner-admin/owneroom' },
-    { icon: 'Sparkles', label: 'Facilities', key: 'facilities' },
+    { icon: 'Sparkles', label: 'Facilities', key: 'facilities', route: '/owner-admin/facilities' },
     { icon: 'Users', label: 'Users', key: 'users' },
     { icon: 'Globe', label: 'OTA Sync', key: 'ota', route: '/owner-admin/ota' },
     { icon: 'DollarSign', label: 'Finance', key: 'finance' },
@@ -101,6 +105,12 @@ const OwnerAdmin = () => {
           <Rooms
             darkMode={darkMode}
             onSelectRoom={setSelectedRoom}
+          />
+        )
+      case 'facilities':
+        return (
+          <Facilities
+            darkMode={darkMode}
           />
         )
       default:

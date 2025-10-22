@@ -166,7 +166,7 @@ export default function CreateRoom() {
             <input name="floor" type="number" value={form.floor} onChange={handleChange} placeholder="3" className="mt-1 w-full border rounded px-3 py-2" />
           </div>
           <div>
-            <label className="text-sm">Price per Night (USD) *</label>
+            <label className="text-sm">Price per Night (NPR) *</label>
             <input name="price" type="number" step="0.01" value={form.price} onChange={handleChange} placeholder="299" className="mt-1 w-full border rounded px-3 py-2" />
           </div>
           <div>

@@ -19,17 +19,25 @@ model Room {
   maxAdults     Int
   maxChildren   Int      @default(0)
   numBeds       Int
-  description   String
+  description   String   @db.Text
   allowChildren Boolean  @default(false)
   status        String   @default("available")
   createdAt     DateTime @default(now())
   updatedAt     DateTime
 
-  amenity  Amenity[]
-  image    Image[]
-  video    Video[]
-  bookings Booking[]
-  reviews  Review[]
+  amenity            Amenity[]
+  image              Image[]
+  video              Video[]
+  bookings           Booking[]
+  reviews            Review[]
+  // Back-relations for housekeeping and related models
+  hkTasks            HkTask[]
+  cleaningLogs       CleaningLog[]
+  inspections        Inspection[]
+  guestRequests      GuestRequest[]
+  maintenanceTickets MaintenanceTicket[]
+  inventoryTxns      InventoryTxn[]
+  lostFound          LostFound[]
 
   @@map("Room")
 }
@@ -68,6 +76,57 @@ model Video {
   room Room @relation(fields: [roomId], references: [id])
 
   @@map("Video")
+}
+
+// =====================
+// Facility Models
+// =====================
+
+model Facility {
+  id           Int       @id @default(autoincrement())
+  name         String
+  slug         String    @unique
+  description  String    @db.Text
+  status       String    @default("open")
+  openingHours String?
+  category     String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now())
+
+  images FacilityImage[]
+  videos FacilityVideo[]
+
+  @@map("facility")
+}
+
+model FacilityImage {
+  id         Int      @id @default(autoincrement())
+  facilityId Int
+  name       String
+  size       Int
+  type       String
+  url        String   @default("")
+  order      Int      @default(0)
+
+  facility Facility @relation(fields: [facilityId], references: [id])
+
+  @@index([facilityId])
+  @@map("facility_image")
+}
+
+model FacilityVideo {
+  id         Int      @id @default(autoincrement())
+  facilityId Int
+  name       String
+  size       Int
+  type       String
+  url        String   @default("")
+  order      Int      @default(0)
+
+  facility Facility @relation(fields: [facilityId], references: [id])
+
+  @@index([facilityId])
+  @@map("facility_video")
 }
 
 model Review {
@@ -118,9 +177,11 @@ model Booking {
   updatedAt   DateTime @default(now())
   source      String   @default("offline")
 
-  guest    Guest     @relation(fields: [guestId], references: [id])
-  room     Room      @relation(fields: [roomId], references: [id])
-  payments Payment[]
+  guest        Guest          @relation(fields: [guestId], references: [id])
+  room         Room           @relation(fields: [roomId], references: [id])
+  payments     Payment[]
+  HkTask       HkTask[]
+  GuestRequest GuestRequest[]
 
   @@map("booking")
 }
@@ -142,8 +203,8 @@ model Payment {
 model OtaSyncLog {
   id             Int      @id @default(autoincrement())
   provider       String
-  direction      String   // push | pull | webhook
-  status         String   // success | failed | queued
+  direction      String // push | pull | webhook
+  status         String // success | failed | queued
   message        String?
   payloadSnippet String?  @db.Text
   createdAt      DateTime @default(now())
@@ -236,9 +297,11 @@ model HkTask {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @default(now())
 
-  room        Room         @relation(fields: [roomId], references: [id])
-  booking     Booking?     @relation(fields: [bookingId], references: [id])
-  attachments HkTaskAttachment[]
+  room         Room               @relation(fields: [roomId], references: [id])
+  booking      Booking?           @relation(fields: [bookingId], references: [id])
+  attachments  HkTaskAttachment[]
+  CleaningLog  CleaningLog[]
+  InventoryTxn InventoryTxn[]
 
   @@index([roomId])
   @@index([status, priority])
@@ -259,7 +322,7 @@ model HkTaskAttachment {
 }
 
 model CleaningLog {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   roomId      Int
   taskId      Int?
   startedAt   DateTime

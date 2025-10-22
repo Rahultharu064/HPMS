@@ -3,7 +3,9 @@ import CreateRoom from './components/owner/forum/createRoom'
 import OwnerAdmin from './pages/owner/OwnerAdmin'
 import Home from './pages/Publicwebsite/Home'
 import PublicRooms from './pages/Publicwebsite/Rooms'
+import PublicFacilities from './pages/Publicwebsite/Facilities'
 import OwnerRooms from './components/owner/sections/Rooms'
+import Facilities from './components/owner/sections/Facilities'
 import RoomDetail from './pages/Publicwebsite/RoomDetail'
 import BookingForm from './pages/Publicwebsite/BookingForm'
 import BookingConfirmation from './pages/Publicwebsite/BookingConfirmation'
@@ -29,6 +31,7 @@ import HKRooms from './components/housekeeping/sections/Rooms'
 import HKSchedule from './components/housekeeping/sections/Schedule'
 import HKStaff from './components/housekeeping/sections/Staff'
 import HKSettings from './components/housekeeping/sections/Settings'
+import HKTasks from './components/housekeeping/sections/Tasks'
 
 
 const App = () => {
@@ -50,6 +53,7 @@ const App = () => {
       children: [
         { index: true, element: <Navigate to="/housekeeping/dashboard" replace /> },
         { path: "dashboard", element: <HKDashboard /> },
+        { path: "tasks", element: <HKTasks /> },
         { path: "rooms", element: <HKRooms /> },
         { path: "schedule", element: <HKSchedule /> },
         { path: "staff", element: <HKStaff /> },
@@ -59,6 +63,10 @@ const App = () => {
     {
       path: "/rooms",
       element: <PublicRooms />
+    },
+    {
+      path: "/facilities",
+      element: <PublicFacilities />
     },
     {
       path: "/rooms/:id",
@@ -93,7 +101,8 @@ const App = () => {
         { index: true, element: <Navigate to="/owner-admin/create-room" replace /> },
         { path: "create-room", element: <CreateRoom /> },
         { path: "ota", element: <OTA /> },
-        { path: "owneroom", element: <OwnerRooms /> }
+        { path: "owneroom", element: <OwnerRooms /> },
+        { path: "facilities", element: <Facilities /> }
       ]
     },
     //frontoffice routes
