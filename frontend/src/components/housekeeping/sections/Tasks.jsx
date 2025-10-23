@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { hkTaskService } from '../../../services/hkTaskService'
 import { roomService } from '../../../services/roomService'
 import { toast } from 'react-hot-toast'
+import { getSocket } from '../../../utils/socket'
 
 const PRIORITIES = ['LOW','MEDIUM','HIGH','URGENT']
 const STATUSES = ['NEW','ASSIGNED','IN_PROGRESS','DONE','QA_CHECK','CLOSED','CANCELLED']
@@ -14,10 +15,10 @@ const Tasks = ({ darkMode }) => {
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
 
-  const [filters, setFilters] = useState({ status: 'ALL', q: '', priority: 'ALL', type: 'ALL', from: '', to: '', roomId: '' })
+  const [filters, setFilters] = useState({ status: 'ALL', q: '', priority: 'ALL', type: 'ALL', from: '', to: '', roomId: '', sortBy: 'createdAt', sortDir: 'desc' })
 
   const [creating, setCreating] = useState(false)
-  const [form, setForm] = useState({ title: '', roomId: '', type: 'cleaning', priority: 'MEDIUM', assignedTo: '', description: '' })
+  const [form, setForm] = useState({ title: '', roomId: '', type: 'cleaning', priority: 'MEDIUM', assignedTo: '', description: '', dueAt: '' })
   const [saving, setSaving] = useState(false)
   const [rooms, setRooms] = useState([])
   const [detailOpen, setDetailOpen] = useState(false)
@@ -26,7 +27,7 @@ const Tasks = ({ darkMode }) => {
   const [errors, setErrors] = useState({})
   const [editOpen, setEditOpen] = useState(false)
   const [editSaving, setEditSaving] = useState(false)
-  const [edit, setEdit] = useState({ id: null, title: '', description: '', assignedTo: '', priority: 'MEDIUM', type: 'cleaning' })
+  const [edit, setEdit] = useState({ id: null, title: '', description: '', assignedTo: '', priority: 'MEDIUM', type: 'cleaning', dueAt: '' })
 
   const load = useCallback(async (p = page) => {
     setLoading(true)
@@ -40,6 +41,8 @@ const Tasks = ({ darkMode }) => {
       if (filters.from) params.from = filters.from
       if (filters.to) params.to = filters.to
       if (filters.roomId) params.roomId = filters.roomId
+      if (filters.sortBy) params.sortBy = filters.sortBy
+      if (filters.sortDir) params.sortDir = filters.sortDir
       const res = await hkTaskService.list(params)
       const data = res?.data || []
       setTasks(data)
@@ -67,6 +70,22 @@ const Tasks = ({ darkMode }) => {
     return () => { mounted = false }
   }, [])
 
+  // Live updates via WebSocket
+  useEffect(() => {
+    const socket = getSocket()
+    const handler = () => load(page)
+    socket.on('hk:task:created', handler)
+    socket.on('hk:task:updated', handler)
+    socket.on('hk:task:deleted', handler)
+    socket.on('hk:task:attachments', handler)
+    return () => {
+      socket.off('hk:task:created', handler)
+      socket.off('hk:task:updated', handler)
+      socket.off('hk:task:deleted', handler)
+      socket.off('hk:task:attachments', handler)
+    }
+  }, [load, page])
+
   const createTask = async () => {
     const nextErrors = {}
     if (!form.title) nextErrors.title = 'Title is required'
@@ -81,11 +100,12 @@ const Tasks = ({ darkMode }) => {
         type: form.type,
         priority: form.priority,
         assignedTo: form.assignedTo || undefined,
-        description: form.description || undefined
+        description: form.description || undefined,
+        dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : undefined
       })
       toast.success('Task created')
       setCreating(false)
-      setForm({ title: '', roomId: '', type: 'cleaning', priority: 'MEDIUM', assignedTo: '', description: '' })
+      setForm({ title: '', roomId: '', type: 'cleaning', priority: 'MEDIUM', assignedTo: '', description: '', dueAt: '' })
       setErrors({})
       await load(1)
       setPage(1)
@@ -130,7 +150,7 @@ const Tasks = ({ darkMode }) => {
   }
 
   const openEdit = (t) => {
-    setEdit({ id: t.id, title: t.title, description: t.description || '', assignedTo: t.assignedTo || '', priority: t.priority, type: t.type })
+    setEdit({ id: t.id, title: t.title, description: t.description || '', assignedTo: t.assignedTo || '', priority: t.priority, type: t.type, dueAt: t.dueAt ? new Date(t.dueAt).toISOString().slice(0,16) : '' })
     setEditOpen(true)
   }
 
@@ -143,7 +163,8 @@ const Tasks = ({ darkMode }) => {
         description: edit.description || null,
         assignedTo: edit.assignedTo || null,
         priority: edit.priority,
-        type: edit.type
+        type: edit.type,
+        dueAt: edit.dueAt ? new Date(edit.dueAt).toISOString() : null
       })
       toast.success('Task updated')
       setEditOpen(false)
@@ -194,6 +215,16 @@ const Tasks = ({ darkMode }) => {
           </select>
           <input type="date" value={filters.from} onChange={e=>setFilters(f=>({ ...f, from: e.target.value }))} className={`${darkMode ? 'bg-gray-800 text-white border-gray-700' : 'bg-white'} px-3 py-2 rounded-lg border`} />
           <input type="date" value={filters.to} onChange={e=>setFilters(f=>({ ...f, to: e.target.value }))} className={`${darkMode ? 'bg-gray-800 text-white border-gray-700' : 'bg-white'} px-3 py-2 rounded-lg border`} />
+          <select value={filters.sortBy} onChange={e=>setFilters(f=>({ ...f, sortBy: e.target.value }))} className={`${darkMode ? 'bg-gray-800 text-white border-gray-700' : 'bg-white'} px-3 py-2 rounded-lg border`}>
+            <option value="createdAt">Sort: Created</option>
+            <option value="dueAt">Sort: Due</option>
+            <option value="priority">Sort: Priority</option>
+            <option value="status">Sort: Status</option>
+          </select>
+          <select value={filters.sortDir} onChange={e=>setFilters(f=>({ ...f, sortDir: e.target.value }))} className={`${darkMode ? 'bg-gray-800 text-white border-gray-700' : 'bg-white'} px-3 py-2 rounded-lg border`}>
+            <option value="desc">Desc</option>
+            <option value="asc">Asc</option>
+          </select>
           <button onClick={()=>setCreating(true)} className="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700">Create Task</button>
         </div>
       </div>
@@ -207,6 +238,7 @@ const Tasks = ({ darkMode }) => {
               <th className="px-4 py-2 text-left text-xs font-semibold uppercase">Priority</th>
               <th className="px-4 py-2 text-left text-xs font-semibold uppercase">Status</th>
               <th className="px-4 py-2 text-left text-xs font-semibold uppercase">Assigned To</th>
+              <th className="px-4 py-2 text-left text-xs font-semibold uppercase">Due</th>
               <th className="px-4 py-2 text-left text-xs font-semibold uppercase">Created</th>
               <th className="px-4 py-2 text-left text-xs font-semibold uppercase">Actions</th>
             </tr>
@@ -216,8 +248,10 @@ const Tasks = ({ darkMode }) => {
               <tr><td colSpan={7} className="px-4 py-6">Loading...</td></tr>
             ) : tasks.length === 0 ? (
               <tr><td colSpan={7} className="px-4 py-6">No tasks</td></tr>
-            ) : tasks.map(t => (
-              <tr key={t.id}>
+            ) : tasks.map(t => {
+              const isOverdue = t.dueAt && !['DONE','CLOSED','CANCELLED'].includes(String(t.status)) && new Date(t.dueAt) < new Date()
+              return (
+              <tr key={t.id} className={isOverdue ? (darkMode ? 'bg-red-900/30' : 'bg-red-50') : ''}>
                 <td className="px-4 py-2"><button className={`${darkMode ? 'text-blue-300 hover:underline' : 'text-blue-700 hover:underline'}`} onClick={()=>openDetail(t.id)}>{t.title}</button></td>
                 <td className="px-4 py-2">{t.room?.roomNumber ?? t.roomId}</td>
                 <td className="px-4 py-2">{t.priority}</td>
@@ -227,6 +261,7 @@ const Tasks = ({ darkMode }) => {
                   </select>
                 </td>
                 <td className="px-4 py-2">{t.assignedTo || '-'}</td>
+                <td className={`px-4 py-2 ${isOverdue ? 'text-red-600 font-semibold' : ''}`}>{t.dueAt ? new Date(t.dueAt).toLocaleString() : '-'}</td>
                 <td className="px-4 py-2">{new Date(t.createdAt).toLocaleString()}</td>
                 <td className="px-4 py-2">
                   <div className="flex gap-2">
@@ -238,8 +273,8 @@ const Tasks = ({ darkMode }) => {
                     <button onClick={()=>removeTask(t)} className={`${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'} px-3 py-1 rounded`}>Delete</button>
                   </div>
                 </td>
-              </tr>
-            ))}
+              </tr>)
+            })}
           </tbody>
         </table>
       </div>
@@ -313,6 +348,7 @@ const Tasks = ({ darkMode }) => {
                 <option value="inspection">inspection</option>
                 <option value="other">other</option>
               </select>
+              <input type="datetime-local" value={edit.dueAt} onChange={e=>setEdit(v=>({ ...v, dueAt: e.target.value }))} className={`${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white'} w-full px-3 py-2 rounded border`} />
             </div>
             <div className="flex justify-end gap-2 mt-4">
               <button onClick={()=>setEditOpen(false)} className={`${darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'} px-4 py-2 rounded`}>Cancel</button>
@@ -344,6 +380,7 @@ const Tasks = ({ darkMode }) => {
                 {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
               <input value={form.assignedTo} onChange={e=>setForm(f=>({ ...f, assignedTo: e.target.value }))} placeholder="Assign to (optional)" className={`${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white'} w-full px-3 py-2 rounded border`} />
+              <input type="datetime-local" value={form.dueAt} onChange={e=>setForm(f=>({ ...f, dueAt: e.target.value }))} className={`${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white'} w-full px-3 py-2 rounded border`} />
             </div>
             <div className="flex justify-end gap-2 mt-4">
               <button onClick={()=>setCreating(false)} className={`${darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'} px-4 py-2 rounded`}>Cancel</button>

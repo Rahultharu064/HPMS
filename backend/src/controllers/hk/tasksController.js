@@ -1,4 +1,5 @@
 import prisma from "../../config/client.js";
+import { getIO } from "../../socket.js";
 
 // List tasks with filters and pagination
 export const listTasks = async (req, res) => {
@@ -7,7 +8,7 @@ export const listTasks = async (req, res) => {
     const limit = Math.min(100, parseInt(req.query.limit) || 20)
     const skip = (page - 1) * limit
 
-    const { status, assignedTo, roomId, type, priority, from, to } = req.query
+    const { status, assignedTo, roomId, type, priority, from, to, sortBy, sortDir } = req.query
     const where = {}
     if (status) where.status = status
     if (assignedTo) where.assignedTo = { contains: String(assignedTo), mode: 'insensitive' }
@@ -20,11 +21,20 @@ export const listTasks = async (req, res) => {
       if (to) where.createdAt.lte = new Date(to)
     }
 
+    const orderBy = {}
+    if (sortBy) {
+      const key = String(sortBy)
+      const direction = String(sortDir || 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc'
+      orderBy[key] = direction
+    } else {
+      orderBy.createdAt = 'desc'
+    }
+
     const [data, total] = await Promise.all([
       prisma.hkTask.findMany({
         where,
         include: { attachments: true, room: { select: { id: true, roomNumber: true, floor: true } } },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip,
         take: limit,
       }),
@@ -57,6 +67,8 @@ export const createTask = async (req, res) => {
         notes: body.notes || null,
       }
     })
+    const io = getIO();
+    io && io.emit('hk:task:created', { task })
     res.status(201).json({ success: true, task })
   } catch (err) {
     console.error(err)
@@ -103,6 +115,8 @@ export const updateTask = async (req, res) => {
       },
       include: { attachments: true }
     })
+    const io = getIO();
+    io && io.emit('hk:task:updated', { task: updated })
     res.json({ success: true, task: updated })
   } catch (err) {
     console.error(err)
@@ -118,6 +132,8 @@ export const deleteTask = async (req, res) => {
     // delete attachments first
     await prisma.hkTaskAttachment.deleteMany({ where: { taskId: id } })
     await prisma.hkTask.delete({ where: { id } })
+    const io = getIO();
+    io && io.emit('hk:task:deleted', { id })
     res.json({ success: true, message: 'Task deleted' })
   } catch (err) {
     console.error(err)
@@ -140,6 +156,8 @@ export const addTaskAttachments = async (req, res) => {
 
     const created = await prisma.hkTaskAttachment.createMany({ data: toCreate })
     const task = await prisma.hkTask.findUnique({ where: { id }, include: { attachments: true } })
+    const io = getIO();
+    io && io.emit('hk:task:attachments', { id, count: created.count })
     res.json({ success: true, count: created.count, task })
   } catch (err) {
     console.error(err)
