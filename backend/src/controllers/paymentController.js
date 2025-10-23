@@ -43,6 +43,73 @@ export const getPaymentGateways = async (req, res) => {
   }
 };
 
+// Cleanup duplicate payments:
+// - Operates per booking and method
+// - If any 'completed' exists: keep the latest completed, delete all other payments (pending/completed) for same booking+method
+// - Else (no completed): keep latest pending, delete older pendings
+export const cleanupDuplicatePayments = async (req, res) => {
+  try {
+    const { bookingId } = req.body || {}
+
+    const processGroups = async (bookingIds) => {
+      let deleted = 0
+      for (const bId of bookingIds) {
+        const payments = await prisma.payment.findMany({
+          where: { bookingId: Number(bId) },
+          orderBy: { createdAt: 'desc' }
+        })
+        if (!payments || payments.length <= 1) continue
+        // group by method
+        const byMethod = new Map()
+        for (const p of payments) {
+          const key = String(p.method || 'unknown').toLowerCase()
+          if (!byMethod.has(key)) byMethod.set(key, [])
+          byMethod.get(key).push(p)
+        }
+        for (const [method, list] of byMethod.entries()) {
+          if (list.length <= 1) continue
+          const completed = list.filter(p => String(p.status) === 'completed')
+          if (completed.length > 0) {
+            // keep the most recent completed, delete the rest in this group
+            const keepId = completed[0].id // list ordered desc
+            const toDelete = list.filter(p => p.id !== keepId).map(p => p.id)
+            if (toDelete.length) {
+              const resDel = await prisma.payment.deleteMany({ where: { id: { in: toDelete } } })
+              deleted += resDel.count
+            }
+          } else {
+            // no completed: keep most recent pending, delete older pending
+            const keepId = list[0].id
+            const toDelete = list.slice(1).map(p => p.id)
+            if (toDelete.length) {
+              const resDel = await prisma.payment.deleteMany({ where: { id: { in: toDelete } } })
+              deleted += resDel.count
+            }
+          }
+        }
+      }
+      return deleted
+    }
+
+    let deleted = 0
+    if (bookingId) {
+      deleted = await processGroups([Number(bookingId)])
+    } else {
+      // Global cleanup: find bookings that have more than 1 payment
+      const many = await prisma.payment.groupBy({ by: ['bookingId'], _count: { _all: true } })
+      const targets = many.filter(g => (g._count?._all || 0) > 1).map(g => g.bookingId)
+      if (targets.length > 0) {
+        deleted = await processGroups(targets)
+      }
+    }
+
+    return res.json({ success: true, deleted })
+  } catch (err) {
+    console.error('cleanupDuplicatePayments error:', err)
+    return res.status(500).json({ success: false, error: 'Failed to cleanup duplicate payments' })
+  }
+}
+
 // Mark a payment as completed (manual override)
 export const markPaymentCompleted = async (req, res) => {
   try {

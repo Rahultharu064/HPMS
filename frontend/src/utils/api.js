@@ -73,7 +73,9 @@ export const apiRequest = async (url, options = {}) => {
     }
     
     if (!response.ok) {
-      const errorMessage = (data && (data.error || data.message)) || `HTTP ${response.status}: ${response.statusText}`
+      const errorMessage = (data && (data.error || data.message))
+        || (data && Array.isArray(data.errors) && data.errors.join(', '))
+        || `HTTP ${response.status}: ${response.statusText}`
       apiDebug.error('API request failed:', {
         status: response.status,
         error: errorMessage,

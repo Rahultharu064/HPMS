@@ -1,7 +1,7 @@
 import express from "express";
 import upload from "../middleware/upload.js";
 import { listTasks, createTask, getTaskById, updateTask, deleteTask, addTaskAttachments, bulkAssignTasks } from "../controllers/hk/tasksController.js";
-import { listCleaningLogs, createCleaningLog, startCleaning, finishCleaning } from "../controllers/hk/cleaningController.js";
+import { listCleaningLogs, createCleaningLog, startCleaning, finishCleaning, listCleaningSchedule } from "../controllers/hk/cleaningController.js";
 
 const router = express.Router();
 
@@ -19,5 +19,7 @@ router.get("/cleaning-logs", listCleaningLogs);
 router.post("/cleaning-logs", createCleaningLog);
 router.post("/cleaning/start", startCleaning);
 router.post("/cleaning/finish", finishCleaning);
+// Cleaning Schedule
+router.get("/schedule", listCleaningSchedule);
 
 export default router;

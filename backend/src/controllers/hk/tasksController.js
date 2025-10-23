@@ -33,7 +33,7 @@ export const listTasks = async (req, res) => {
     const [data, total] = await Promise.all([
       prisma.hkTask.findMany({
         where,
-        include: { attachments: true, room: { select: { id: true, roomNumber: true, floor: true } } },
+        include: { attachments: true, room: { select: { id: true, roomNumber: true, floor: true, status: true } } },
         orderBy,
         skip,
         take: limit,

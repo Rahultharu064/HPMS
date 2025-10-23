@@ -1,5 +1,6 @@
 import express from 'express'
 import { validateBody } from '../middleware/validate.js'
+import upload from '../middleware/upload.js'
 import { bookingSchema } from '../validation/bookingValidation.js'
 import { 
   createBooking, 
@@ -8,7 +9,8 @@ import {
   updateBooking, 
   cancelBooking, 
   deleteBooking, 
-  getBookingStats 
+  getBookingStats, 
+  uploadIdProof 
 } from '../controllers/bookingController.js'
 
 const router = express.Router()
@@ -21,6 +23,9 @@ router.get('/stats', getBookingStats)
 
 // Create new booking
 router.post('/', validateBody(bookingSchema), createBooking)
+
+// Upload booking ID proof image (field name: idProof)
+router.post('/:id/id-proof', upload.single('idProof'), uploadIdProof)
 
 // Get booking by ID
 router.get('/:id', getBookingById)

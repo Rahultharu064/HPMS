@@ -22,17 +22,20 @@ const baseSchema = z.object({
   idNumber: z.string().min(1, 'ID Number is required'),
   // idProof is a file input; validate presence loosely in UI, accept any file type, optional here
   idProof: z.any().optional(),
+  // profilePhoto is guest face photo
+  profilePhoto: z.any().optional(),
   checkIn: z.string().min(1),
   checkOut: z.string().min(1),
   adults: z.coerce.number().int().min(1),
   children: z.coerce.number().int().min(0).optional().default(0),
-  paymentMethod: z.string().min(1)
+  paymentMethod: z.string().min(1),
+  specialRequest: z.string().max(1000).optional().default('')
 })
 
 // Normalize free-text nationality to ISO-2 for South Asia
 const COUNTRY_ALIASES = {
   IN: ['india', 'in', 'indian'],
-  NP: ['nepal', 'np', 'nepali'],
+  NP: ['nepal', 'np', 'nepali', 'nepalese'],
   BD: ['bangladesh', 'bd', 'bangladeshi'],
   PK: ['pakistan', 'pk', 'pakistani'],
   LK: ['sri lanka', 'srilanka', 'lk', 'sri lankan', 'sri-lanka'],
@@ -56,42 +59,50 @@ const COUNTRY_ID_RULES = {
     Passport: /^[A-Z][0-9]{7}$/,
     'National ID': /^(?:\d{4}\s?\d{4}\s?\d{4}|\d{12})$/, // Aadhaar
     'Voter ID': /^[A-Z]{3}[0-9]{7}$/,
-    'Driver License': /^[A-Z]{2}\d{2}\d{11}$/
+    'Driver License': /^[A-Z]{2}\d{2}\d{11}$/,
+    Citizenship: /^[A-Z0-9-]{6,20}$/
   },
   NP: {
     Passport: /^[A-Z][0-9]{7}$/,
     'National ID': /^[A-Z0-9-]{6,20}$/,
-    'Driver License': /^[A-Z0-9-]{5,20}$/
+    'Driver License': /^[A-Z0-9-]{5,20}$/,
+    Citizenship: /^[A-Z0-9-]{6,20}$/
   },
   BD: {
     Passport: /^[A-Z0-9]{8,9}$/,
     'National ID': /^(?:\d{10}|\d{13}|\d{17})$/,
-    'Driver License': /^[A-Z0-9-]{5,20}$/
+    'Driver License': /^[A-Z0-9-]{5,20}$/,
+    Citizenship: /^[A-Z0-9-]{6,20}$/
   },
   PK: {
     Passport: /^[A-Z]{2}\d{7}$/,
     'National ID': /^\d{5}-\d{7}-\d$/,
-    'Driver License': /^[A-Z0-9-]{5,20}$/
+    'Driver License': /^[A-Z0-9-]{5,20}$/,
+    Citizenship: /^[A-Z0-9-]{6,20}$/
   },
   LK: {
     Passport: /^[A-Z]\d{7}$/,
     'National ID': /^(?:\d{9}[VvXx]|\d{12})$/,
-    'Driver License': /^[A-Z0-9-]{5,20}$/
+    'Driver License': /^[A-Z0-9-]{5,20}$/,
+    Citizenship: /^[A-Z0-9-]{6,20}$/
   },
   BT: {
     Passport: /^[A-Z0-9]{8,9}$/,
     'National ID': /^\d{11}$/,
-    'Driver License': /^[A-Z0-9-]{5,20}$/
+    'Driver License': /^[A-Z0-9-]{5,20}$/,
+    Citizenship: /^[A-Z0-9-]{6,20}$/
   },
   MV: {
     Passport: /^[A-Z0-9]{8,9}$/,
     'National ID': /^[A-Z0-9]{5,20}$/,
-    'Driver License': /^[A-Z0-9-]{5,20}$/
+    'Driver License': /^[A-Z0-9-]{5,20}$/,
+    Citizenship: /^[A-Z0-9-]{6,20}$/
   },
   AF: {
     Passport: /^[A-Z]{1,2}\d{7}$/,
     'National ID': /^[A-Z0-9-]{6,20}$/,
-    'Driver License': /^[A-Z0-9-]{5,20}$/
+    'Driver License': /^[A-Z0-9-]{5,20}$/,
+    Citizenship: /^[A-Z0-9-]{6,20}$/
   }
 }
 
@@ -135,6 +146,10 @@ const schema = baseSchema.superRefine((val, ctx) => {
       if (!/^[A-Z0-9]{5,20}$/i.test(num)) add('Voter ID must be 5-20 alphanumeric characters')
       break
     }
+    case 'citizenship': {
+      if (!/^[A-Z0-9-]{6,20}$/i.test(num)) add('Citizenship number must be 6-20 characters (letters, numbers, hyphen)')
+      break
+    }
     default: {
       if (num.length < 3 || num.length > 50) add('ID Number must be between 3 and 50 characters')
     }
@@ -158,7 +173,8 @@ const BookingForm = () => {
       idType: '',
       idNumber: '',
       checkIn: '',
-      checkOut: ''
+      checkOut: '',
+      specialRequest: ''
     } 
   })
 
@@ -253,10 +269,37 @@ const BookingForm = () => {
           throw new Error('ID proof image too small (min 200x200)')
         }
       }
+
+      // Validate Guest Profile Photo (optional): mime, size <= 5MB, dimensions >= 200x200
+      const profList = values?.profilePhoto instanceof FileList ? values.profilePhoto : (values?.profilePhoto || [])
+      const profFile = profList && profList.length ? profList[0] : null
+      if (profFile) {
+        const allowedP = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+        if (!allowedP.includes(profFile.type)) {
+          throw new Error('Profile photo must be an image (JPEG, PNG, WEBP, GIF)')
+        }
+        const MAX_BYTES = 5 * 1024 * 1024
+        if (profFile.size > MAX_BYTES) {
+          throw new Error('Profile photo too large (max 5MB)')
+        }
+        const dimsOkP = await new Promise((resolve) => {
+          const img = new Image()
+          img.onload = () => {
+            resolve(img.width >= 200 && img.height >= 200)
+          }
+          img.onerror = () => resolve(false)
+          const url = URL.createObjectURL(profFile)
+          img.src = url
+        })
+        if (!dimsOkP) {
+          throw new Error('Profile photo too small (min 200x200)')
+        }
+      }
       
-      // Create booking
+      // Create booking (exclude idProof from payload; it's uploaded separately)
+      const { idProof: _omit, profilePhoto: _omit2, ...cleanValues } = values
       const payload = { 
-        ...values, 
+        ...cleanValues, 
         roomId: Number(roomId),
         checkIn: values.checkIn,
         checkOut: values.checkOut
@@ -266,35 +309,48 @@ const BookingForm = () => {
       const booking = res.booking
       const amount = booking.totalAmount
 
-      // Extract ID proof file (if provided) before redirecting to any external payment page
+      // Extract files (if provided) before redirecting to any external payment page
       const fileList = values?.idProof instanceof FileList ? values.idProof : (values?.idProof || [])
       const idFile = fileList && fileList.length ? fileList[0] : null
+      const profFiles = values?.profilePhoto instanceof FileList ? values.profilePhoto : (values?.profilePhoto || [])
+      const profileFile = profFiles && profFiles.length ? profFiles[0] : null
 
-      // If we have a file and backend exposes guest photo upload, upload it using guestId
+      // First, upload Guest Profile Photo to guest endpoint
       try {
-        if (idFile && booking && booking.guestId) {
-          await guestService.uploadPhoto(booking.guestId, idFile)
+        if (profileFile && booking && booking.guestId) {
+          await guestService.uploadPhoto(booking.guestId, profileFile)
         }
       } catch (e) {
         // Non-blocking: continue even if upload fails
+        console.warn('Profile photo upload failed:', e)
+      }
+
+      // Then, upload ID Proof to booking endpoint for validation/logging
+      try {
+        if (idFile && booking && booking.id) {
+          await bookingService.uploadIdProof(booking.id, idFile)
+        }
+      } catch (e) {
         console.warn('ID proof upload failed:', e)
       }
       
-      // Create payment
-      const paymentResponse = await paymentService.createPayment({ 
-        bookingId: booking.id, 
-        method: values.paymentMethod, 
-        amount 
-      })
-      
-      // Handle different payment methods
-      if (values.paymentMethod === 'khalti') {
-        await paymentService.handleKhaltiPayment(paymentResponse)
-      } else if (values.paymentMethod === 'esewa') {
-        await paymentService.handleEsewaPayment(paymentResponse)
-      } else {
-        // For cash and card payments, redirect to confirmation
+      // Payment handling
+      const method = String(values.paymentMethod || 'cash').toLowerCase()
+      if (method === 'cash' || method === 'card') {
+        // For cash/card, backend already created a completed payment; just go to confirmation
         navigate(`/booking/confirm/${booking.id}`)
+      } else {
+        // For online methods, create a payment and handle redirection
+        const paymentResponse = await paymentService.createPayment({ 
+          bookingId: booking.id, 
+          method, 
+          amount 
+        })
+        if (method === 'khalti') {
+          await paymentService.handleKhaltiPayment(paymentResponse)
+        } else if (method === 'esewa') {
+          await paymentService.handleEsewaPayment(paymentResponse)
+        }
       }
       
     } catch (e) {
@@ -372,6 +428,16 @@ const BookingForm = () => {
                         {errors.lastName && <p className="text-red-500 text-sm mt-1">Last name is required</p>}
                       </div>
                       <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Guest Profile Photo</label>
+                        <input 
+                          className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                          type="file" 
+                          accept="image/*"
+                          {...register('profilePhoto')}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Add a clear face photo. Accepted: JPG, PNG, WEBP. Max 5MB. This is separate from Government ID.</p>
+                      </div>
+                      <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
                         <input 
                           className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" 
@@ -409,6 +475,7 @@ const BookingForm = () => {
                           <option value="Passport">Passport</option>
                           <option value="National ID">National ID</option>
                           <option value="Driver License">Driver License</option>
+                          <option value="Citizenship">Citizenship</option>
                           <option value="Voter ID">Voter ID</option>
                           <option value="Other">Other</option>
                         </select>
@@ -434,6 +501,17 @@ const BookingForm = () => {
                         <p className="text-xs text-gray-500 mt-1">Accepted: JPG, PNG. Max ~5MB (browser limit).</p>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Special Request */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Special Request</h3>
+                    <textarea
+                      className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
+                      placeholder="Any special requests (optional)"
+                      {...register('specialRequest')}
+                    />
+                    {errors.specialRequest && <p className="text-red-500 text-sm mt-1">{errors.specialRequest.message}</p>}
                   </div>
 
                   {/* Stay Details */}

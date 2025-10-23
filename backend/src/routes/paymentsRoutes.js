@@ -7,7 +7,8 @@ import {
   refundPayment,
   handleKhaltiReturn,
   handleEsewaReturn,
-  markPaymentCompleted
+  markPaymentCompleted,
+  cleanupDuplicatePayments
 } from '../controllers/paymentController.js'
 
 const router = express.Router()
@@ -36,6 +37,9 @@ router.post('/:paymentId/refund', refundPayment)
 
 // Manually mark a payment as completed
 router.post('/:paymentId/complete', markPaymentCompleted)
+
+// Cleanup duplicate payments (admin utility). Optional body: { bookingId }
+router.post('/admin/cleanup-duplicates', cleanupDuplicatePayments)
 
 export default router
 export const paymentRoutes = router

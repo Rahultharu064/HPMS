@@ -1,4 +1,7 @@
 import prisma from "../config/client.js";
+import path from 'path'
+import fs from 'fs'
+import sharp from 'sharp'
 import { getIO } from "../socket.js";
 
 const diffNights = (checkIn, checkOut) => {
@@ -6,6 +9,99 @@ const diffNights = (checkIn, checkOut) => {
   const nights = Math.ceil(ms / (1000 * 60 * 60 * 24));
   return Math.max(nights, 1);
 };
+
+// Helper: compute a simple perceptual hash (8x8 grayscale, DCT-like average threshold)
+async function computeSimplePHash(filePath) {
+  const size = 8
+  const { data, info } = await sharp(filePath).resize(size, size).greyscale().raw().toBuffer({ resolveWithObject: true })
+  const pixels = Array.from(data)
+  const avg = pixels.reduce((a,b)=>a+b,0) / pixels.length
+  let hash = 0n
+  for (let i=0;i<pixels.length;i++) {
+    if (pixels[i] >= avg) hash |= (1n << BigInt(i))
+  }
+  return hash
+}
+
+function hammingDistance(a, b) {
+  let x = a ^ b
+  let count = 0
+  while (x) { x &= (x - 1n); count++; }
+  return count
+}
+
+// Upload ID Proof image for a booking and log it
+export const uploadIdProof = async (req, res) => {
+  try {
+    const id = Number(req.params.id)
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ success: false, error: 'Invalid booking id' })
+    }
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No idProof image uploaded' })
+    }
+
+    const booking = await prisma.booking.findUnique({ where: { id }, include: { guest: true } })
+    if (!booking) return res.status(404).json({ success: false, error: 'Booking not found' })
+
+    // Validate image
+    const MAX_BYTES = 5 * 1024 * 1024
+    if (req.file.size && req.file.size > MAX_BYTES) {
+      try { fs.unlinkSync(req.file.path) } catch {}
+      return res.status(400).json({ success: false, error: 'Image too large (max 5MB)' })
+    }
+    try {
+      const meta = await sharp(req.file.path).metadata()
+      const allowedFormats = new Set(['jpeg','jpg','png','webp','gif'])
+      const fmt = String(meta.format || '').toLowerCase()
+      if (!allowedFormats.has(fmt)) {
+        try { fs.unlinkSync(req.file.path) } catch {}
+        return res.status(400).json({ success: false, error: 'Unsupported image format' })
+      }
+      const minW = 400, minH = 300
+      if (!meta.width || !meta.height || meta.width < minW || meta.height < minH) {
+        try { fs.unlinkSync(req.file.path) } catch {}
+        return res.status(400).json({ success: false, error: `Image too small (min ${minW}x${minH})` })
+      }
+    } catch (e) {
+      try { fs.unlinkSync(req.file.path) } catch {}
+      return res.status(400).json({ success: false, error: 'Invalid image file' })
+    }
+
+    // Basic duplicate/similarity check vs guest profile photo (if exists)
+    let similarity = null
+    if (booking.guest?.photoUrl) {
+      try {
+        const guestPath = path.isAbsolute(booking.guest.photoUrl) ? booking.guest.photoUrl : path.join(process.cwd(), booking.guest.photoUrl)
+        const h1 = await computeSimplePHash(guestPath)
+        const h2 = await computeSimplePHash(req.file.path)
+        const dist = Number(hammingDistance(h1, h2))
+        similarity = 1 - (dist / 64) // 0..1
+        // If images are nearly identical, reject: ID proof must be govt ID, not a face selfie
+        if (similarity > 0.95) {
+          try { fs.unlinkSync(req.file.path) } catch {}
+          return res.status(400).json({ success: false, error: 'ID Proof appears identical to profile photo. Upload the government ID image.' })
+        }
+      } catch (_) { /* ignore similarity failures */ }
+    }
+
+    // Store path in workflow log as an attachment reference
+    const webPath = path.relative(process.cwd(), req.file.path ?? path.join(req.file.destination || 'uploads', req.file.filename || ''))
+    const log = await prisma.bookingWorkflowLog.create({
+      data: {
+        bookingId: booking.id,
+        type: 'id-proof',
+        signatureUrl: webPath,
+        remarks: similarity != null ? `similarity:${(similarity*100).toFixed(1)}%` : undefined
+      }
+    })
+
+    return res.json({ success: true, log })
+  } catch (err) {
+    console.error('uploadIdProof error:', err)
+    return res.status(500).json({ success: false, error: 'Failed to upload ID proof' })
+  }
+}
 
 // Create a booking workflow log (check-in/check-out audit entry)
 export const createBookingWorkflowLog = async (req, res) => {
@@ -220,14 +316,29 @@ export const createBooking = async (req, res) => {
         },
       });
 
-      const payment = await tx.payment.create({
-        data: {
-          bookingId: booking.id,
-          method: body.paymentMethod ?? 'Cash',
-          amount: totalAmount,
-          status: 'pending',
-        },
-      });
+      const method = String(body.paymentMethod ?? 'cash').toLowerCase()
+      let payment = null
+      if (method === 'cash' || method === 'card') {
+        payment = await tx.payment.create({
+          data: {
+            bookingId: booking.id,
+            method,
+            amount: totalAmount,
+            status: 'completed',
+          },
+        });
+      }
+
+      // Log special request if provided
+      if (body.specialRequest && String(body.specialRequest).trim().length) {
+        await tx.bookingWorkflowLog.create({
+          data: {
+            bookingId: booking.id,
+            type: 'special-request',
+            remarks: String(body.specialRequest).slice(0, 1000)
+          }
+        })
+      }
 
       return { booking, payment };
     });

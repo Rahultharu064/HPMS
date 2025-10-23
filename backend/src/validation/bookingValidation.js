@@ -1,6 +1,6 @@
 import Joi from 'joi'
 
-const IdTypes = ['Passport', 'National ID', 'Driver License', 'Voter ID', 'Other']
+const IdTypes = ['Passport', 'National ID', 'Driver License', 'Voter ID', 'Citizenship', 'Other']
 
 // Normalize free-text nationality to ISO-2 country codes for South Asia
 const COUNTRY_ALIASES = {
@@ -29,47 +29,56 @@ const COUNTRY_ID_RULES = {
     'Passport': /^[A-Z][0-9]{7}$/,
     'National ID': /^(?:\d{4}\s?\d{4}\s?\d{4}|\d{12})$/, // Aadhaar
     'Voter ID': /^[A-Z]{3}[0-9]{7}$/,
-    'Driver License': /^[A-Z]{2}\d{2}\d{11}$/
+    'Driver License': /^[A-Z]{2}\d{2}\d{11}$/,
+    'Citizenship': /^[A-Z0-9-]{6,20}$/
   },
   NP: {
     'Passport': /^[A-Z][0-9]{7}$/,
     'National ID': /^[A-Z0-9-]{6,20}$/,
-    'Driver License': /^[A-Z0-9-]{5,20}$/
+    'Driver License': /^[A-Z0-9-]{5,20}$/,
+    'Citizenship': /^[A-Z0-9-]{6,20}$/
   },
   BD: {
     'Passport': /^[A-Z0-9]{8,9}$/,
     'National ID': /^(?:\d{10}|\d{13}|\d{17})$/,
-    'Driver License': /^[A-Z0-9-]{5,20}$/
+    'Driver License': /^[A-Z0-9-]{5,20}$/,
+    'Citizenship': /^[A-Z0-9-]{6,20}$/
   },
   PK: {
     'Passport': /^[A-Z]{2}\d{7}$/,
     'National ID': /^\d{5}-\d{7}-\d$/,
-    'Driver License': /^[A-Z0-9-]{5,20}$/
+    'Driver License': /^[A-Z0-9-]{5,20}$/,
+    'Citizenship': /^[A-Z0-9-]{6,20}$/
   },
   LK: {
     'Passport': /^[A-Z]\d{7}$/,
     'National ID': /^(?:\d{9}[VvXx]|\d{12})$/,
-    'Driver License': /^[A-Z0-9-]{5,20}$/
+    'Driver License': /^[A-Z0-9-]{5,20}$/,
+    'Citizenship': /^[A-Z0-9-]{6,20}$/
   },
   BT: {
     'Passport': /^[A-Z0-9]{8,9}$/,
     'National ID': /^\d{11}$/,
-    'Driver License': /^[A-Z0-9-]{5,20}$/
+    'Driver License': /^[A-Z0-9-]{5,20}$/,
+    'Citizenship': /^[A-Z0-9-]{6,20}$/
   },
   MV: {
     'Passport': /^[A-Z0-9]{8,9}$/,
     'National ID': /^[A-Z0-9]{5,20}$/,
-    'Driver License': /^[A-Z0-9-]{5,20}$/
+    'Driver License': /^[A-Z0-9-]{5,20}$/,
+    'Citizenship': /^[A-Z0-9-]{6,20}$/
   },
   AF: {
     'Passport': /^[A-Z]{1,2}\d{7}$/,
     'National ID': /^[A-Z0-9-]{6,20}$/,
-    'Driver License': /^[A-Z0-9-]{5,20}$/
+    'Driver License': /^[A-Z0-9-]{5,20}$/,
+    'Citizenship': /^[A-Z0-9-]{6,20}$/
   }
 }
 
 // Conditional ID number pattern based on ID type (generic but practical constraints)
-const idNumberSchema = Joi.when('idType', {
+// Use context reference ($idType) so we can validate the scalar with a provided context
+const idNumberSchema = Joi.when(Joi.ref('$idType'), {
   switch: [
     {
       is: 'Passport',
@@ -100,6 +109,13 @@ const idNumberSchema = Joi.when('idType', {
         .required(),
     },
     {
+      is: 'Citizenship',
+      then: Joi.string()
+        .pattern(/^[A-Z0-9-]{6,20}$/i)
+        .messages({ 'string.pattern.base': 'Citizenship number must be 6-20 characters (letters, numbers, hyphen)' })
+        .required(),
+    },
+    {
       is: 'Other',
       then: Joi.string().min(3).max(50).required(),
     },
@@ -119,6 +135,7 @@ export const bookingSchema = Joi.object({
   nationality: Joi.string().min(1).max(100).optional(),
   idType: Joi.string().valid(...IdTypes).optional(),
   idNumber: idNumberSchema.optional(),
+  specialRequest: Joi.string().max(1000).allow('').optional(),
 
   // Booking details
   roomId: Joi.number().integer().positive().required(),

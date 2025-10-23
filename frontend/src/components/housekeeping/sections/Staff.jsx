@@ -21,6 +21,17 @@ const Staff = ({ darkMode }) => {
     finally { setLoading(false) }
   }
 
+  const getStatusBadgeColor = (status) => {
+    switch(String(status)) {
+      case 'clean': return 'bg-green-100 text-green-700 border-green-300'
+      case 'needs-cleaning': return 'bg-rose-100 text-rose-700 border-rose-300'
+      case 'occupied': return 'bg-indigo-100 text-indigo-700 border-indigo-300'
+      case 'maintenance': return 'bg-amber-100 text-amber-800 border-amber-300'
+      case 'available': return 'bg-gray-100 text-gray-700 border-gray-300'
+      default: return 'bg-gray-100 text-gray-700 border-gray-300'
+    }
+  }
+
   useEffect(() => { load() }, [])
 
   // Live updates: refresh when tasks change elsewhere
@@ -87,6 +98,45 @@ const Staff = ({ darkMode }) => {
           <input value={staffName} onChange={e=>setStaffName(e.target.value)} placeholder="Add/Select staff name" className={`${darkMode ? 'bg-gray-800 text-white border-gray-700' : 'bg-white'} px-3 py-2 rounded-lg border`} />
         </div>
       </div>
+
+      {staffGroups.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {staffGroups.map(group => {
+            const rooms = new Map()
+            group.list.forEach(t => {
+              const rId = t.room?.id ?? t.roomId
+              const rNum = t.room?.roomNumber ?? t.roomId
+              const rStatus = t.room?.status ?? '-'
+              if (!rooms.has(rId)) rooms.set(rId, { roomNumber: rNum, status: rStatus })
+            })
+            const list = Array.from(rooms.values())
+            return (
+              <div key={`card-${group.name}`} className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-2xl p-5`}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold">
+                      {group.name.slice(0,2).toUpperCase()}
+                    </div>
+                    <div>
+                      <h4 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{group.name}</h4>
+                      <div className="text-xs opacity-70">{list.length} room(s) • {group.list.length} task(s)</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {list.length === 0 ? (
+                    <span className={`${darkMode ? 'text-gray-400' : 'text-gray-600'} text-sm`}>No rooms</span>
+                  ) : list.map(r => (
+                    <span key={`${group.name}-${r.roomNumber}`} className={`px-3 py-1 rounded-full border text-xs font-semibold ${getStatusBadgeColor(r.status)}`}>
+                      #{r.roomNumber} • {String(r.status).replace('-', ' ')}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {loading ? (
         <div className={`${darkMode ? 'text-white' : 'text-gray-700'}`}>Loading...</div>

@@ -51,6 +51,15 @@ export const bookingService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     })
+  },
+
+  async uploadIdProof(bookingId, file) {
+    const form = new FormData()
+    form.append('idProof', file)
+    return await apiRequest(`/api/bookings/${bookingId}/id-proof`, {
+      method: 'POST',
+      body: form
+    })
   }
 }
 
