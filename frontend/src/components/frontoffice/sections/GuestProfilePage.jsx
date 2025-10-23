@@ -4,6 +4,7 @@ import Header from '../Layout/Header'
 import Sidebar from '../Layout/Sidebar'
 import { guestService } from '../../../services/guestService'
 import toast from 'react-hot-toast'
+import { buildMediaUrl } from '../../../utils/media'
 import {
   User, Edit3, FileText, Download, Phone, Mail, MapPin, Star,
   TrendingUp, Plus, Send, Printer, Award, ChevronRight, Eye, X, Check,
@@ -267,7 +268,7 @@ export default function GuestProfilePage() {
               <div className="flex gap-6">
                 <div className="flex flex-col items-center">
                   {guest.photoUrl ? (
-                    <img src={guest.photoUrl} alt={displayName} className="w-32 h-32 rounded-full object-cover shadow-lg" />
+                    <img src={buildMediaUrl(guest.photoUrl)} alt={displayName} className="w-32 h-32 rounded-full object-cover shadow-lg" />
                   ) : (
                     <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-900 to-blue-700 flex items-center justify-center text-white text-4xl font-bold shadow-lg">
                       {initials}

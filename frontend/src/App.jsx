@@ -9,6 +9,7 @@ import Facilities from './components/owner/sections/Facilities'
 import RoomDetail from './pages/Publicwebsite/RoomDetail'
 import BookingForm from './pages/Publicwebsite/BookingForm'
 import BookingConfirmation from './pages/Publicwebsite/BookingConfirmation'
+import BookingSuccess from './pages/Publicwebsite/BookingSuccess'
 import About from './pages/Publicwebsite/About'
 import Contact from './pages/Publicwebsite/Contact'
 import FrontOffice from './pages/frontoffice/FrontOffice'
@@ -79,6 +80,10 @@ const App = () => {
     {
       path: "/booking/confirm/:id",
       element: <BookingConfirmation />
+    },
+    {
+      path: "/booking/success/:id",
+      element: <BookingSuccess />
     },
     {
       path: "/guest/profile",

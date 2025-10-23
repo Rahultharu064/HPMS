@@ -370,9 +370,12 @@ const Rooms = () => {
                         </button>
                       </div>
                       <div className="absolute bottom-4 left-4">
-                        <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
-                          <Star className="fill-yellow-400 text-yellow-400" size={16} />
-                          <span className="text-sm font-semibold text-gray-900">4.8</span>
+                        <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
+                          <div className="flex items-center gap-1">
+                            <Star className="fill-yellow-400 text-yellow-400" size={16} />
+                            <span className="text-sm font-semibold text-gray-900">{(room.ratingAvg ?? 0).toFixed(1)}</span>
+                          </div>
+                          <span className="text-xs text-gray-600">({room.ratingCount ?? 0})</span>
                         </div>
                       </div>
                     </div>

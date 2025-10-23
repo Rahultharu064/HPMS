@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { roomService } from '../../../services/roomService'
 import { allowedStatuses } from '../../../constants/roomStatus'
 import { toast } from 'react-hot-toast'
+import { getSocket } from '../../../utils/socket'
 
 const Rooms = ({ darkMode }) => {
   const [rooms, setRooms] = useState([])
@@ -31,6 +32,29 @@ const Rooms = ({ darkMode }) => {
     }
     fetchData()
     return () => { mounted = false }
+  }, [filterStatus, filterFloor])
+
+  // Live updates: listen for room status changes
+  useEffect(() => {
+    const socket = getSocket()
+    const handler = (payload) => {
+      const room = payload?.room
+      if (!room) return
+      // refresh list with current filters
+      const params = {}
+      if (filterStatus !== 'all') params.status = filterStatus
+      if (filterFloor !== 'all') params.floor = String(filterFloor)
+      roomService.getStatusMap(params)
+        .then(res => setRooms(res.data || []))
+        .catch((e) => console.error(e))
+      if (room.status === 'needs-cleaning') {
+        toast.success(`Room #${room.roomNumber} marked Needs Cleaning`)
+      }
+    }
+    socket.on('hk:room:status', handler)
+    return () => {
+      socket.off('hk:room:status', handler)
+    }
   }, [filterStatus, filterFloor])
 
   const getStatusColor = (status) => {

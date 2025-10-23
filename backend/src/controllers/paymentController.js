@@ -220,7 +220,7 @@ export const verifyPayment = async (req, res) => {
     }
 
     if (gateway === 'khalti') {
-      const verificationResult = await verifyKhaltiPayment(token, amount);
+      const verificationResult = await verifyKhaltiPayment({ token, amount });
       
       if (verificationResult.success) {
         await prisma.payment.update({
@@ -269,8 +269,8 @@ export const verifyPayment = async (req, res) => {
   }
 };
 
-// Verify Khalti payment
-const verifyKhaltiPayment = async (token, amount) => {
+// Verify Khalti payment (supports either pidx or legacy token/amount shape)
+const verifyKhaltiPayment = async ({ pidx, token, amount }) => {
   try {
     return new Promise((resolve, reject) => {
       const options = {
@@ -280,10 +280,11 @@ const verifyKhaltiPayment = async (token, amount) => {
           'Authorization': `Key ${process.env.KHALTI_SECRET_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          token: token,
-          amount: Math.round(parseFloat(amount) * 100)
-        })
+        body: JSON.stringify(
+          pidx
+            ? { pidx }
+            : { token: token, amount: Math.round(parseFloat(amount) * 100) }
+        )
       };
 
       request(options, function (error, response) {
@@ -305,6 +306,50 @@ const verifyKhaltiPayment = async (token, amount) => {
     throw err;
   }
 };
+
+// Handle Khalti return redirect (GET) with pidx and status
+export const handleKhaltiReturn = async (req, res) => {
+  try {
+    const { pidx, status, purchase_order_id } = req.query || {}
+    const frontend = process.env.FRONTEND_URL || 'http://localhost:5173'
+    if (!pidx) {
+      return res.redirect(`${frontend}/rooms?err=missing_pidx`)
+    }
+
+    // Extract booking id from purchase_order_id like BOOKING_123
+    let bookingId = null
+    if (purchase_order_id && String(purchase_order_id).startsWith('BOOKING_')) {
+      bookingId = Number(String(purchase_order_id).split('_')[1])
+    }
+
+    // Verify with Khalti using pidx
+    const result = await verifyKhaltiPayment({ pidx })
+    const completed = String(status || result?.status || '').toLowerCase() === 'completed'
+
+    if (completed) {
+      if (bookingId) {
+        // Mark pending khalti payments as completed for this booking
+        await prisma.payment.updateMany({
+          where: { bookingId, method: 'khalti', status: 'pending' },
+          data: { status: 'completed' }
+        })
+        // Optionally mark booking confirmed
+        await prisma.booking.update({ where: { id: bookingId }, data: { status: 'confirmed', updatedAt: new Date() } }).catch(()=>{})
+        return res.redirect(`${frontend}/booking/success/${bookingId}`)
+      }
+      // Fallback if bookingId not parsed
+      return res.redirect(`${frontend}`)
+    } else {
+      // Not completed — redirect back to confirmation page to show error state
+      const to = bookingId ? `${frontend}/booking/confirm/${bookingId}` : frontend
+      return res.redirect(to + `?status=${encodeURIComponent(status || 'failed')}`)
+    }
+  } catch (err) {
+    console.error('Khalti return handler error:', err)
+    const frontend = process.env.FRONTEND_URL || 'http://localhost:5173'
+    return res.redirect(`${frontend}/rooms?err=verify_failed`)
+  }
+}
 
 // Verify eSewa payment
 const verifyEsewaPayment = async (paymentData) => {

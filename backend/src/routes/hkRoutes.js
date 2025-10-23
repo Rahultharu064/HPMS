@@ -1,7 +1,7 @@
 import express from "express";
 import upload from "../middleware/upload.js";
-import { listTasks, createTask, getTaskById, updateTask, deleteTask, addTaskAttachments } from "../controllers/hk/tasksController.js";
-import { listCleaningLogs, createCleaningLog } from "../controllers/hk/cleaningController.js";
+import { listTasks, createTask, getTaskById, updateTask, deleteTask, addTaskAttachments, bulkAssignTasks } from "../controllers/hk/tasksController.js";
+import { listCleaningLogs, createCleaningLog, startCleaning, finishCleaning } from "../controllers/hk/cleaningController.js";
 
 const router = express.Router();
 
@@ -12,9 +12,12 @@ router.get("/tasks/:id", getTaskById);
 router.put("/tasks/:id", updateTask);
 router.delete("/tasks/:id", deleteTask);
 router.post("/tasks/:id/attachments", upload.array("files", 10), addTaskAttachments);
+router.post("/tasks/bulk-assign", bulkAssignTasks);
 
 // Cleaning Logs
 router.get("/cleaning-logs", listCleaningLogs);
 router.post("/cleaning-logs", createCleaningLog);
+router.post("/cleaning/start", startCleaning);
+router.post("/cleaning/finish", finishCleaning);
 
 export default router;

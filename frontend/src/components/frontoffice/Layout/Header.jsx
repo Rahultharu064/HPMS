@@ -1,7 +1,60 @@
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Search, X, Sun, Moon, Bell, ChevronDown, Settings, Shield, LogOut, User, Menu } from 'lucide-react'
+import { getSocket } from '../../../utils/socket'
 
 const Header = ({ darkMode = false, setDarkMode = () => {}, sidebarOpen = true, setSidebarOpen = () => {}, notifications = 0, searchQuery = '', setSearchQuery = () => {} }) => {
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [items, setItems] = useState([])
+  const unread = useMemo(() => items.filter(i => !i.read).length, [items])
+
+  useEffect(() => {
+    const socket = getSocket()
+    const pushItem = (msg) => setItems(prev => [{ id: `${Date.now()}-${Math.random()}`, msg, time: new Date().toLocaleTimeString(), read: false }, ...prev].slice(0, 30))
+    const onRoom = (payload) => {
+      const room = payload?.room; if (!room) return
+      pushItem(`Room #${room.roomNumber} is ${String(room.status).replace('-', ' ')}`)
+    }
+    const onTask = (payload) => {
+      const t = payload?.task
+      if (payload?.id) pushItem(`Task #${payload.id} deleted`)
+      else if (t) pushItem(`Task: ${t.title} (${t.status})`)
+    }
+    const onCleaning = (payload, type) => {
+      const log = payload?.log; if (!log) return
+      if (type === 'start') pushItem(`Cleaning started for room #${log.roomId}`)
+      if (type === 'finish') pushItem(`Cleaning finished for room #${log.roomId}`)
+    }
+    const onBookingCreated = (p) => { const b=p?.booking; if (b) pushItem(`Booking created: #${b.id} for room #${b.roomId}`) }
+    const onBookingUpdated = (p) => { const b=p?.booking; if (b) pushItem(`Booking updated: #${b.id} (${b.status})`) }
+    const onBookingCancelled = (p) => { const b=p?.booking; if (b) pushItem(`Booking cancelled: #${b.id}`) }
+    const onBookingDeleted = (p) => { if (p?.id) pushItem(`Booking deleted: #${p.id}`) }
+    socket.on('hk:room:status', onRoom)
+    socket.on('hk:task:created', onTask)
+    socket.on('hk:task:updated', onTask)
+    socket.on('hk:task:deleted', onTask)
+    socket.on('hk:cleaning:start', (p)=>onCleaning(p,'start'))
+    socket.on('hk:cleaning:finish', (p)=>onCleaning(p,'finish'))
+    socket.on('fo:booking:created', onBookingCreated)
+    socket.on('fo:booking:updated', onBookingUpdated)
+    socket.on('fo:booking:cancelled', onBookingCancelled)
+    socket.on('fo:booking:deleted', onBookingDeleted)
+    return () => {
+      socket.off('hk:room:status', onRoom)
+      socket.off('hk:task:created', onTask)
+      socket.off('hk:task:updated', onTask)
+      socket.off('hk:task:deleted', onTask)
+      socket.off('hk:cleaning:start')
+      socket.off('hk:cleaning:finish')
+      socket.off('fo:booking:created', onBookingCreated)
+      socket.off('fo:booking:updated', onBookingUpdated)
+      socket.off('fo:booking:cancelled', onBookingCancelled)
+      socket.off('fo:booking:deleted', onBookingDeleted)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (showNotifications) setItems(prev => prev.map(i => ({ ...i, read: true })))
+  }, [showNotifications])
   return (
     <header className={`${darkMode ? 'bg-gray-800/80 backdrop-blur-lg' : 'bg-white/80 backdrop-blur-lg'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} sticky top-0 z-40`}>
       <div className="flex items-center justify-between px-6 py-4">
@@ -60,14 +113,31 @@ const Header = ({ darkMode = false, setDarkMode = () => {}, sidebarOpen = true, 
           </button>
 
           {/* Notifications */}
-          <button className="relative p-3 rounded-2xl bg-gray-100 hover:scale-105 transition-transform" aria-label="Notifications">
-            <Bell size={20} className={darkMode ? 'text-gray-300' : 'text-gray-600'} />
-            {notifications > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                {notifications}
-              </span>
+          <div className="relative">
+            <button onClick={()=>setShowNotifications(v=>!v)} className={`relative p-3 rounded-2xl ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`} aria-label="Notifications">
+              <Bell size={20} className={darkMode ? 'text-gray-300' : 'text-gray-600'} />
+              {(unread || notifications) > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[1.25rem] h-5 px-1 flex items-center justify-center font-semibold">
+                  {unread || notifications}
+                </span>
+              )}
+            </button>
+            {showNotifications && (
+              <div className={`absolute right-0 mt-2 w-80 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} rounded-2xl shadow-2xl border overflow-hidden`}>
+                <div className={`px-4 py-3 border-b ${darkMode ? 'border-gray-700 bg-gray-900/50' : 'border-gray-100 bg-gray-50'}`}>
+                  <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Notifications</h3>
+                </div>
+                {items.length === 0 ? (
+                  <div className={`px-4 py-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>No notifications</div>
+                ) : items.map(n => (
+                  <div key={n.id} className={`px-4 py-3 border-b ${darkMode ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-100 hover:bg-gray-50'} cursor-pointer transition-colors`}>
+                    <p className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>{n.msg}</p>
+                    <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'} mt-1`}>{n.time}</p>
+                  </div>
+                ))}
+              </div>
             )}
-          </button>
+          </div>
 
           {/* Profile Dropdown */}
           <div className={`flex items-center gap-3 px-4 py-2 rounded-2xl ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} cursor-pointer transition-colors group relative`}>

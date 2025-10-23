@@ -1,6 +1,7 @@
 import prisma from "../config/client.js";
 import fs from "fs";
 import path from "path";
+import { getIO } from "../socket.js";
 
 const removeFileIfExists = (filePath) => {
   try {
@@ -59,7 +60,8 @@ export const updateRoomStatus = async (req, res) => {
       data: { status: String(status), updatedAt: new Date() },
       select: { id: true, roomNumber: true, floor: true, status: true, updatedAt: true }
     });
-
+    const io = getIO();
+    io && io.emit('hk:room:status', { room: updated })
     res.json({ success: true, room: updated });
   } catch (err) {
     console.error(err);
@@ -267,12 +269,35 @@ export const getAllRooms = async (req, res) => {
       prisma.room.count({ where })
     ]);
 
+    // Enrich with review aggregates
+    const roomIds = rooms.map(r => r.id)
+    let ratingByRoom = new Map();
+    if (roomIds.length > 0) {
+      const aggregates = await prisma.review.groupBy({
+        by: ['roomId'],
+        where: { roomId: { in: roomIds } },
+        _avg: { rating: true },
+        _count: { _all: true }
+      });
+      for (const a of aggregates) {
+        ratingByRoom.set(a.roomId, {
+          ratingAvg: Number(a._avg.rating ?? 0),
+          ratingCount: Number(a._count._all ?? 0)
+        });
+      }
+    }
+    const enriched = rooms.map(r => ({
+      ...r,
+      ratingAvg: ratingByRoom.get(r.id)?.ratingAvg ?? 0,
+      ratingCount: ratingByRoom.get(r.id)?.ratingCount ?? 0
+    }))
+
     res.json({
       success: true,
       currentPage: page,
       totalPages: Math.ceil(total / limit),
       total,
-      data: rooms
+      data: enriched
     });
   } catch (err) {
     console.error(err);

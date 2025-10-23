@@ -164,3 +164,25 @@ export const addTaskAttachments = async (req, res) => {
     res.status(500).json({ success: false, error: 'Failed to add attachments' })
   }
 }
+
+// Bulk assign tasks to a staff member
+export const bulkAssignTasks = async (req, res) => {
+  try {
+    const body = req.body || {}
+    const ids = Array.isArray(body.ids) ? body.ids.map(Number).filter(n => Number.isFinite(n)) : []
+    const assignedTo = body.assignedTo ?? null
+    if (ids.length === 0) return res.status(400).json({ success: false, error: 'No task ids provided' })
+
+    const result = await prisma.hkTask.updateMany({
+      where: { id: { in: ids } },
+      data: { assignedTo, updatedAt: new Date() }
+    })
+
+    const io = getIO();
+    io && io.emit('hk:task:updated', { count: result.count })
+    res.json({ success: true, count: result.count })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ success: false, error: 'Failed to bulk assign tasks' })
+  }
+}

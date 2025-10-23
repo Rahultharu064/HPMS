@@ -1,4 +1,5 @@
 import prisma from "../config/client.js";
+import path from "path";
 
 // Get all guests with pagination and search
 export const getAllGuests = async (req, res) => {
@@ -65,9 +66,11 @@ export const uploadGuestPhoto = async (req, res) => {
       return res.status(400).json({ success: false, error: 'No photo uploaded' });
     }
 
+    // Store a web-accessible relative path (served via /uploads)
+    const webPath = path.relative(process.cwd(), req.file.path ?? path.join(req.file.destination || 'uploads', req.file.filename || ''))
     const updated = await prisma.guest.update({
       where: { id },
-      data: { photoUrl: req.file.path ?? req.file.filename ?? '' }
+      data: { photoUrl: webPath }
     });
 
     res.json({ success: true, guest: updated });

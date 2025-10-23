@@ -1,24 +1,15 @@
 import React, { useEffect, useState } from 'react'
-import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { bookingService } from '../../services/bookingService'
 import { buildMediaUrl } from '../../utils/media'
 
-const BookingConfirmation = () => {
+const BookingSuccess = () => {
   const { id } = useParams()
-  const location = useLocation()
-  const navigate = useNavigate()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    // If returning from gateway with success, redirect to a clean success page
-    const params = new URLSearchParams(location.search)
-    const status = params.get('status') || params.get('Status') || ''
-    if (status.toLowerCase() === 'completed' || status.toLowerCase() === 'success') {
-      navigate(`/booking/success/${id}`, { replace: true })
-      return
-    }
     let mounted = true
     ;(async () => {
       try {
@@ -31,7 +22,7 @@ const BookingConfirmation = () => {
       }
     })()
     return () => { mounted = false }
-  }, [id, location.search, navigate])
+  }, [id])
 
   const getPrimaryImage = (room) => {
     const val = room?.image
@@ -47,7 +38,7 @@ const BookingConfirmation = () => {
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-3xl">
-      <h1 className="text-3xl font-bold mb-6">Booking Confirmed</h1>
+      <h1 className="text-3xl font-bold mb-6 text-green-700">Payment Successful</h1>
       <div className="bg-white rounded-xl shadow p-6 space-y-4">
         <div className="flex items-start gap-4">
           {getPrimaryImage(data.room) && (
@@ -88,7 +79,7 @@ const BookingConfirmation = () => {
           <div className="mt-2 font-semibold">Total: ₹{data.totalAmount}</div>
         </div>
         <div className="flex gap-3 pt-2">
-          <Link to="/rooms" className="px-4 py-2 bg-blue-600 text-white rounded">Browse More Rooms</Link>
+          <Link to="/" className="px-4 py-2 bg-blue-600 text-white rounded">Go to Home</Link>
           <Link to={`/rooms/${data.roomId}`} className="px-4 py-2 bg-gray-100 rounded">View Room</Link>
           <Link to="/guest/profile" className="px-4 py-2 bg-gray-100 rounded">Guest Profile</Link>
         </div>
@@ -97,4 +88,4 @@ const BookingConfirmation = () => {
   )
 }
 
-export default BookingConfirmation
+export default BookingSuccess

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { hkTaskService } from '../../../services/hkTaskService'
 import { toast } from 'react-hot-toast'
+import { getSocket } from '../../../utils/socket'
 
 const Staff = ({ darkMode }) => {
   const [tasks, setTasks] = useState([])
@@ -21,6 +22,22 @@ const Staff = ({ darkMode }) => {
   }
 
   useEffect(() => { load() }, [])
+
+  // Live updates: refresh when tasks change elsewhere
+  useEffect(() => {
+    const socket = getSocket()
+    const handler = () => load()
+    socket.on('hk:task:created', handler)
+    socket.on('hk:task:updated', handler)
+    socket.on('hk:task:deleted', handler)
+    socket.on('hk:task:attachments', handler)
+    return () => {
+      socket.off('hk:task:created', handler)
+      socket.off('hk:task:updated', handler)
+      socket.off('hk:task:deleted', handler)
+      socket.off('hk:task:attachments', handler)
+    }
+  }, [])
 
   const staffGroups = useMemo(() => {
     const map = new Map()
@@ -51,6 +68,17 @@ const Staff = ({ darkMode }) => {
     finally { setAssigningId(null) }
   }
 
+  // DnD handlers
+  const onDragStart = (ev, taskId) => {
+    ev.dataTransfer.setData('text/plain', String(taskId))
+  }
+  const onDragOver = (ev) => { ev.preventDefault() }
+  const onDropTo = (ev, targetName) => {
+    ev.preventDefault()
+    const taskId = Number(ev.dataTransfer.getData('text/plain'))
+    if (Number.isFinite(taskId)) assign(taskId, targetName)
+  }
+
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between">
@@ -64,13 +92,13 @@ const Staff = ({ darkMode }) => {
         <div className={`${darkMode ? 'text-white' : 'text-gray-700'}`}>Loading...</div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} border rounded-2xl p-6`}>
+          <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} border rounded-2xl p-6`} onDragOver={onDragOver} onDrop={(e)=>onDropTo(e, '')}>
             <h3 className={`text-lg font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Unassigned Tasks ({unassigned.length})</h3>
             <div className="space-y-2 max-h-[60vh] overflow-auto pr-1">
               {unassigned.length === 0 ? (
                 <div className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>No unassigned tasks</div>
               ) : unassigned.map(t => (
-                <div key={t.id} className={`${darkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-gray-50 border-gray-200'} border rounded-xl p-3 flex items-center justify-between`}>
+                <div key={t.id} className={`${darkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-gray-50 border-gray-200'} border rounded-xl p-3 flex items-center justify-between`} draggable onDragStart={(e)=>onDragStart(e, t.id)}>
                   <div>
                     <div className="font-medium">{t.title}</div>
                     <div className="text-xs opacity-70">Room {t.room?.roomNumber ?? t.roomId} • {t.priority} • {t.type}</div>
@@ -91,7 +119,7 @@ const Staff = ({ darkMode }) => {
             {staffGroups.length === 0 ? (
               <div className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>No staff yet. Type a staff name and assign a task to create a group.</div>
             ) : staffGroups.map(group => (
-              <div key={group.name} className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} border rounded-2xl p-6`}>
+              <div key={group.name} className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} border rounded-2xl p-6`} onDragOver={onDragOver} onDrop={(e)=>onDropTo(e, group.name)}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold">
@@ -105,7 +133,7 @@ const Staff = ({ darkMode }) => {
                 </div>
                 <div className="space-y-2 max-h-[60vh] overflow-auto pr-1">
                   {group.list.map(t => (
-                    <div key={t.id} className={`${darkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-gray-50 border-gray-200'} border rounded-xl p-3 flex items-center justify-between`}>
+                    <div key={t.id} className={`${darkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-gray-50 border-gray-200'} border rounded-xl p-3 flex items-center justify-between`} draggable onDragStart={(e)=>onDragStart(e, t.id)}>
                       <div>
                         <div className="font-medium">{t.title}</div>
                         <div className="text-xs opacity-70">Room {t.room?.roomNumber ?? t.roomId} • {t.priority} • {t.type}</div>

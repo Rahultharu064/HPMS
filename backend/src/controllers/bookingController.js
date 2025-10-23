@@ -1,4 +1,5 @@
 import prisma from "../config/client.js";
+import { getIO } from "../socket.js";
 
 const diffNights = (checkIn, checkOut) => {
   const ms = checkOut.getTime() - checkIn.getTime();
@@ -186,6 +187,11 @@ export const createBooking = async (req, res) => {
       return { booking, payment };
     });
 
+    try {
+      const io = getIO();
+      io && io.emit('fo:booking:created', { booking: result.booking })
+    } catch {}
+
     res.status(201).json({ success: true, ...result });
   } catch (err) {
     console.error(err);
@@ -287,6 +293,10 @@ export const updateBooking = async (req, res) => {
       }
     });
 
+    try {
+      const io = getIO();
+      io && io.emit('fo:booking:updated', { booking: updatedBooking })
+    } catch {}
     res.json({ success: true, booking: updatedBooking });
   } catch (err) {
     console.error(err);
@@ -335,6 +345,10 @@ export const cancelBooking = async (req, res) => {
       });
     }
 
+    try {
+      const io = getIO();
+      io && io.emit('fo:booking:cancelled', { booking: updatedBooking, reason: reason || null })
+    } catch {}
     res.json({ 
       success: true, 
       booking: updatedBooking,
@@ -371,6 +385,11 @@ export const deleteBooking = async (req, res) => {
     await prisma.booking.delete({
       where: { id }
     });
+
+    try {
+      const io = getIO();
+      io && io.emit('fo:booking:deleted', { id })
+    } catch {}
 
     res.json({ 
       success: true, 

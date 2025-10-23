@@ -36,12 +36,18 @@ export const apiRequest = async (url, options = {}) => {
   apiDebug.log(`Making ${options.method || 'GET'} request to:`, fullUrl)
   
   try {
+    const isFormData = options && options.body && typeof FormData !== 'undefined' && options.body instanceof FormData
+    const headers = {
+      ...(options.headers || {})
+    }
+    // Only set JSON content-type when NOT sending FormData
+    if (!isFormData && !headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json'
+    }
+
     const response = await fetch(fullUrl, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-      },
-      ...options
+      ...options,
+      headers,
     })
     
     apiDebug.log('Response received:', {
