@@ -1,6 +1,6 @@
 import React from 'react'
-import Header from '../../components/publicwebsite/Layout/Header'
-import Footer from '../../components/publicwebsite/Layout/Footer'
+import Header from '../../components/Publicwebsite/Layout/Header'
+import Footer from '../../components/Publicwebsite/Layout/Footer'
 import { Award, Users, Clock, Star, Heart, Shield, Coffee, Car } from 'lucide-react'
 
 const About = () => {

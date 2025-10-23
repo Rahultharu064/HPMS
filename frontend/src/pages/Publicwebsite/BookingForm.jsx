@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { bookingService } from '../../services/bookingService'
+import { guestService } from '../../services/guestService'
 import { roomService } from '../../services/roomService'
 import { paymentService } from '../../services/paymentService'
 import PaymentOptions from '../../components/booking/PaymentOptions'
@@ -11,16 +12,133 @@ import Header from '../../components/Publicwebsite/Layout/Header'
 import Footer from '../../components/Publicwebsite/Layout/Footer'
 import { API_BASE_URL } from '../../utils/api'
 
-const schema = z.object({
+const baseSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   email: z.string().email(),
   phone: z.string().min(6),
+  nationality: z.string().min(1, 'Nationality is required'),
+  idType: z.string().min(1, 'ID Type is required'),
+  idNumber: z.string().min(1, 'ID Number is required'),
+  // idProof is a file input; validate presence loosely in UI, accept any file type, optional here
+  idProof: z.any().optional(),
   checkIn: z.string().min(1),
   checkOut: z.string().min(1),
   adults: z.coerce.number().int().min(1),
   children: z.coerce.number().int().min(0).optional().default(0),
   paymentMethod: z.string().min(1)
+})
+
+// Normalize free-text nationality to ISO-2 for South Asia
+const COUNTRY_ALIASES = {
+  IN: ['india', 'in', 'indian'],
+  NP: ['nepal', 'np', 'nepali'],
+  BD: ['bangladesh', 'bd', 'bangladeshi'],
+  PK: ['pakistan', 'pk', 'pakistani'],
+  LK: ['sri lanka', 'srilanka', 'lk', 'sri lankan', 'sri-lanka'],
+  BT: ['bhutan', 'bt', 'bhutanese'],
+  MV: ['maldives', 'mv', 'maldivian'],
+  AF: ['afghanistan', 'af', 'afghan']
+}
+
+const normalizeCountryToISO2 = (name) => {
+  const n = String(name || '').trim().toLowerCase()
+  if (!n) return null
+  for (const [iso, aliases] of Object.entries(COUNTRY_ALIASES)) {
+    if (aliases.includes(n)) return iso
+  }
+  return null
+}
+
+// South Asia country-specific ID patterns (mirror backend)
+const COUNTRY_ID_RULES = {
+  IN: {
+    Passport: /^[A-Z][0-9]{7}$/,
+    'National ID': /^(?:\d{4}\s?\d{4}\s?\d{4}|\d{12})$/, // Aadhaar
+    'Voter ID': /^[A-Z]{3}[0-9]{7}$/,
+    'Driver License': /^[A-Z]{2}\d{2}\d{11}$/
+  },
+  NP: {
+    Passport: /^[A-Z][0-9]{7}$/,
+    'National ID': /^[A-Z0-9-]{6,20}$/,
+    'Driver License': /^[A-Z0-9-]{5,20}$/
+  },
+  BD: {
+    Passport: /^[A-Z0-9]{8,9}$/,
+    'National ID': /^(?:\d{10}|\d{13}|\d{17})$/,
+    'Driver License': /^[A-Z0-9-]{5,20}$/
+  },
+  PK: {
+    Passport: /^[A-Z]{2}\d{7}$/,
+    'National ID': /^\d{5}-\d{7}-\d$/,
+    'Driver License': /^[A-Z0-9-]{5,20}$/
+  },
+  LK: {
+    Passport: /^[A-Z]\d{7}$/,
+    'National ID': /^(?:\d{9}[VvXx]|\d{12})$/,
+    'Driver License': /^[A-Z0-9-]{5,20}$/
+  },
+  BT: {
+    Passport: /^[A-Z0-9]{8,9}$/,
+    'National ID': /^\d{11}$/,
+    'Driver License': /^[A-Z0-9-]{5,20}$/
+  },
+  MV: {
+    Passport: /^[A-Z0-9]{8,9}$/,
+    'National ID': /^[A-Z0-9]{5,20}$/,
+    'Driver License': /^[A-Z0-9-]{5,20}$/
+  },
+  AF: {
+    Passport: /^[A-Z]{1,2}\d{7}$/,
+    'National ID': /^[A-Z0-9-]{6,20}$/,
+    'Driver License': /^[A-Z0-9-]{5,20}$/
+  }
+}
+
+const schema = baseSchema.superRefine((val, ctx) => {
+  const norm = (s) => String(s || '').toLowerCase()
+  const type = norm(val.idType)
+  const num = String(val.idNumber || '')
+  const add = (message) => ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['idNumber'], message })
+
+  if (!type) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['idType'], message: 'ID Type is required' })
+    return
+  }
+
+  // Prefer country-specific validation if we recognize nationality
+  const iso = normalizeCountryToISO2(val.nationality)
+  const exactType = ['passport','national id','driver license','voter id','other'].find(t => t === type) ? val.idType : val.idType
+  const countryRule = iso && COUNTRY_ID_RULES?.[iso]?.[exactType]
+  if (countryRule) {
+    if (!countryRule.test(num)) {
+      add(`Invalid ${val.idType} format for ${val.nationality}`)
+    }
+    return
+  }
+
+  // Fallback to generic idType rules
+  switch (type) {
+    case 'passport': {
+      if (!/^[A-Z0-9]{6,12}$/i.test(num)) add('Passport number must be 6-12 alphanumeric characters')
+      break
+    }
+    case 'national id': {
+      if (!/^[A-Z0-9-]{6,20}$/i.test(num)) add('National ID must be 6-20 characters (letters, numbers, hyphen)')
+      break
+    }
+    case 'driver license': {
+      if (!/^[A-Z0-9-]{5,20}$/i.test(num)) add('Driver License must be 5-20 characters (letters, numbers, hyphen)')
+      break
+    }
+    case 'voter id': {
+      if (!/^[A-Z0-9]{5,20}$/i.test(num)) add('Voter ID must be 5-20 alphanumeric characters')
+      break
+    }
+    default: {
+      if (num.length < 3 || num.length > 50) add('ID Number must be between 3 and 50 characters')
+    }
+  }
 })
 
 const BookingForm = () => {
@@ -36,6 +154,9 @@ const BookingForm = () => {
       adults: 1, 
       children: 0, 
       paymentMethod: 'cash',
+      nationality: '',
+      idType: '',
+      idNumber: '',
       checkIn: '',
       checkOut: ''
     } 
@@ -105,6 +226,33 @@ const BookingForm = () => {
       if (checkOutDate <= checkInDate) {
         throw new Error('Check-out date must be after check-in date')
       }
+
+      // Validate ID proof image (if provided): mime, size <= 5MB, dimensions >= 200x200
+      const fileListPre = values?.idProof instanceof FileList ? values.idProof : (values?.idProof || [])
+      const idFilePre = fileListPre && fileListPre.length ? fileListPre[0] : null
+      if (idFilePre) {
+        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+        if (!allowed.includes(idFilePre.type)) {
+          throw new Error('ID proof must be an image (JPEG, PNG, WEBP, GIF)')
+        }
+        const MAX_BYTES = 5 * 1024 * 1024
+        if (idFilePre.size > MAX_BYTES) {
+          throw new Error('ID proof image too large (max 5MB)')
+        }
+        // Dimension check
+        const dimsOk = await new Promise((resolve) => {
+          const img = new Image()
+          img.onload = () => {
+            resolve(img.width >= 200 && img.height >= 200)
+          }
+          img.onerror = () => resolve(false)
+          const url = URL.createObjectURL(idFilePre)
+          img.src = url
+        })
+        if (!dimsOk) {
+          throw new Error('ID proof image too small (min 200x200)')
+        }
+      }
       
       // Create booking
       const payload = { 
@@ -117,6 +265,20 @@ const BookingForm = () => {
       const res = await bookingService.createBooking(payload)
       const booking = res.booking
       const amount = booking.totalAmount
+
+      // Extract ID proof file (if provided) before redirecting to any external payment page
+      const fileList = values?.idProof instanceof FileList ? values.idProof : (values?.idProof || [])
+      const idFile = fileList && fileList.length ? fileList[0] : null
+
+      // If we have a file and backend exposes guest photo upload, upload it using guestId
+      try {
+        if (idFile && booking && booking.guestId) {
+          await guestService.uploadPhoto(booking.guestId, idFile)
+        }
+      } catch (e) {
+        // Non-blocking: continue even if upload fails
+        console.warn('ID proof upload failed:', e)
+      }
       
       // Create payment
       const paymentResponse = await paymentService.createPayment({ 
@@ -163,6 +325,16 @@ const BookingForm = () => {
       
       <main className="pt-24 pb-20">
         <div className="container mx-auto px-4 py-10 max-w-4xl">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-blue-600"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+              <path fillRule="evenodd" d="M10.53 4.47a.75.75 0 0 1 0 1.06L5.81 10.25H21a.75.75 0 0 1 0 1.5H5.81l4.72 4.72a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
+            </svg>
+            Back
+          </button>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Booking Form */}
             <div className="lg:col-span-2">
@@ -217,6 +389,49 @@ const BookingForm = () => {
                           {...register('phone')} 
                         />
                         {errors.phone && <p className="text-red-500 text-sm mt-1">Phone is required</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Nationality</label>
+                        <input 
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                          placeholder="e.g., Nepalese" 
+                          {...register('nationality')} 
+                        />
+                        {errors.nationality && <p className="text-red-500 text-sm mt-1">Nationality is required</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Government ID Type</label>
+                        <select 
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                          {...register('idType')}
+                        >
+                          <option value="">Select ID Type</option>
+                          <option value="Passport">Passport</option>
+                          <option value="National ID">National ID</option>
+                          <option value="Driver License">Driver License</option>
+                          <option value="Voter ID">Voter ID</option>
+                          <option value="Other">Other</option>
+                        </select>
+                        {errors.idType && <p className="text-red-500 text-sm mt-1">ID Type is required</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">ID Number</label>
+                        <input 
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                          placeholder="Enter ID Number" 
+                          {...register('idNumber')} 
+                        />
+                        {errors.idNumber && <p className="text-red-500 text-sm mt-1">ID Number is required</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Upload ID Proof (image)</label>
+                        <input 
+                          className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                          type="file" 
+                          accept="image/*"
+                          {...register('idProof')}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Accepted: JPG, PNG. Max ~5MB (browser limit).</p>
                       </div>
                     </div>
                   </div>

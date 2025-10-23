@@ -157,6 +157,9 @@ model Guest {
   photoUrl      String?
   loyaltyLevel  String?
   vip           Boolean?
+  nationality   String?
+  idType        String?
+  idNumber      String?
 
   bookings Booking[]
 

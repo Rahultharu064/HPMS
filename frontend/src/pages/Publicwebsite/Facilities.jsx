@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import Header from '../../components/publicwebsite/Layout/Header'
-import Footer from '../../components/publicwebsite/Layout/Footer'
+import Header from '../../components/Publicwebsite/Layout/Header'
+import Footer from '../../components/Publicwebsite/Layout/Footer'
 import { facilityService } from '../../services/facilityService'
 import { buildMediaUrl } from '../../utils/media'
 

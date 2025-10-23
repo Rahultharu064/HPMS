@@ -6,8 +6,8 @@ import {
   Bed, Square, Clock, Shield, CreditCard, ArrowLeft,
   ChevronDown, Plus, Minus
 } from 'lucide-react'
-import Header from '../../components/publicwebsite/Layout/Header'
-import Footer from '../../components/publicwebsite/Layout/Footer'
+import Header from '../../components/Publicwebsite/Layout/Header'
+import Footer from '../../components/Publicwebsite/Layout/Footer'
 import { roomService } from '../../services/roomService'
 import { bookingService } from '../../services/bookingService'
 import { buildMediaUrl } from '../../utils/media'

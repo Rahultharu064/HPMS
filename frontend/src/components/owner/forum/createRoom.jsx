@@ -155,6 +155,7 @@ export default function CreateRoom() {
               <option value="suite">Suite</option>
               <option value="presidential">Presidential Suite</option>
               <option value="family">Family Room</option>
+              <option value="luxury">Executive Room</option>
             </select>
           </div>
           <div>

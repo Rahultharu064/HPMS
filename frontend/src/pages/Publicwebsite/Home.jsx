@@ -1,10 +1,10 @@
 import React from 'react'
-import Header from '../../components/publicwebsite/Layout/Header'
-import Footer from '../../components/publicwebsite/Layout/Footer'
-import Hero from '../../components/publicwebsite/sections/Hero'
-import FeaturedRooms from '../../components/publicwebsite/sections/FeaturedRooms'
-import Features from '../../components/publicwebsite/sections/Features'
-import Testimonials from '../../components/publicwebsite/sections/Testimonials'
+import Header from '../../components/Publicwebsite/Layout/Header'
+import Footer from '../../components/Publicwebsite/Layout/Footer'
+import Hero from '../../components/Publicwebsite/sections/Hero'
+import FeaturedRooms from '../../components/Publicwebsite/sections/FeaturedRooms'
+import Features from '../../components/Publicwebsite/sections/Features'
+import Testimonials from '../../components/Publicwebsite/sections/Testimonials'
 
 const Home = () => {
   return (

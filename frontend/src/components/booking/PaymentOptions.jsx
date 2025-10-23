@@ -6,11 +6,18 @@ const PaymentOptions = ({ value, onChange, gateways = [] }) => {
   const [loading, setLoading] = useState(false)
   const [availableGateways, setAvailableGateways] = useState(gateways)
 
+  // Keep internal state in sync with prop updates
   useEffect(() => {
-    if (gateways.length === 0) {
+    setAvailableGateways(gateways)
+  }, [gateways])
+
+  // If no gateways were provided, fetch from backend
+  useEffect(() => {
+    if (!gateways || gateways.length === 0) {
       fetchGateways()
     }
-  }, [gateways.length])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const fetchGateways = async () => {
     try {
@@ -21,8 +28,10 @@ const PaymentOptions = ({ value, onChange, gateways = [] }) => {
       console.error('Error fetching gateways:', error)
       // Fallback to default gateways
       setAvailableGateways([
+        { code: 'khalti', name: 'Khalti', description: 'Pay with Khalti', enabled: true },
+        { code: 'esewa', name: 'eSewa', description: 'Pay with eSewa', enabled: true },
+        { code: 'card', name: 'Credit/Debit Card', description: 'Pay with card', enabled: true },
         { code: 'cash', name: 'Cash', description: 'Pay at property', enabled: true },
-        { code: 'card', name: 'Credit/Debit Card', description: 'Pay with card', enabled: true }
       ])
     } finally {
       setLoading(false)

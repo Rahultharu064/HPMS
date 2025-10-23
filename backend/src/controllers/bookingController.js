@@ -182,6 +182,9 @@ export const createBooking = async (req, res) => {
           lastName: body.lastName,
           email: body.email,
           phone: body.phone,
+          nationality: body.nationality ?? undefined,
+          idType: body.idType ?? undefined,
+          idNumber: body.idNumber ?? undefined,
         }
       });
     } else {
@@ -191,6 +194,9 @@ export const createBooking = async (req, res) => {
           lastName: body.lastName,
           email: body.email,
           phone: body.phone,
+          nationality: body.nationality ?? null,
+          idType: body.idType ?? null,
+          idNumber: body.idNumber ?? null,
         }
       });
     }
