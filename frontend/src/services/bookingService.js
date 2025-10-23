@@ -43,6 +43,14 @@ export const bookingService = {
 
   async deleteBooking(id) {
     return await apiRequest(`/api/bookings/${id}`, { method: 'DELETE' })
+  },
+
+  async addWorkflowLog(id, data) {
+    return await apiRequest(`/api/bookings/${id}/workflow`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
   }
 }
 

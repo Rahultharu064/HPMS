@@ -182,8 +182,26 @@ model Booking {
   payments     Payment[]
   HkTask       HkTask[]
   GuestRequest GuestRequest[]
+  workflowLogs BookingWorkflowLog[]
 
   @@map("booking")
+}
+
+model BookingWorkflowLog {
+  id           Int      @id @default(autoincrement())
+  bookingId    Int
+  type         String   // checkin | checkout
+  idType       String?
+  idNumber     String?
+  remarks      String?
+  signatureUrl String?
+  createdAt    DateTime @default(now())
+  createdBy    String?
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@index([bookingId])
+  @@map("booking_workflow_log")
 }
 
 model Payment {

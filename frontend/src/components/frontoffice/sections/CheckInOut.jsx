@@ -9,6 +9,7 @@ const CheckInOut = () => {
   const [checkOuts, setCheckOuts] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
   const [modal, setModal] = useState({ open: false, type: '', item: null })
+  const [wf, setWf] = useState({ idType: '', idNumber: '', remarks: '' })
 
   const loadData = useCallback(async () => {
     const today = new Date().toISOString().slice(0,10)
@@ -58,16 +59,18 @@ const CheckInOut = () => {
   const filteredCheckIns = checkIns.filter(g => g.guest.toLowerCase().includes(searchQuery.toLowerCase()) || g.room.includes(searchQuery) || g.bookingId.toLowerCase().includes(searchQuery.toLowerCase()))
   const filteredCheckOuts = checkOuts.filter(g => g.guest.toLowerCase().includes(searchQuery.toLowerCase()) || g.room.includes(searchQuery))
 
-  const open = (type, item) => setModal({ open: true, type, item })
-  const close = () => setModal({ open: false, type: '', item: null })
+  const open = (type, item) => { setModal({ open: true, type, item }); setWf({ idType: '', idNumber: '', remarks: '' }) }
+  const close = () => { setModal({ open: false, type: '', item: null }); setWf({ idType: '', idNumber: '', remarks: '' }) }
 
   const complete = async () => {
     try {
       if (modal.type === 'checkin') {
         await bookingService.updateBooking(modal.item.id, { status: 'confirmed' })
+        await bookingService.addWorkflowLog(modal.item.id, { type: 'checkin', idType: wf.idType, idNumber: wf.idNumber, remarks: wf.remarks })
       }
       if (modal.type === 'checkout') {
         await bookingService.updateBooking(modal.item.id, { status: 'completed' })
+        await bookingService.addWorkflowLog(modal.item.id, { type: 'checkout', idType: wf.idType, idNumber: wf.idNumber, remarks: wf.remarks })
       }
       close()
       // Auto-refresh lists after status update
@@ -173,7 +176,20 @@ const CheckInOut = () => {
               <h3 className="text-lg font-semibold text-gray-900 capitalize">{modal.type}</h3>
               <button onClick={close} className="text-gray-400 hover:text-gray-600">✕</button>
             </div>
-            <div className="text-gray-600 text-sm">Workflow fields go here (ID capture, signatures, etc.).</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <label className="block text-gray-600 mb-1">ID Type</label>
+                <input value={wf.idType} onChange={e=>setWf(s=>({ ...s, idType: e.target.value }))} placeholder="Passport / License" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-gray-600 mb-1">ID Number</label>
+                <input value={wf.idNumber} onChange={e=>setWf(s=>({ ...s, idNumber: e.target.value }))} placeholder="e.g., AB123456" className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+              </div>
+              <div className="md:col-span-3">
+                <label className="block text-gray-600 mb-1">Remarks</label>
+                <textarea value={wf.remarks} onChange={e=>setWf(s=>({ ...s, remarks: e.target.value }))} placeholder="Notes..." rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2" />
+              </div>
+            </div>
             <div className="flex justify-end gap-3 mt-6">
               <button onClick={close} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Cancel</button>
               <button onClick={complete} className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Complete</button>

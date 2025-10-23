@@ -7,6 +7,45 @@ const diffNights = (checkIn, checkOut) => {
   return Math.max(nights, 1);
 };
 
+// Create a booking workflow log (check-in/check-out audit entry)
+export const createBookingWorkflowLog = async (req, res) => {
+  try {
+    const bookingId = Number(req.params.id);
+    const { type, idType, idNumber, remarks, signatureUrl, createdBy } = req.body || {};
+
+    if (!bookingId || !['checkin', 'checkout'].includes(String(type))) {
+      return res.status(400).json({ success: false, error: 'Invalid payload' });
+    }
+
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
+    if (!booking) {
+      return res.status(404).json({ success: false, error: 'Booking not found' });
+    }
+
+    const log = await prisma.bookingWorkflowLog.create({
+      data: {
+        bookingId,
+        type: String(type),
+        idType: idType || null,
+        idNumber: idNumber || null,
+        remarks: remarks || null,
+        signatureUrl: signatureUrl || null,
+        createdBy: createdBy || null,
+      }
+    });
+
+    try {
+      const io = getIO();
+      io && io.emit('fo:booking:workflow', { bookingId, log });
+    } catch {}
+
+    res.status(201).json({ success: true, log });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Failed to create workflow log' });
+  }
+};
+
 // Get all bookings with pagination and filters
 export const getAllBookings = async (req, res) => {
   try {
@@ -271,6 +310,49 @@ export const updateBooking = async (req, res) => {
       
       const nights = diffNights(checkIn, checkOut);
       totalAmount = nights * room.price;
+    }
+
+    // Guardrails: validate status transitions
+    if (body.status) {
+      const currentStatus = existingBooking.status;
+      const nextStatus = String(body.status);
+      const allowed = new Set(['pending', 'confirmed', 'completed', 'cancelled']);
+      if (!allowed.has(nextStatus)) {
+        return res.status(400).json({ success: false, error: 'Invalid status value' });
+      }
+
+      // Normalize date-only comparisons
+      const toDateOnly = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const today = toDateOnly(new Date());
+      const ci = toDateOnly(checkIn);
+      const co = toDateOnly(checkOut);
+
+      // Disallow changes from cancelled/completed except specific cases (no reopen)
+      if (['cancelled', 'completed'].includes(currentStatus) && nextStatus !== currentStatus) {
+        return res.status(400).json({ success: false, error: `Cannot change status from ${currentStatus}` });
+      }
+
+      // Check-in: pending -> confirmed, not before check-in date
+      if (nextStatus === 'confirmed') {
+        if (currentStatus !== 'pending') {
+          return res.status(400).json({ success: false, error: 'Only pending bookings can be checked in' });
+        }
+        if (today < ci) {
+          return res.status(400).json({ success: false, error: 'Cannot check in before check-in date' });
+        }
+      }
+
+      // Check-out: confirmed -> completed, not before check-out date
+      if (nextStatus === 'completed') {
+        if (currentStatus !== 'confirmed') {
+          return res.status(400).json({ success: false, error: 'Only confirmed bookings can be checked out' });
+        }
+        if (today < co) {
+          return res.status(400).json({ success: false, error: 'Cannot check out before check-out date' });
+        }
+      }
+
+      // Cancelling is allowed from pending/confirmed; handled below by update
     }
 
     // Update booking

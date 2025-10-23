@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { bookingService } from '../../../services/bookingService'
+import { getSocket } from '../../../utils/socket'
 
 const STATUS_OPTIONS = [
   { label: 'All', value: '' },
@@ -20,6 +21,7 @@ const Reservations = () => {
   const [limit] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
   const [stats, setStats] = useState(null)
+  
 
   const [filters, setFilters] = useState({
     status: '',
@@ -42,7 +44,7 @@ const Reservations = () => {
     return q
   }, [page, limit, filters])
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const res = await bookingService.getStats({
         startDate: filters.startDate,
@@ -52,9 +54,9 @@ const Reservations = () => {
     } catch {
       // soft fail
     }
-  }
+  }, [filters.startDate, filters.endDate])
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true)
       setError('')
@@ -66,13 +68,30 @@ const Reservations = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [queryParams])
 
   useEffect(() => {
     loadData()
     loadStats()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryParams])
+  }, [loadData, loadStats])
+
+  useEffect(() => {
+    const socket = getSocket()
+    const onCreated = () => { loadData(); loadStats() }
+    const onUpdated = () => { loadData(); loadStats() }
+    const onCancelled = () => { loadData(); loadStats() }
+    const onDeleted = () => { loadData(); loadStats() }
+    socket.on('fo:booking:created', onCreated)
+    socket.on('fo:booking:updated', onUpdated)
+    socket.on('fo:booking:cancelled', onCancelled)
+    socket.on('fo:booking:deleted', onDeleted)
+    return () => {
+      socket.off('fo:booking:created', onCreated)
+      socket.off('fo:booking:updated', onUpdated)
+      socket.off('fo:booking:cancelled', onCancelled)
+      socket.off('fo:booking:deleted', onDeleted)
+    }
+  }, [loadData, loadStats])
 
   // Sync global search (?q=) to guestName filter
   useEffect(() => {
@@ -85,6 +104,16 @@ const Reservations = () => {
   const resetFilters = () => {
     setFilters({ status: '', guestName: '', roomId: '', startDate: '', endDate: '' })
     setPage(1)
+  }
+
+  const onChangeStatus = async (booking, newStatus) => {
+    try {
+      await bookingService.updateBooking(booking.id, { status: newStatus })
+      await loadData()
+      await loadStats()
+    } catch (e) {
+      alert(e.message || 'Failed to update status')
+    }
   }
 
   const onCancel = async (id) => {
@@ -109,6 +138,8 @@ const Reservations = () => {
     }
   }
 
+  
+
   const StatusBadge = ({ status }) => {
     const color = {
       pending: 'bg-yellow-100 text-yellow-800',
@@ -117,6 +148,17 @@ const Reservations = () => {
       completed: 'bg-blue-100 text-blue-800'
     }[status] || 'bg-gray-100 text-gray-800'
     return <span className={`px-2 py-1 rounded-full text-xs font-medium ${color}`}>{status}</span>
+  }
+
+  const getPaidMethod = (booking) => {
+    const list = Array.isArray(booking?.payments) ? booking.payments : []
+    if (!list.length) return '—'
+    const completed = list
+      .filter(p => String(p.status).toLowerCase() === 'completed')
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
+    if (!completed) return '—'
+    const m = String(completed.method || '')
+    return m ? m.charAt(0).toUpperCase() + m.slice(1) : '—'
   }
 
   return (
@@ -220,6 +262,7 @@ const Reservations = () => {
                 <th className="text-left p-3">Room</th>
                 <th className="text-left p-3">Dates</th>
                 <th className="text-left p-3">Status</th>
+                <th className="text-left p-3">Payment</th>
                 <th className="text-left p-3">Amount</th>
                 <th className="text-left p-3">Actions</th>
               </tr>
@@ -227,17 +270,17 @@ const Reservations = () => {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={7} className="p-6 text-center text-gray-500">Loading...</td>
+                  <td colSpan={8} className="p-6 text-center text-gray-500">Loading...</td>
                 </tr>
               )}
               {!loading && error && (
                 <tr>
-                  <td colSpan={7} className="p-6 text-center text-red-600">{error}</td>
+                  <td colSpan={8} className="p-6 text-center text-red-600">{error}</td>
                 </tr>
               )}
               {!loading && !error && items.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-6 text-center text-gray-500">No reservations found</td>
+                  <td colSpan={8} className="p-6 text-center text-gray-500">No reservations found</td>
                 </tr>
               )}
               {!loading && !error && items.map(b => (
@@ -255,13 +298,34 @@ const Reservations = () => {
                     <div>{new Date(b.checkIn).toLocaleDateString()} → {new Date(b.checkOut).toLocaleDateString()}</div>
                     <div className="text-gray-500 text-xs">{b.adults} Adults · {b.children} Children</div>
                   </td>
-                  <td className="p-3"><StatusBadge status={b.status} /></td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={b.status} />
+                      <select
+                        className="border rounded-lg px-2 py-1 text-xs"
+                        value={b.status}
+                        onChange={(e) => onChangeStatus(b, e.target.value)}
+                      >
+                        <option value="pending">pending</option>
+                        <option value="confirmed">confirmed</option>
+                        <option value="completed">completed</option>
+                        <option value="cancelled">cancelled</option>
+                      </select>
+                    </div>
+                  </td>
+                  <td className="p-3">{getPaidMethod(b)}</td>
                   <td className="p-3 font-semibold">₹{(b.totalAmount ?? 0).toLocaleString()}</td>
                   <td className="p-3">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center flex-wrap">
                       <button className="px-3 py-1 rounded-lg border text-blue-600" onClick={() => navigate(`/front-office/reservations/${b.id}`)}>View</button>
                       <button className="px-3 py-1 rounded-lg border" onClick={() => navigate(`/frontoffice/guests/${b.guestId}`)}>Guest</button>
                       <button className="px-3 py-1 rounded-lg border" onClick={() => navigate(`/rooms/${b.roomId}`)}>Room</button>
+                      {b.status === 'pending' && new Date(b.checkIn).toDateString() === new Date().toDateString() && (
+                        <button className="px-3 py-1 rounded-lg border text-green-600" onClick={() => onChangeStatus(b, 'confirmed')}>Check-in</button>
+                      )}
+                      {b.status === 'confirmed' && new Date(b.checkOut).toDateString() === new Date().toDateString() && (
+                        <button className="px-3 py-1 rounded-lg border text-red-600" onClick={() => onChangeStatus(b, 'completed')}>Check-out</button>
+                      )}
                       {b.status !== 'cancelled' && (
                         <button className="px-3 py-1 rounded-lg border text-red-600" onClick={() => onCancel(b.id)}>Cancel</button>
                       )}

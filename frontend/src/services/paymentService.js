@@ -11,6 +11,18 @@ export const paymentService = {
     }
   },
 
+  // Manually mark a payment as completed
+  async completePayment(paymentId) {
+    try {
+      return await apiRequest(`/api/payments/${paymentId}/complete`, {
+        method: 'POST'
+      })
+    } catch (error) {
+      apiDebug.error('Error completing payment:', error)
+      throw error
+    }
+  },
+
   // Create payment
   async createPayment({ bookingId, method, amount, gatewayData }) {
     try {
@@ -72,7 +84,7 @@ export const paymentService = {
   // Handle Khalti payment
   async handleKhaltiPayment(paymentData) {
     try {
-      const { payment_url, pidx } = paymentData.gatewayResponse;
+      const { payment_url } = paymentData.gatewayResponse;
       
       // Redirect to Khalti payment page
       if (payment_url) {
@@ -96,7 +108,8 @@ export const paymentService = {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = payment_url;
-        form.target = '_blank';
+        // Submit in the same tab so backend return redirects back into the app
+        form.target = '_self';
         
         Object.keys(form_data).forEach(key => {
           const input = document.createElement('input');
