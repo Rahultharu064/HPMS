@@ -20,5 +20,10 @@ export const hkCleaningService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     })
+  },
+
+  async list(params = {}) {
+    const query = new URLSearchParams(params)
+    return await apiRequest(`/api/hk/cleaning${query.toString() ? `?${query}` : ''}`)
   }
 }

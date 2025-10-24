@@ -1,4 +1,5 @@
 import prisma from "../config/client.js";
+import path from 'path'
 
 // Get all guests with pagination and search
 export const getAllGuests = async (req, res) => {

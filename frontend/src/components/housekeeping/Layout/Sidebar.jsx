@@ -1,14 +1,15 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
-import { Home, Eye, Calendar, Users, Settings } from 'lucide-react'
+import { Home, Eye, Calendar, Users, Settings, BarChart3 } from 'lucide-react'
 
 const Sidebar = ({ darkMode, sidebarOpen, setSidebarOpen }) => {
   const items = [
     { to: '/housekeeping/dashboard', icon: Home, label: 'Dashboard' },
-    
+
     { to: '/housekeeping/rooms', icon: Eye, label: 'Room Status' },
     { to: '/housekeeping/schedule', icon: Calendar, label: 'Schedule' },
     { to: '/housekeeping/staff', icon: Users, label: 'Staff Assignment' },
+    { to: '/housekeeping/reports', icon: BarChart3, label: 'Reports' },
     { to: '/housekeeping/settings', icon: Settings, label: 'Settings' },
   ]
 

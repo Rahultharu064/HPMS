@@ -8,6 +8,7 @@ import { guestService } from '../../services/guestService'
 import { roomService } from '../../services/roomService'
 import { paymentService } from '../../services/paymentService'
 import PaymentOptions from '../../components/booking/PaymentOptions'
+
 import Header from '../../components/Publicwebsite/Layout/Header'
 import Footer from '../../components/Publicwebsite/Layout/Footer'
 import { API_BASE_URL } from '../../utils/api'
@@ -163,11 +164,12 @@ const BookingForm = () => {
   const [submitting, setSubmitting] = useState(false)
   const [room, setRoom] = useState(null)
   const [loading, setLoading] = useState(true)
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({ 
-    resolver: zodResolver(schema), 
-    defaultValues: { 
-      adults: 1, 
-      children: 0, 
+
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      adults: 1,
+      children: 0,
       paymentMethod: 'cash',
       nationality: '',
       idType: '',
@@ -175,7 +177,7 @@ const BookingForm = () => {
       checkIn: '',
       checkOut: '',
       specialRequest: ''
-    } 
+    }
   })
 
   const watchedValues = watch()
@@ -243,31 +245,34 @@ const BookingForm = () => {
         throw new Error('Check-out date must be after check-in date')
       }
 
-      // Validate ID proof image (if provided): mime, size <= 5MB, dimensions >= 200x200
-      const fileListPre = values?.idProof instanceof FileList ? values.idProof : (values?.idProof || [])
-      const idFilePre = fileListPre && fileListPre.length ? fileListPre[0] : null
-      if (idFilePre) {
-        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-        if (!allowed.includes(idFilePre.type)) {
-          throw new Error('ID proof must be an image (JPEG, PNG, WEBP, GIF)')
+      // Validate ID proof file from form input
+      const fileList = values?.idProof instanceof FileList ? values.idProof : (values?.idProof || [])
+      const idFileToUse = fileList && fileList.length ? fileList[0] : null
+
+      if (!idFileToUse) {
+        throw new Error('Please upload a government ID proof image')
+      }
+
+      const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+      if (!allowed.includes(idFileToUse.type)) {
+        throw new Error('ID proof must be an image (JPEG, PNG, WEBP, GIF)')
+      }
+      const MAX_BYTES = 5 * 1024 * 1024
+      if (idFileToUse.size > MAX_BYTES) {
+        throw new Error('ID proof image too large (max 5MB)')
+      }
+      // Dimension check
+      const dimsOk = await new Promise((resolve) => {
+        const img = new Image()
+        img.onload = () => {
+          resolve(img.width >= 400 && img.height >= 300)
         }
-        const MAX_BYTES = 5 * 1024 * 1024
-        if (idFilePre.size > MAX_BYTES) {
-          throw new Error('ID proof image too large (max 5MB)')
-        }
-        // Dimension check
-        const dimsOk = await new Promise((resolve) => {
-          const img = new Image()
-          img.onload = () => {
-            resolve(img.width >= 200 && img.height >= 200)
-          }
-          img.onerror = () => resolve(false)
-          const url = URL.createObjectURL(idFilePre)
-          img.src = url
-        })
-        if (!dimsOk) {
-          throw new Error('ID proof image too small (min 200x200)')
-        }
+        img.onerror = () => resolve(false)
+        const url = URL.createObjectURL(idFileToUse)
+        img.src = url
+      })
+      if (!dimsOk) {
+        throw new Error('ID proof image too small (min 400x300)')
       }
 
       // Validate Guest Profile Photo (optional): mime, size <= 5MB, dimensions >= 200x200
@@ -310,8 +315,6 @@ const BookingForm = () => {
       const amount = booking.totalAmount
 
       // Extract files (if provided) before redirecting to any external payment page
-      const fileList = values?.idProof instanceof FileList ? values.idProof : (values?.idProof || [])
-      const idFile = fileList && fileList.length ? fileList[0] : null
       const profFiles = values?.profilePhoto instanceof FileList ? values.profilePhoto : (values?.profilePhoto || [])
       const profileFile = profFiles && profFiles.length ? profFiles[0] : null
 
@@ -327,8 +330,8 @@ const BookingForm = () => {
 
       // Then, upload ID Proof to booking endpoint for validation/logging
       try {
-        if (idFile && booking && booking.id) {
-          await bookingService.uploadIdProof(booking.id, idFile)
+        if (idFileToUse && booking && booking.id) {
+          await bookingService.uploadIdProof(booking.id, idFileToUse)
         }
       } catch (e) {
         console.warn('ID proof upload failed:', e)
@@ -491,14 +494,16 @@ const BookingForm = () => {
                         {errors.idNumber && <p className="text-red-500 text-sm mt-1">ID Number is required</p>}
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Upload ID Proof (image)</label>
-                        <input 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                          type="file" 
-                          accept="image/*"
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Government ID Proof</label>
+                        <input
+                          className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/gif"
                           {...register('idProof')}
                         />
-                        <p className="text-xs text-gray-500 mt-1">Accepted: JPG, PNG. Max ~5MB (browser limit).</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Upload a clear image of your government ID. Accepted: JPG, PNG, WEBP, GIF. Max 5MB, min 400x300px.
+                        </p>
                       </div>
                     </div>
                   </div>

@@ -2,7 +2,9 @@ import prisma from "../config/client.js";
 import path from 'path'
 import fs from 'fs'
 import sharp from 'sharp'
+import { createWorker } from 'tesseract.js'
 import { getIO } from "../socket.js";
+import { sendBookingSuccessEmail } from "../services/emailService.js";
 
 const diffNights = (checkIn, checkOut) => {
   const ms = checkOut.getTime() - checkIn.getTime();
@@ -85,14 +87,33 @@ export const uploadIdProof = async (req, res) => {
       } catch (_) { /* ignore similarity failures */ }
     }
 
+    // Basic OCR processing for logging (optional - doesn't block upload)
+    let ocrText = null
+    let ocrConfidence = null
+    try {
+      const worker = await createWorker('eng')
+      const { data: { text, confidence } } = await worker.recognize(req.file.path)
+      await worker.terminate()
+      ocrText = text.trim()
+      ocrConfidence = confidence
+    } catch (ocrErr) {
+      console.warn('OCR processing failed:', ocrErr.message)
+      // OCR failure does not block upload
+    }
+
     // Store path in workflow log as an attachment reference
     const webPath = path.relative(process.cwd(), req.file.path ?? path.join(req.file.destination || 'uploads', req.file.filename || ''))
+    const remarks = [
+      similarity != null ? `similarity:${(similarity*100).toFixed(1)}%` : null,
+      ocrConfidence != null ? `ocr_confidence:${ocrConfidence.toFixed(1)}%` : null
+    ].filter(Boolean).join('; ') || undefined
+
     const log = await prisma.bookingWorkflowLog.create({
       data: {
         bookingId: booking.id,
         type: 'id-proof',
         signatureUrl: webPath,
-        remarks: similarity != null ? `similarity:${(similarity*100).toFixed(1)}%` : undefined
+        remarks
       }
     })
 
@@ -151,7 +172,7 @@ export const getAllBookings = async (req, res) => {
     const { status, guestName, roomId, checkIn, checkOut } = req.query;
 
     // Build where clause
-    const where = {};
+    const where = { deletedAt: null };
     if (status) where.status = status;
     if (roomId) where.roomId = parseInt(roomId);
     if (checkIn) where.checkIn = { gte: new Date(checkIn) };
@@ -203,15 +224,15 @@ export const getBookingById = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid booking id' });
     }
     const booking = await prisma.booking.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
       include: {
         guest: true,
-        room: { 
-          include: { 
-            image: true, 
+        room: {
+          include: {
+            image: true,
             video: true,
-            amenity: true 
-          } 
+            amenity: true
+          }
         },
         payments: true,
       }
@@ -492,6 +513,16 @@ export const updateBooking = async (req, res) => {
       }
     });
 
+    // Send booking success email if status changed to 'confirmed'
+    if (body.status === 'confirmed' && existingBooking.status !== 'confirmed') {
+      try {
+        await sendBookingSuccessEmail(updatedBooking);
+      } catch (emailError) {
+        console.error('Failed to send booking success email:', emailError);
+        // Don't fail the booking update if email fails
+      }
+    }
+
     try {
       const io = getIO();
       io && io.emit('fo:booking:updated', { booking: updatedBooking })
@@ -559,13 +590,13 @@ export const cancelBooking = async (req, res) => {
   }
 };
 
-// Delete booking
+// Delete booking (soft delete)
 export const deleteBooking = async (req, res) => {
   try {
     const id = Number(req.params.id);
 
     const booking = await prisma.booking.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
       include: { payments: true }
     });
 
@@ -573,16 +604,10 @@ export const deleteBooking = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Booking not found' });
     }
 
-    // Delete related payments first
-    if (booking.payments.length > 0) {
-      await prisma.payment.deleteMany({
-        where: { bookingId: id }
-      });
-    }
-
-    // Delete booking
-    await prisma.booking.delete({
-      where: { id }
+    // Soft delete booking
+    await prisma.booking.update({
+      where: { id },
+      data: { deletedAt: new Date() }
     });
 
     try {
@@ -590,8 +615,8 @@ export const deleteBooking = async (req, res) => {
       io && io.emit('fo:booking:deleted', { id })
     } catch {}
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: 'Booking deleted successfully'
     });
   } catch (err) {
@@ -604,8 +629,8 @@ export const deleteBooking = async (req, res) => {
 export const getBookingStats = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    
-    const where = {};
+
+    const where = { deletedAt: null };
     if (startDate && endDate) {
       where.createdAt = {
         gte: new Date(startDate),

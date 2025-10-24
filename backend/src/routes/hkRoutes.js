@@ -9,6 +9,7 @@ const router = express.Router();
 
 
 // Cleaning Logs
+router.get("/cleaning", listCleaningLogs);
 router.get("/cleaning-logs", listCleaningLogs);
 router.post("/cleaning-logs", createCleaningLog);
 router.post("/cleaning/start", startCleaning);
