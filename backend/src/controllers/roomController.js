@@ -100,7 +100,39 @@ export const getRoomsStatusMap = async (req, res) => {
       orderBy: [{ floor: 'asc' }, { roomNumber: 'asc' }]
     });
 
-    res.json({ success: true, data: rooms });
+    if (rooms.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const roomIds = rooms.map((r) => r.id);
+
+    // Active cleaning sessions per room (finishedAt is null)
+    const activeLogs = await prisma.cleaningLog.findMany({
+      where: { roomId: { in: roomIds }, finishedAt: null },
+      select: { id: true, roomId: true, startedAt: true },
+      orderBy: { startedAt: 'desc' },
+    });
+    const activeByRoom = new Map();
+    for (const al of activeLogs) {
+      if (!activeByRoom.has(al.roomId)) activeByRoom.set(al.roomId, al);
+    }
+
+    // Last finished cleaning per room (max finishedAt)
+    const lastFinished = await prisma.cleaningLog.groupBy({
+      by: ['roomId'],
+      where: { roomId: { in: roomIds }, finishedAt: { not: null } },
+      _max: { finishedAt: true },
+    });
+    const lastFinishedByRoom = new Map(lastFinished.map((lf) => [lf.roomId, lf._max.finishedAt]));
+
+    const enriched = rooms.map((r) => ({
+      ...r,
+      cleaningInProgress: activeByRoom.has(r.id),
+      activeLogId: activeByRoom.get(r.id)?.id ?? null,
+      lastCleanedAt: lastFinishedByRoom.get(r.id) ?? null,
+    }));
+
+    res.json({ success: true, data: enriched });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: 'Failed to fetch room status map' });
