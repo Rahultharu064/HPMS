@@ -11,23 +11,61 @@ const Header = ({ darkMode, setDarkMode, showNotifications, setShowNotifications
     const onRoom = (payload) => {
       const room = payload?.room
       if (!room) return
-      setItems(prev => [{ id: `room-${room.id}-${Date.now()}`, msg: `Room #${room.roomNumber} is ${room.status.replace('-', ' ')}`, time: new Date().toLocaleTimeString(), read: false }, ...prev].slice(0, 20))
+      const statusText = room.status.replace('-', ' ')
+      const icon = room.status === 'needs-cleaning' ? '🔴' : 
+                   room.status === 'clean' ? '✅' : 
+                   room.status === 'occupied' ? '👤' : '🔧'
+      setItems(prev => [{ 
+        id: `room-${room.id}-${Date.now()}`, 
+        msg: `${icon} Room #${room.roomNumber} is ${statusText}`, 
+        time: new Date().toLocaleTimeString(), 
+        read: false,
+        type: 'room_status',
+        roomId: room.id
+      }, ...prev].slice(0, 20))
     }
     const onTask = (payload) => {
       const t = payload?.task
       if (!t && !payload?.id) return
-      const msg = payload?.id ? `Task #${payload.id} deleted` : `Task: ${t.title} (${t.status})`
-      setItems(prev => [{ id: `task-${Date.now()}`, msg, time: new Date().toLocaleTimeString(), read: false }, ...prev].slice(0, 20))
+      const icon = t?.priority === 'URGENT' ? '🚨' : 
+                   t?.priority === 'HIGH' ? '⚠️' : '📋'
+      const msg = payload?.id ? `🗑️ Task #${payload.id} deleted` : `${icon} Task: ${t.title} (${t.status})`
+      setItems(prev => [{ 
+        id: `task-${Date.now()}`, 
+        msg, 
+        time: new Date().toLocaleTimeString(), 
+        read: false,
+        type: 'task',
+        taskId: t?.id || payload?.id
+      }, ...prev].slice(0, 20))
+    }
+    const onCleaning = (payload) => {
+      const log = payload?.log
+      if (!log) return
+      const icon = log.finishedAt ? '✨' : '🧹'
+      const action = log.finishedAt ? 'completed cleaning' : 'started cleaning'
+      setItems(prev => [{ 
+        id: `cleaning-${log.id}-${Date.now()}`, 
+        msg: `${icon} Room #${log.roomId} ${action}`, 
+        time: new Date().toLocaleTimeString(), 
+        read: false,
+        type: 'cleaning',
+        roomId: log.roomId
+      }, ...prev].slice(0, 20))
     }
     socket.on('hk:room:status', onRoom)
     socket.on('hk:task:created', onTask)
     socket.on('hk:task:updated', onTask)
     socket.on('hk:task:deleted', onTask)
+    socket.on('hk:cleaning:start', onCleaning)
+    socket.on('hk:cleaning:finish', onCleaning)
     return () => {
       socket.off('hk:room:status', onRoom)
       socket.off('hk:task:created', onTask)
       socket.off('hk:task:updated', onTask)
       socket.off('hk:task:deleted', onTask)
+      socket.off('hk:cleaning:start', onCleaning)
+      socket.off('hk:cleaning:finish', onCleaning)
     }
   }, [])
 

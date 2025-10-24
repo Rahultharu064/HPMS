@@ -1,4 +1,4 @@
-import { apiRequest } from '../utils/api'
+import { apiRequest, API_BASE_URL } from '../utils/api'
 
 export const hkTaskService = {
   async list(params = {}) {
@@ -25,7 +25,7 @@ export const hkTaskService = {
   async addAttachment(id, file) {
     const form = new FormData()
     form.append('file', file)
-    const res = await fetch(`/api/hk/tasks/${id}/attachments`, { method: 'POST', body: form })
+    const res = await fetch(`${API_BASE_URL}/api/hk/tasks/${id}/attachments`, { method: 'POST', body: form })
     const json = await res.json()
     if (!res.ok) throw new Error(json.error || 'Failed to add attachment')
     return json

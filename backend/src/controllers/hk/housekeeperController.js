@@ -32,7 +32,7 @@ export const createHousekeeper = async (req, res) => {
     const hk = await prisma.housekeeper.create({
       data: {
         name: String(body.name),
-        role: body.role ? String(body.role) : null,
+        shift: body.shift ? String(body.shift) : 'MORNING',
         contact: body.contact ? String(body.contact) : null,
         profilePictureUrl: null,
         updatedAt: new Date(),
@@ -51,7 +51,7 @@ export const updateHousekeeper = async (req, res) => {
     const body = req.body || {}
     const data = {
       ...(body.name !== undefined && { name: String(body.name) }),
-      ...(body.role !== undefined && { role: body.role ? String(body.role) : null }),
+      ...(body.shift !== undefined && { shift: body.shift ? String(body.shift) : 'MORNING' }),
       ...(body.contact !== undefined && { contact: body.contact ? String(body.contact) : null }),
       updatedAt: new Date(),
     }
@@ -66,18 +66,33 @@ export const updateHousekeeper = async (req, res) => {
 
 export const uploadHousekeeperPhoto = async (req, res) => {
   try {
-    const id = Number(req.params.id)
-    const file = req.file
-    if (!file) return res.status(400).json({ success: false, error: 'file required' })
-    const url = path.relative(process.cwd(), file.path ?? path.join(file.destination, file.filename))
-    const hk = await prisma.housekeeper.update({ where: { id }, data: { profilePictureUrl: url, updatedAt: new Date() } })
-    res.json({ success: true, data: { profilePictureUrl: hk.profilePictureUrl } })
+    const id = Number(req.params.id);
+    const file = req.file;
+    console.log('Received file for upload:', file);
+
+    if (!file) {
+      console.error('No file received for upload.');
+      return res.status(400).json({ success: false, error: 'File required for upload.' });
+    }
+
+    // Multer provides file.path when diskStorage is used
+    const relativeFilePath = path.relative(process.cwd(), file.path);
+    console.log('Constructed relative file path:', relativeFilePath);
+
+    const hk = await prisma.housekeeper.update({
+      where: { id },
+      data: { profilePictureUrl: relativeFilePath, updatedAt: new Date() },
+    });
+
+    res.json({ success: true, data: { profilePictureUrl: hk.profilePictureUrl } });
   } catch (err) {
-    console.error(err)
-    if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Not found' })
-    res.status(500).json({ success: false, error: 'Failed to upload photo' })
+    console.error('Error in uploadHousekeeperPhoto:', err);
+    if (err.code === 'P2025') {
+      return res.status(404).json({ success: false, error: 'Housekeeper not found.' });
+    }
+    res.status(500).json({ success: false, error: `Failed to upload photo: ${err.message}` });
   }
-}
+};
 
 export const deleteHousekeeperPhoto = async (req, res) => {
   try {
@@ -88,5 +103,17 @@ export const deleteHousekeeperPhoto = async (req, res) => {
     console.error(err)
     if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Not found' })
     res.status(500).json({ success: false, error: 'Failed to delete photo' })
+  }
+}
+
+export const deleteHousekeeper = async (req, res) => {
+  try {
+    const id = Number(req.params.id)
+    await prisma.housekeeper.delete({ where: { id } })
+    res.json({ success: true })
+  } catch (err) {
+    console.error(err)
+    if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Not found' })
+    res.status(500).json({ success: false, error: 'Failed to delete housekeeper' })
   }
 }
