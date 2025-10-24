@@ -3,10 +3,12 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { getSocket } from '../../../utils/socket'
 import { hkTaskService } from '../../../services/hkTaskService'
-import { Plus, Users, RefreshCw } from 'lucide-react'
+import { Plus, Users, RefreshCw, User, Settings } from 'lucide-react'
 import { roomService } from '../../../services/roomService'
+import HousekeeperManagement from './HousekeeperManagement'
 
 const Staff = ({ darkMode }) => {
+  const [activeTab, setActiveTab] = useState('tasks') // 'tasks' or 'housekeepers'
   const [tasks, setTasks] = useState([])
   const [, setLoading] = useState(true)
   const [staffName] = useState('')
@@ -119,20 +121,63 @@ const Staff = ({ darkMode }) => {
             <Users className="w-5 h-5" />
           </div>
           <div>
-            <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Staff Assignment</h2>
-            <div className={`${darkMode ? 'text-gray-400' : 'text-gray-500'} text-sm`}>Assign and manage housekeeping tasks</div>
+            <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Staff Management</h2>
+            <div className={`${darkMode ? 'text-gray-400' : 'text-gray-500'} text-sm`}>Manage housekeeping staff and task assignments</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={load} title="Refresh" className={`${darkMode ? 'bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700' : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200'} px-3 py-2 rounded-xl flex items-center gap-2`}>
             <RefreshCw className="w-4 h-4" />
           </button>
-          <button onClick={() => openCreate('')} className={`px-4 py-2 rounded-xl flex items-center gap-2 shadow ${darkMode ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white'}`}>
-            <Plus className="w-4 h-4" />
-            <span>Create Task</span>
+          {activeTab === 'tasks' && (
+            <button onClick={() => openCreate('')} className={`px-4 py-2 rounded-xl flex items-center gap-2 shadow ${darkMode ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white'}`}>
+              <Plus className="w-4 h-4" />
+              <span>Create Task</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white'} border rounded-2xl p-1`}>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setActiveTab('tasks')}
+            className={`flex-1 px-4 py-3 rounded-xl flex items-center justify-center gap-2 transition-colors ${
+              activeTab === 'tasks'
+                ? darkMode
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-blue-600 text-white'
+                : darkMode
+                ? 'text-gray-400 hover:text-white hover:bg-gray-700'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Task Assignment</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('housekeepers')}
+            className={`flex-1 px-4 py-3 rounded-xl flex items-center justify-center gap-2 transition-colors ${
+              activeTab === 'housekeepers'
+                ? darkMode
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-blue-600 text-white'
+                : darkMode
+                ? 'text-gray-400 hover:text-white hover:bg-gray-700'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <User className="w-4 h-4" />
+            <span>Housekeeper Profiles</span>
           </button>
         </div>
       </div>
+
+      {activeTab === 'housekeepers' ? (
+        <HousekeeperManagement darkMode={darkMode} />
+      ) : (
+        <>
 
       {staffGroups.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -227,6 +272,8 @@ const Staff = ({ darkMode }) => {
             </form>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   )
