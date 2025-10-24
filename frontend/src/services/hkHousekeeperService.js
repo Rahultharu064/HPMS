@@ -25,8 +25,20 @@ export const hkHousekeeperService = {
   async uploadPhoto(id, file) {
     const form = new FormData()
     form.append('file', file)
-    const res = await fetch(`/api/housekeepers/${id}/photo`, { method: 'POST', body: form })
+    
+    console.log('Uploading photo for housekeeper:', id, 'File:', file.name, 'Size:', file.size, 'Type:', file.type)
+    
+    const res = await fetch(`/api/housekeepers/${id}/photo`, { 
+      method: 'POST', 
+      body: form,
+      credentials: 'include'
+    })
+    
+    console.log('Upload response status:', res.status)
+    
     const json = await res.json()
+    console.log('Upload response:', json)
+    
     if (!res.ok) throw new Error(json.error || 'Failed to upload photo')
     return json
   },

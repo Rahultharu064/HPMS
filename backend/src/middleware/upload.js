@@ -25,13 +25,33 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
+  console.log('File upload attempt:', {
+    fieldname: file.fieldname,
+    originalname: file.originalname,
+    mimetype: file.mimetype,
+    size: file.size
+  });
+  
   const allowedImage = ["image/jpeg", "image/png", "image/webp", "image/jpg", "image/gif"];
   const allowedVideo = ["video/mp4", "video/quicktime", "video/mov", "video/x-msvideo"];
-  if (allowedImage.includes(file.mimetype) || allowedVideo.includes(file.mimetype)) cb(null, true);
-  else cb(new Error("Invalid file type"), false);
+  
+  if (allowedImage.includes(file.mimetype) || allowedVideo.includes(file.mimetype)) {
+    console.log('File type accepted:', file.mimetype);
+    cb(null, true);
+  } else {
+    console.log('File type rejected:', file.mimetype);
+    cb(new Error("Invalid file type"), false);
+  }
 };
 
-const upload = multer({ storage, fileFilter, limits: { fileSize: 100 * 1024 * 1024 } }); // 100MB
+const upload = multer({ 
+  storage, 
+  fileFilter, 
+  limits: { 
+    fileSize: 100 * 1024 * 1024, // 100MB
+    files: 1 // Only allow 1 file at a time
+  } 
+});
 
 export default upload;
 export { IMAGE_DIR, VIDEO_DIR };

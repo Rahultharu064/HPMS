@@ -69,8 +69,18 @@ export const uploadHousekeeperPhoto = async (req, res) => {
     const id = Number(req.params.id)
     const file = req.file
     if (!file) return res.status(400).json({ success: false, error: 'file required' })
-    const url = path.relative(process.cwd(), file.path ?? path.join(file.destination, file.filename))
-    const hk = await prisma.housekeeper.update({ where: { id }, data: { profilePictureUrl: url, updatedAt: new Date() } })
+    
+    // Ensure the housekeeper exists
+    const existingHk = await prisma.housekeeper.findUnique({ where: { id } })
+    if (!existingHk) return res.status(404).json({ success: false, error: 'Housekeeper not found' })
+    
+    // Create the relative URL path for the uploaded file
+    const url = path.join('images', file.filename)
+    
+    const hk = await prisma.housekeeper.update({ 
+      where: { id }, 
+      data: { profilePictureUrl: url, updatedAt: new Date() } 
+    })
     res.json({ success: true, data: { profilePictureUrl: hk.profilePictureUrl } })
   } catch (err) {
     console.error(err)
