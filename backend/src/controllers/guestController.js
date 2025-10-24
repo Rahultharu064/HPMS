@@ -1,7 +1,4 @@
 import prisma from "../config/client.js";
-import path from "path";
-import fs from "fs";
-import sharp from "sharp";
 
 // Get all guests with pagination and search
 export const getAllGuests = async (req, res) => {
@@ -66,33 +63,6 @@ export const uploadGuestPhoto = async (req, res) => {
 
     if (!req.file) {
       return res.status(400).json({ success: false, error: 'No photo uploaded' });
-    }
-
-    // Additional server-side validation to ensure it's a real image (not spoofed)
-    // 1) Enforce max size ~5MB for ID proof uploads
-    const MAX_BYTES = 5 * 1024 * 1024;
-    if (req.file.size && req.file.size > MAX_BYTES) {
-      try { fs.unlinkSync(req.file.path); } catch {}
-      return res.status(400).json({ success: false, error: 'Image too large (max 5MB)' });
-    }
-
-    // 2) Verify the file is decodable as an image and meets minimal dimensions
-    try {
-      const meta = await sharp(req.file.path).metadata();
-      const allowedFormats = new Set(['jpeg', 'jpg', 'png', 'webp', 'gif']);
-      const fmt = String(meta.format || '').toLowerCase();
-      if (!allowedFormats.has(fmt)) {
-        try { fs.unlinkSync(req.file.path); } catch {}
-        return res.status(400).json({ success: false, error: 'Unsupported image format' });
-      }
-      const minW = 200, minH = 200;
-      if (!meta.width || !meta.height || meta.width < minW || meta.height < minH) {
-        try { fs.unlinkSync(req.file.path); } catch {}
-        return res.status(400).json({ success: false, error: `Image too small (min ${minW}x${minH})` });
-      }
-    } catch (e) {
-      try { fs.unlinkSync(req.file.path); } catch {}
-      return res.status(400).json({ success: false, error: 'Invalid image file' });
     }
 
     // Store a web-accessible relative path (served via /uploads)

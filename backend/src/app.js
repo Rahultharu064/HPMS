@@ -7,6 +7,9 @@ import guestRoutes from "./routes/guestRoutes.js";
 import paymentRoutes from "./routes/paymentsRoutes.js";
 import hkRoutes from "./routes/hkRoutes.js";
 import facilityRoutes from "./routes/facilityRoutes.js";
+import housekeeperRoutes from "./routes/housekeeperRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import settingsRoutes from "./routes/settingsRoutes.js";
 import dotenv from "dotenv";
 import prisma from "./config/client.js";
 dotenv.config();
@@ -42,6 +45,9 @@ app.use("/api/guests", guestRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/hk", hkRoutes);
 app.use("/api/facilities", facilityRoutes);
+app.use("/api/housekeepers", housekeeperRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/settings", settingsRoutes);
 
 app.get("/", (req, res) => res.send("HPMS API running"));
 

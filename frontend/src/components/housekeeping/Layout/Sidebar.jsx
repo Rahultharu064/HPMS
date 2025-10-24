@@ -5,7 +5,7 @@ import { Home, Eye, Calendar, Users, Settings } from 'lucide-react'
 const Sidebar = ({ darkMode, sidebarOpen, setSidebarOpen }) => {
   const items = [
     { to: '/housekeeping/dashboard', icon: Home, label: 'Dashboard' },
-    { to: '/housekeeping/tasks', icon: Calendar, label: 'Tasks' },
+    
     { to: '/housekeeping/rooms', icon: Eye, label: 'Room Status' },
     { to: '/housekeeping/schedule', icon: Calendar, label: 'Schedule' },
     { to: '/housekeeping/staff', icon: Users, label: 'Staff Assignment' },

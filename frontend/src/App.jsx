@@ -32,7 +32,7 @@ import HKRooms from './components/housekeeping/sections/Rooms'
 import HKSchedule from './components/housekeeping/sections/Schedule'
 import HKStaff from './components/housekeeping/sections/Staff'
 import HKSettings from './components/housekeeping/sections/Settings'
-import HKTasks from './components/housekeeping/sections/Tasks'
+
 
 
 const App = () => {
@@ -54,7 +54,7 @@ const App = () => {
       children: [
         { index: true, element: <Navigate to="/housekeeping/dashboard" replace /> },
         { path: "dashboard", element: <HKDashboard /> },
-        { path: "tasks", element: <HKTasks /> },
+       
         { path: "rooms", element: <HKRooms /> },
         { path: "schedule", element: <HKSchedule /> },
         { path: "staff", element: <HKStaff /> },

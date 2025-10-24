@@ -1,13 +1,25 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { hkTaskService } from '../../../services/hkTaskService'
+
 import { toast } from 'react-hot-toast'
 import { getSocket } from '../../../utils/socket'
+import { hkTaskService } from '../../../services/hkTaskService'
+import { Plus, Users, RefreshCw } from 'lucide-react'
+import { roomService } from '../../../services/roomService'
 
 const Staff = ({ darkMode }) => {
   const [tasks, setTasks] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [staffName, setStaffName] = useState('')
-  const [assigningId, setAssigningId] = useState(null)
+  const [, setLoading] = useState(true)
+  const [staffName] = useState('')
+  const [showCreate, setShowCreate] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [createForm, setCreateForm] = useState({
+    roomId: '',
+    title: '',
+    type: 'cleaning',
+    priority: 'MEDIUM',
+    assignedTo: ''
+  })
+  const [rooms, setRooms] = useState([])
 
   const load = async () => {
     setLoading(true)
@@ -33,6 +45,16 @@ const Staff = ({ darkMode }) => {
   }
 
   useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const res = await roomService.getStatusMap({})
+        setRooms(res.data || [])
+      } catch (e) { console.error(e) }
+    }
+    fetchRooms()
+  }, [])
 
   // Live updates: refresh when tasks change elsewhere
   useEffect(() => {
@@ -61,41 +83,54 @@ const Staff = ({ darkMode }) => {
     return Array.from(map.entries()).map(([name, list]) => ({ name, list }))
   }, [tasks])
 
-  const unassigned = useMemo(() => tasks.filter(t => !t.assignedTo), [tasks])
+  const openCreate = (assignedTo = '') => {
+    setCreateForm(f => ({ ...f, assignedTo: assignedTo || staffName || '' }))
+    setShowCreate(true)
+  }
 
-  const allStaffNames = useMemo(() => {
-    const set = new Set(staffGroups.map(g => g.name))
-    if (staffName && !set.has(staffName)) set.add(staffName)
-    return Array.from(set)
-  }, [staffGroups, staffName])
-
-  const assign = async (taskId, name) => {
+  const submitCreate = async (e) => {
+    e?.preventDefault?.()
     try {
-      setAssigningId(taskId)
-      await hkTaskService.update(taskId, { assignedTo: name || null })
-      toast.success(name ? 'Assigned' : 'Unassigned')
+      if (!createForm.roomId || !createForm.title) {
+        toast.error('Room and Title are required')
+        return
+      }
+      setCreating(true)
+      await hkTaskService.create({
+        roomId: Number(createForm.roomId),
+        title: String(createForm.title),
+        type: String(createForm.type || 'cleaning'),
+        priority: String(createForm.priority || 'MEDIUM'),
+        assignedTo: createForm.assignedTo ? String(createForm.assignedTo) : undefined
+      })
+      toast.success('Task created')
+      setShowCreate(false)
+      setCreateForm({ roomId: '', title: '', type: 'cleaning', priority: 'MEDIUM', assignedTo: createForm.assignedTo || '' })
       await load()
-    } catch (e) { console.error(e); toast.error('Failed to update assignment') }
-    finally { setAssigningId(null) }
-  }
-
-  // DnD handlers
-  const onDragStart = (ev, taskId) => {
-    ev.dataTransfer.setData('text/plain', String(taskId))
-  }
-  const onDragOver = (ev) => { ev.preventDefault() }
-  const onDropTo = (ev, targetName) => {
-    ev.preventDefault()
-    const taskId = Number(ev.dataTransfer.getData('text/plain'))
-    if (Number.isFinite(taskId)) assign(taskId, targetName)
+    } catch (e) { console.error(e); toast.error(e?.message || 'Failed to create task') }
+    finally { setCreating(false) }
   }
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center justify-between">
-        <h2 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Staff Assignment</h2>
+      <div className={`${darkMode ? 'bg-gray-800/60 border-gray-700' : 'bg-white'} border rounded-2xl p-4 flex items-center justify-between shadow-sm`}>
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${darkMode ? 'bg-gray-900 text-white' : 'bg-blue-50 text-blue-600'}`}>
+            <Users className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Staff Assignment</h2>
+            <div className={`${darkMode ? 'text-gray-400' : 'text-gray-500'} text-sm`}>Assign and manage housekeeping tasks</div>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
-          <input value={staffName} onChange={e=>setStaffName(e.target.value)} placeholder="Add/Select staff name" className={`${darkMode ? 'bg-gray-800 text-white border-gray-700' : 'bg-white'} px-3 py-2 rounded-lg border`} />
+          <button onClick={load} title="Refresh" className={`${darkMode ? 'bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700' : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200'} px-3 py-2 rounded-xl flex items-center gap-2`}>
+            <RefreshCw className="w-4 h-4" />
+          </button>
+          <button onClick={() => openCreate('')} className={`px-4 py-2 rounded-xl flex items-center gap-2 shadow ${darkMode ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white'}`}>
+            <Plus className="w-4 h-4" />
+            <span>Create Task</span>
+          </button>
         </div>
       </div>
 
@@ -122,6 +157,12 @@ const Staff = ({ darkMode }) => {
                       <div className="text-xs opacity-70">{list.length} room(s) • {group.list.length} task(s)</div>
                     </div>
                   </div>
+                  <div>
+                    <button onClick={() => openCreate(group.name)} className={`${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'} px-3 py-1 rounded-xl flex items-center gap-2`}>
+                      <Plus className="w-4 h-4" />
+                      <span>Create Task</span>
+                    </button>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {list.length === 0 ? (
@@ -138,68 +179,52 @@ const Staff = ({ darkMode }) => {
         </div>
       )}
 
-      {loading ? (
-        <div className={`${darkMode ? 'text-white' : 'text-gray-700'}`}>Loading...</div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} border rounded-2xl p-6`} onDragOver={onDragOver} onDrop={(e)=>onDropTo(e, '')}>
-            <h3 className={`text-lg font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Unassigned Tasks ({unassigned.length})</h3>
-            <div className="space-y-2 max-h-[60vh] overflow-auto pr-1">
-              {unassigned.length === 0 ? (
-                <div className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>No unassigned tasks</div>
-              ) : unassigned.map(t => (
-                <div key={t.id} className={`${darkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-gray-50 border-gray-200'} border rounded-xl p-3 flex items-center justify-between`} draggable onDragStart={(e)=>onDragStart(e, t.id)}>
-                  <div>
-                    <div className="font-medium">{t.title}</div>
-                    <div className="text-xs opacity-70">Room {t.room?.roomNumber ?? t.roomId} • {t.priority} • {t.type}</div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <select className={`${darkMode ? 'bg-gray-900 text-white border-gray-700' : 'bg-white'} px-2 py-1 rounded border`} onChange={e=>assign(t.id, e.target.value)} disabled={assigningId===t.id} defaultValue="">
-                      <option value="" disabled>Assign to...</option>
-                      {allStaffNames.map(n => <option key={n} value={n}>{n}</option>)}
-                      {staffName && !allStaffNames.includes(staffName) && <option value={staffName}>{staffName}</option>}
-                    </select>
-                  </div>
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className={`${darkMode ? 'bg-gray-800 text-white' : 'bg-white'} w-full max-w-lg rounded-2xl p-6 shadow-xl`}>
+            <h3 className="text-xl font-semibold mb-4">Create Task</h3>
+            <form onSubmit={submitCreate} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm mb-1">Room <span className="text-red-500">*</span></label>
+                  <select required value={createForm.roomId} onChange={e=>setCreateForm(f=>({ ...f, roomId: e.target.value }))} className={`${darkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white'} w-full px-3 py-2 rounded-lg border`}>
+                    <option value="">Select a room</option>
+                    {rooms.map(r => (
+                      <option key={r.id} value={r.id}>#{r.roomNumber} ({r.status})</option>
+                    ))}
+                  </select>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="lg:col-span-2 space-y-6">
-            {staffGroups.length === 0 ? (
-              <div className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>No staff yet. Type a staff name and assign a task to create a group.</div>
-            ) : staffGroups.map(group => (
-              <div key={group.name} className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} border rounded-2xl p-6`} onDragOver={onDragOver} onDrop={(e)=>onDropTo(e, group.name)}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold">
-                      {group.name.slice(0,2).toUpperCase()}
-                    </div>
-                    <div>
-                      <h4 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{group.name}</h4>
-                      <div className="text-xs opacity-70">{group.list.length} task(s)</div>
-                    </div>
-                  </div>
+                <div>
+                  <label className="block text-sm mb-1">Assigned To</label>
+                  <input value={createForm.assignedTo} onChange={e=>setCreateForm(f=>({ ...f, assignedTo: e.target.value }))} className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white'} w-full px-3 py-2 rounded-lg border`} placeholder="Optional" />
                 </div>
-                <div className="space-y-2 max-h-[60vh] overflow-auto pr-1">
-                  {group.list.map(t => (
-                    <div key={t.id} className={`${darkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-gray-50 border-gray-200'} border rounded-xl p-3 flex items-center justify-between`} draggable onDragStart={(e)=>onDragStart(e, t.id)}>
-                      <div>
-                        <div className="font-medium">{t.title}</div>
-                        <div className="text-xs opacity-70">Room {t.room?.roomNumber ?? t.roomId} • {t.priority} • {t.type}</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={()=>assign(t.id, '')} disabled={assigningId===t.id} className={`${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'} px-3 py-1 rounded`}>Unassign</button>
-                        <select className={`${darkMode ? 'bg-gray-900 text-white border-gray-700' : 'bg-white'} px-2 py-1 rounded border`} onChange={e=>assign(t.id, e.target.value)} disabled={assigningId===t.id} defaultValue={group.name}>
-                          <option value={group.name}>{group.name}</option>
-                          {allStaffNames.filter(n=>n!==group.name).map(n => <option key={n} value={n}>{n}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                  ))}
+                <div className="md:col-span-2">
+                  <label className="block text-sm mb-1">Task Title <span className="text-red-500">*</span></label>
+                  <input required value={createForm.title} onChange={e=>setCreateForm(f=>({ ...f, title: e.target.value }))} className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white'} w-full px-3 py-2 rounded-lg border`} placeholder="e.g. Deep clean bathroom, restock linens" />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">Task Type</label>
+                  <select value={createForm.type} onChange={e=>setCreateForm(f=>({ ...f, type: e.target.value }))} className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white'} w-full px-3 py-2 rounded-lg border`}>
+                    <option value="cleaning">cleaning</option>
+                    <option value="maintenance">maintenance</option>
+                    <option value="inspection">inspection</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">Priority</label>
+                  <select value={createForm.priority} onChange={e=>setCreateForm(f=>({ ...f, priority: e.target.value }))} className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white'} w-full px-3 py-2 rounded-lg border`}>
+                    <option value="LOW">LOW</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="HIGH">HIGH</option>
+                    <option value="URGENT">URGENT</option>
+                  </select>
                 </div>
               </div>
-            ))}
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onClick={()=>setShowCreate(false)} className={`${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'} px-4 py-2 rounded-lg`}>Cancel</button>
+                <button type="submit" disabled={creating} className={`px-4 py-2 rounded-lg ${darkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'} ${creating ? 'opacity-70 cursor-wait' : ''}`}>{creating ? 'Creating...' : 'Create'}</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -14,7 +14,9 @@ import {
   getRoomReviews,
   addRoomReview,
   getRoomsStatusMap,
-  updateRoomStatus
+  updateRoomStatus,
+  addRoomNote,
+  addRoomMedia
 } from "../controllers/roomController.js";
 
 const router = express.Router();
@@ -44,6 +46,19 @@ router.get("/:id", getRoomById);
 
 // Update room status (housekeeping)
 router.put("/:id/status", updateRoomStatus);
+
+// Housekeeping: Add note to room
+router.put("/:id/note", addRoomNote);
+
+// Housekeeping: Upload additional media (images/videos)
+router.post(
+  "/:id/media",
+  upload.fields([
+    { name: "images", maxCount: 10 },
+    { name: "videos", maxCount: 3 }
+  ]),
+  addRoomMedia
+);
 
 // Get similar rooms
 router.get("/:id/similar", getSimilarRooms);

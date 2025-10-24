@@ -2,6 +2,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { getSocket } from '../../../utils/socket'
 import { toast } from 'react-hot-toast'
 import { hkCleaningService } from '../../../services/hkCleaningService'
+import { hkTaskService } from '../../../services/hkTaskService'
+import { Plus } from 'lucide-react'
+import { roomService } from '../../../services/roomService'
 
 const Schedule = ({ darkMode }) => {
   const [items, setItems] = useState([])
@@ -12,6 +15,10 @@ const Schedule = ({ darkMode }) => {
   const [shift, setShift] = useState('ALL') // ALL | MORNING | AFTERNOON | EVENING
   const [roomStatus, setRoomStatus] = useState('ALL') // ALL | clean | needs-cleaning | occupied | maintenance | available
   const [taskStatus, setTaskStatus] = useState('ALL') // ALL | NEW | ASSIGNED | IN_PROGRESS | DONE | QA_CHECK | CLOSED | CANCELLED | NONE
+  const [showCreate, setShowCreate] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [createForm, setCreateForm] = useState({ roomId: '', title: '', type: 'cleaning', priority: 'MEDIUM', assignedTo: '' })
+  const [rooms, setRooms] = useState([])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -27,6 +34,16 @@ const Schedule = ({ darkMode }) => {
   }, [date, shift])
 
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const res = await roomService.getStatusMap({})
+        setRooms(res.data || [])
+      } catch (e) { console.error(e) }
+    }
+    fetchRooms()
+  }, [])
 
   // Live updates when room status changes
   useEffect(() => {
@@ -88,9 +105,43 @@ const Schedule = ({ darkMode }) => {
     }
   }
 
+  const submitCreate = async (e) => {
+    e?.preventDefault?.()
+    try {
+      if (!createForm.roomId || !createForm.title) {
+        toast.error('Room and Title are required')
+        return
+      }
+      setCreating(true)
+      await hkTaskService.create({
+        roomId: Number(createForm.roomId),
+        title: String(createForm.title),
+        type: String(createForm.type || 'cleaning'),
+        priority: String(createForm.priority || 'MEDIUM'),
+        assignedTo: createForm.assignedTo ? String(createForm.assignedTo) : undefined
+      })
+      toast.success('Task created')
+      setShowCreate(false)
+      setCreateForm({ roomId: '', title: '', type: 'cleaning', priority: 'MEDIUM', assignedTo: '' })
+      await load()
+    } catch (e) { console.error(e); toast.error(e?.message || 'Failed to create task') }
+    finally { setCreating(false) }
+  }
+
   return (
     <div className="space-y-6 animate-fadeIn">
-      <h2 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Cleaning Schedule</h2>
+      <div className={`${darkMode ? 'bg-gray-800/60 border-gray-700' : 'bg-white'} border rounded-2xl p-4 flex items-center justify-between shadow-sm`}>
+        <div>
+          <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Cleaning Schedule</h2>
+          <div className={`${darkMode ? 'text-gray-400' : 'text-gray-500'} text-sm`}>Plan and track daily room cleaning</div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowCreate(true)} className={`px-4 py-2 rounded-xl flex items-center gap-2 shadow ${darkMode ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white'}`}>
+            <Plus className="w-4 h-4" />
+            <span>Create Task</span>
+          </button>
+        </div>
+      </div>
       <div className={`${darkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-white'} border rounded-2xl overflow-hidden shadow-xl`}>
         <div className={`p-4 flex items-center gap-3 flex-wrap ${darkMode ? 'border-b border-gray-700' : 'border-b border-gray-200'}`}>
           <input type="date" value={date} onChange={e=>setDate(e.target.value)} className={`${darkMode ? 'bg-gray-800 text-white border-gray-700' : 'bg-white'} px-3 py-2 rounded-lg border`} />
@@ -154,6 +205,55 @@ const Schedule = ({ darkMode }) => {
           </table>
         </div>
       </div>
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className={`${darkMode ? 'bg-gray-800 text-white' : 'bg-white'} w-full max-w-lg rounded-2xl p-6 shadow-xl`}>
+            <h3 className="text-xl font-semibold mb-4">Create Task</h3>
+            <form onSubmit={submitCreate} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm mb-1">Room <span className="text-red-500">*</span></label>
+                  <select required value={createForm.roomId} onChange={e=>setCreateForm(f=>({ ...f, roomId: e.target.value }))} className={`${darkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white'} w-full px-3 py-2 rounded-lg border`}>
+                    <option value="">Select a room</option>
+                    {rooms.map(r => (
+                      <option key={r.id} value={r.id}>#{r.roomNumber} ({r.status})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">Assigned To</label>
+                  <input value={createForm.assignedTo} onChange={e=>setCreateForm(f=>({ ...f, assignedTo: e.target.value }))} className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white'} w-full px-3 py-2 rounded-lg border`} placeholder="Optional" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm mb-1">Task Title <span className="text-red-500">*</span></label>
+                  <input required value={createForm.title} onChange={e=>setCreateForm(f=>({ ...f, title: e.target.value }))} className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white'} w-full px-3 py-2 rounded-lg border`} placeholder="e.g. Deep clean bathroom, restock linens" />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">Task Type</label>
+                  <select value={createForm.type} onChange={e=>setCreateForm(f=>({ ...f, type: e.target.value }))} className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white'} w-full px-3 py-2 rounded-lg border`}>
+                    <option value="cleaning">cleaning</option>
+                    <option value="maintenance">maintenance</option>
+                    <option value="inspection">inspection</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm mb-1">Priority</label>
+                  <select value={createForm.priority} onChange={e=>setCreateForm(f=>({ ...f, priority: e.target.value }))} className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white'} w-full px-3 py-2 rounded-lg border`}>
+                    <option value="LOW">LOW</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="HIGH">HIGH</option>
+                    <option value="URGENT">URGENT</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onClick={()=>setShowCreate(false)} className={`${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'} px-4 py-2 rounded-lg`}>Cancel</button>
+                <button type="submit" disabled={creating} className={`px-4 py-2 rounded-lg ${darkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'} ${creating ? 'opacity-70 cursor-wait' : ''}`}>{creating ? 'Creating...' : 'Create'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

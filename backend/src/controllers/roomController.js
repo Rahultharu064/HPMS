@@ -12,6 +12,74 @@ const removeFileIfExists = (filePath) => {
   }
 };
 
+// PUT /api/rooms/:id/note → save a room note (stored in CleaningLog for auditability)
+export const addRoomNote = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const note = String((req.body?.note ?? '').toString().trim());
+    if (!note) return res.status(400).json({ success: false, error: 'note required' });
+    // ensure room exists
+    const room = await prisma.room.findUnique({ where: { id }, select: { id: true, roomNumber: true, status: true } });
+    if (!room) return res.status(404).json({ success: false, error: 'Room not found' });
+    const now = new Date();
+    const log = await prisma.cleaningLog.create({
+      data: {
+        roomId: id,
+        startedAt: now,
+        finishedAt: now,
+        durationMin: 0,
+        outcome: 'NOTE',
+        notes: note,
+      }
+    });
+    res.json({ success: true, note: { id: log.id, roomId: id, note, createdAt: log.startedAt } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Failed to save note' });
+  }
+};
+
+// POST /api/rooms/:id/media → upload extra images/videos
+export const addRoomMedia = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const room = await prisma.room.findUnique({ where: { id }, select: { id: true } });
+    if (!room) return res.status(404).json({ success: false, error: 'Room not found' });
+
+    const images = (req.files?.images || []).map(f => ({
+      name: f.originalname,
+      size: f.size,
+      type: f.mimetype,
+      url: path.relative(process.cwd(), f.path ?? path.join(f.destination, f.filename)),
+      roomId: id,
+    }));
+    const videos = (req.files?.videos || []).map(f => ({
+      name: f.originalname,
+      size: f.size,
+      type: f.mimetype,
+      url: path.relative(process.cwd(), f.path ?? path.join(f.destination, f.filename)),
+      roomId: id,
+    }));
+
+    const createdImages = [];
+    const createdVideos = [];
+    for (const img of images) {
+      const ci = await prisma.image.create({ data: img, select: { id: true, name: true, size: true, type: true, url: true } });
+      createdImages.push(ci);
+    }
+    for (const vid of videos) {
+      const cv = await prisma.video.create({ data: vid, select: { id: true, name: true, size: true, type: true, url: true } });
+      createdVideos.push(cv);
+    }
+
+    await prisma.room.update({ where: { id }, data: { updatedAt: new Date() } });
+    res.status(201).json({ success: true, images: createdImages, videos: createdVideos });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Failed to upload media' });
+  }
+};
+
 // GET /api/rooms/status-map → simplified list for housekeeping UI
 export const getRoomsStatusMap = async (req, res) => {
   try {

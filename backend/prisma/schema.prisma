@@ -2,6 +2,53 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// =====================
+// Housekeeper Profiles
+// =====================
+
+model Housekeeper {
+  id                Int       @id @default(autoincrement())
+  name              String
+  role              String?
+  contact           String?
+  profilePictureUrl String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @default(now())
+
+  tasks HkTask[]
+
+  @@map("housekeeper")
+}
+
+// =====================
+// Notifications
+// =====================
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  type      String
+  message   String
+  sender    String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  meta      Json?
+
+  @@index([read, createdAt])
+  @@map("notification")
+}
+
+// =====================
+// App Settings (key-value)
+// =====================
+
+model AppSetting {
+  key       String   @id
+  value     Json?
+  updatedAt DateTime @default(now())
+
+  @@map("app_setting")
+}
+
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
@@ -312,6 +359,7 @@ model HkTask {
   priority    Priority     @default(MEDIUM)
   status      HkTaskStatus @default(NEW)
   assignedTo  String?
+  housekeeperId Int?
   dueAt       DateTime?
   checklist   Json?
   notes       String?
@@ -320,6 +368,7 @@ model HkTask {
 
   room         Room               @relation(fields: [roomId], references: [id])
   booking      Booking?           @relation(fields: [bookingId], references: [id])
+  housekeeper  Housekeeper?       @relation(fields: [housekeeperId], references: [id])
   attachments  HkTaskAttachment[]
   CleaningLog  CleaningLog[]
   InventoryTxn InventoryTxn[]

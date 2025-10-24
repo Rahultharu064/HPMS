@@ -216,33 +216,400 @@ Payment methods: Cash, Card, eSewa, Khalti
 Daily arrivals/departures, occupancy, revenue, payment reconciliation
 
 3. Housekeeping Dashboard
-3.1 Dashboard Overview
+1. Overview
 
-Room status map (VC, VD, OC, OD, OOO), KPIs: cleaned rooms, pending tasks
+Staff-facing dashboard for managing room cleaning, housekeeping schedules, and staff assignments.
 
-3.2 Room Cleaning Tasks
+Real-time updates for room statuses and notifications.
 
-Task table with real-time updates, linked room gallery & videos for cleaning guidelines
+Integration with Front Office for check-ins/check-outs, room availability, and cleaning assignments.
 
-3.3 Inventory Management
+Notifications system for housekeeping tasks and maintenance requests.
 
-Low-stock alerts, product analytics
+Filters for viewing rooms by status (Clean, Needs Cleaning, Occupied, Maintenance).
 
-3.4 Special Guest Requests
+Notes and media (photo/video) support per room.
 
-Assign staff, mark complete
+Housekeeper profile pictures shown across the UI (top nav, staff grid, notifications).
 
-3.5 Reports & Logs
+2. UI Components & Layout
+2.1 Top Navigation
 
-Cleaning reports, lost & found, staff performance
+Sticky navbar with blur effect on scroll.
 
-3.6 Maintenance & Safety
+Elements:
 
-Scheduled inspections, safety logs, room video inspection records
+Dashboard title: 🏠 Housekeeping Dashboard
 
-3.7 Notifications
+Current Date & Shift info
 
-Sync with Front Office: Vacant Dirty → Clean → Ready
+Notifications bell icon with unread badge
+
+Staff profile (name + profile picture avatar). Clicking opens quick profile menu (view profile, settings, logout).
+
+2.2 Sidebar Navigation
+
+Collapsible/scrollable vertical sidebar.
+
+Items:
+
+Dashboard – Overview & Stats
+
+Room Status – Room cards & filters
+
+Schedule – Today's cleaning schedule
+
+Staff Assignment – Staff and room allocation
+
+Settings – Housekeeping settings
+
+UI details:
+
+Active tab highlight & hover effects
+
+Small avatar next to “Staff Assignment” when collapsed (optional)
+
+2.3 Main Content Tabs
+Dashboard Overview
+
+Stats Cards (responsive grid 1–4 columns):
+
+Clean Rooms – count & green indicator
+
+Needs Cleaning – count & red indicator
+
+Occupied – count & blue indicator
+
+Maintenance – count & orange indicator
+
+Quick Actions
+
+View All Rooms
+
+Mark Multiple Clean
+
+Report Issue
+
+Room Status Board
+
+Filter bar (All Rooms, Clean, Needs Cleaning, Occupied, Maintenance)
+
+Room Cards (responsive grid 1–4 columns) — each card shows:
+
+Room number
+
+Status icon and color
+
+Housekeeper name + profile picture (thumbnail) or avatar initials
+
+Checkout time (if applicable)
+
+Last cleaned time (if applicable)
+
+Notes (optional snippet)
+
+Buttons: Mark Clean, Add Note (modal), View Media, Status dropdown
+
+Card styling color-coded by status
+
+Schedule
+
+List of rooms requiring cleaning today
+
+Room number, housekeeper (with avatar), checkout time
+
+Action buttons for marking clean
+
+Filter for different shifts/dates (future enhancement)
+
+Staff Assignment
+
+Grid of housekeepers — each housekeeper card shows:
+
+Profile picture (circular), name, role
+
+Rooms assigned (list/badges)
+
+Room statuses for assigned rooms (colored badges)
+
+Quick action: Reassign room (future drag/drop), Message, View profile
+
+Settings
+
+Housekeeping-specific configurations (shift timings, notifications, priority rules)
+
+Profile picture settings and upload policy
+
+3. Modals & Popups
+Add Note Modal
+
+Textarea for room-specific notes
+
+Save / Cancel buttons
+
+Closes on backdrop click or X button
+
+Profile Photo Upload Modal (new)
+
+Shows current profile picture, option to upload/change
+
+Drag & drop + choose file
+
+Cropper preview (square/round), rotate option
+
+Validation: max file size (e.g., 5MB), accepted types (jpg, png, webp)
+
+Save / Cancel
+
+Automatic thumbnail generation after upload
+
+Notifications Dropdown
+
+List of notifications (latest first) with optional sender avatar
+
+Mark as read
+
+Unread count indicator on bell icon
+
+Scrollable if overflowing
+
+4. State & Interactivity
+
+State Variables (high level)
+
+activeTab – currently selected sidebar tab
+
+rooms – array of room objects: { id, number, status, floor, housekeeperId, housekeeperName, checkoutTime, notes, lastCleaned, media }
+
+housekeepers – array of housekeeper objects: { id, name, profilePictureUrl, assignedRooms, statusCounts }
+
+filter – current room status filter
+
+selectedRoom – for note/media modal
+
+showNoteModal – toggle note modal
+
+newNote – note content
+
+notifications – array of notifications with sender avatar where applicable
+
+showNotifications – toggle notifications dropdown
+
+Interactive Functions
+
+updateRoomStatus(roomId, newStatus) – updates room status & last cleaned time, triggers notification
+
+addNote(roomId, note) – saves room note
+
+uploadHousekeeperPhoto(housekeeperId, file) – uploads and sets profilePictureUrl
+
+markNotificationRead(notificationId) – marks a notification as read
+
+Filter rooms dynamically based on filter
+
+Sidebar navigation updates activeTab
+
+5. Room Status Logic
+
+Statuses & colors:
+
+clean – green (icon: Lucide CheckCircle)
+
+needs-cleaning – red (icon: Lucide AlertCircle)
+
+occupied – blue (icon: Lucide User)
+
+maintenance – orange (icon: Lucide Wrench)
+
+Behavior:
+
+Status update triggers a notification and visual feedback (toast + card highlight)
+
+Guest checks out → room automatically flagged needs-cleaning (via Front Office webhook)
+
+Housekeeper marks room clean → lastCleaned timestamp updated
+
+6. Notifications System
+
+Bell icon in top nav shows unread count
+
+Dropdown contains message, timestamp, and sender avatar (if from staff)
+
+Mark as read per item or bulk mark-all
+
+Notifications generated for: new checkouts, assignment changes, status updates, reported issues
+
+Supports real-time updates (WebSocket in future)
+
+7. Filters & Search
+
+Room status filter dropdown
+
+Search by room number
+
+Expandable filters: floor, housekeeper, time-based availability
+
+Filtered rooms dynamically update the room grid
+
+8. Housekeeping Workflow
+
+Guest checks out → Front Office updates room status → needs-cleaning
+
+Dashboard updates and notifies assigned housekeeper
+
+Housekeeper receives notification (with room + quick actions)
+
+Housekeeper marks room clean via dashboard → lastCleaned timestamp updated
+
+Notifications for completed cleaning auto-generate
+
+Notes can be added for special instructions or issues
+
+Admin/Front Office reviews room statuses in real time
+
+9. Housekeeper Profile Picture — Details & UX
+
+Where shown
+
+Top nav staff avatar
+
+Housekeeper cards in Staff Assignment
+
+Room cards (thumbnail beside name)
+
+Notifications (sender avatar)
+
+Housekeeper profile page/modal
+
+Upload flow
+
+Upload through profile edit or admin staff management
+
+Accept JPG/PNG/WEBP; max 5MB
+
+Provide cropper (circle/thumbnail) + preview
+
+Store one canonical full-size image + generated thumbnails (e.g., 128×128, 48×48)
+
+Fallback
+
+If no picture provided, show initials avatar (e.g., RC) with color background
+
+Option to show a default silhouette image
+
+Privacy & storage options
+
+Upload to your app storage, S3/Cloud, or optional IPFS/Filecoin
+
+Use secure URLs (signed if needed)
+
+Validate file type on backend + sanitize filenames
+
+10. Future Enhancements
+
+Real-time WebSocket integration for live updates and presence indicators
+
+Drag-and-drop room assignments for staff
+
+Floor-wise room maps with status color coding
+
+Bulk actions for marking multiple rooms clean
+
+Integration with Housekeeping Inventory (low stock alerts)
+
+Export daily cleaning reports or sync with Front Office reports
+
+Mobile-optimized UI and PWA support for housekeepers on the go
+
+11. API Endpoints (updated with profile picture)
+Rooms
+
+GET /api/rooms
+Response: list of rooms with { id, number, status, floor, housekeeperId, housekeeperName, checkoutTime, lastCleaned, notes, media }
+
+PUT /api/rooms/:id/status
+Body: { status: "clean" | "needs-cleaning" | "occupied" | "maintenance" }
+Effect: updates status, sets lastCleaned if clean, emits notification
+
+PUT /api/rooms/:id/note
+Body: { note: string }
+Effect: add/update room note
+
+Notifications
+
+GET /api/notifications
+
+PUT /api/notifications/:id/read
+
+Housekeepers (new / updated)
+
+GET /api/housekeepers
+Response: { id, name, role, profilePictureUrl, assignedRooms[], contact, statusCounts }
+
+GET /api/housekeepers/:id
+Response: full profile
+
+POST /api/housekeepers
+Create new housekeeper (admin only)
+
+PUT /api/housekeepers/:id
+Update profile (name, contact, role)
+
+POST /api/housekeepers/:id/photo
+Accepts multipart/form-data file upload. Returns { profilePictureUrl, thumbnails: { small, medium, large } }
+
+DELETE /api/housekeepers/:id/photo
+Remove profile photo -> revert to initials/default avatar
+
+Optional / Media
+
+POST /api/rooms/:id/media — upload photo/video for room (for media viewing in room card)
+
+GET /api/schedule — today's schedule or date range
+
+(Optional) GET /api/reports/daily-cleaning?date=YYYY-MM-DD
+
+12. Data Models (example)
+Room (example)
+{
+  "id": "room-101",
+  "number": "101",
+  "floor": 1,
+  "status": "needs-cleaning",
+  "housekeeperId": "hk-12",
+  "housekeeperName": "Maya Rai",
+  "checkoutTime": "2025-10-24T10:15:00+05:45",
+  "lastCleaned": "2025-10-23T09:00:00+05:45",
+  "notes": "Left a wet towel on the floor.",
+  "media": ["https://.../room-101-1.jpg"]
+}
+
+Housekeeper (example)
+{
+  "id": "hk-12",
+  "name": "Maya Rai",
+  "role": "Housekeeper",
+  "contact": "+977-98XXXXXXXX",
+  "profilePictureUrl": "https://cdn.example.com/hk-12.jpg",
+  "assignedRooms": ["101", "102", "110"],
+  "statusCounts": { "clean": 5, "needs-cleaning": 2, "occupied": 0, "maintenance": 1 }
+}
+
+13. Implementation notes & suggestions
+
+Use Lucide icons for status icons (CheckCircle, AlertCircle, User, Wrench).
+
+For avatars use a component that accepts profilePictureUrl and falls back to initials.
+
+Cropper library suggestion: any modern React cropper (allow circle or square).
+
+Thumbnails: generate server-side on upload for performance.
+
+Consider signed URLs for private storage.
+
+WebSocket (socket.io or WS) for real-time updates later.
+
+Validate uploads on frontend (size/type) and backend (mime-type, virus scan if needed).
 
 4. Admin Dashboard (Management-Facing)
 4.1 Dashboard Overview
