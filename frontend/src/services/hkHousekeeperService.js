@@ -32,5 +32,8 @@ export const hkHousekeeperService = {
   },
   async deletePhoto(id) {
     return await apiRequest(`/api/housekeepers/${id}/photo`, { method: 'DELETE' })
+  },
+  async delete(id) {
+    return await apiRequest(`/api/housekeepers/${id}`, { method: 'DELETE' })
   }
 }

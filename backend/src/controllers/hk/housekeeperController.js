@@ -90,3 +90,15 @@ export const deleteHousekeeperPhoto = async (req, res) => {
     res.status(500).json({ success: false, error: 'Failed to delete photo' })
   }
 }
+
+export const deleteHousekeeper = async (req, res) => {
+  try {
+    const id = Number(req.params.id)
+    await prisma.housekeeper.delete({ where: { id } })
+    res.json({ success: true })
+  } catch (err) {
+    console.error(err)
+    if (err.code === 'P2025') return res.status(404).json({ success: false, error: 'Not found' })
+    res.status(500).json({ success: false, error: 'Failed to delete housekeeper' })
+  }
+}

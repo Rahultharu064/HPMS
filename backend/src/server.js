@@ -3,7 +3,7 @@ import http from "http"
 import { Server as SocketIOServer } from "socket.io"
 import { setIO } from "./socket.js"
 
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || 5003
 
 const server = http.createServer(app)
 
