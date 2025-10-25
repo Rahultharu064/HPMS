@@ -286,37 +286,19 @@ export const createBooking = async (req, res) => {
       return res.status(409).json({ success: false, error: 'Room not available for selected dates' });
     }
 
-    // Upsert guest by email/phone
-    const existingByEmail = await prisma.guest.findUnique({ where: { email: body.email } }).catch(() => null);
-    const existingByPhone = await prisma.guest.findUnique({ where: { phone: body.phone } }).catch(() => null);
-    let guest;
-    if (existingByEmail || existingByPhone) {
-      const id = (existingByEmail ?? existingByPhone).id;
-      guest = await prisma.guest.update({
-        where: { id },
-        data: {
-          firstName: body.firstName,
-          lastName: body.lastName,
-          email: body.email,
-          phone: body.phone,
-          nationality: body.nationality ?? undefined,
-          idType: body.idType ?? undefined,
-          idNumber: body.idNumber ?? undefined,
-        }
-      });
-    } else {
-      guest = await prisma.guest.create({
-        data: {
-          firstName: body.firstName,
-          lastName: body.lastName,
-          email: body.email,
-          phone: body.phone,
-          nationality: body.nationality ?? null,
-          idType: body.idType ?? null,
-          idNumber: body.idNumber ?? null,
-        }
-      });
-    }
+    // Create new guest - always create a new guest record for each booking
+    // This avoids unique constraint issues and maintains data integrity
+    const guest = await prisma.guest.create({
+      data: {
+        firstName: body.firstName,
+        lastName: body.lastName,
+        email: body.email,
+        phone: body.phone,
+        nationality: body.nationality ?? null,
+        idType: body.idType ?? null,
+        idNumber: body.idNumber ?? null,
+      }
+    });
 
     // Compute totals (server-side authoritative)
     const nights = diffNights(checkIn, checkOut);

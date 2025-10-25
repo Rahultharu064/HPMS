@@ -195,8 +195,8 @@ model Guest {
   id            Int       @id @default(autoincrement())
   firstName     String
   lastName      String
-  email         String    @unique
-  phone         String    @unique
+  email         String
+  phone         String
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now())
   dateOfBirth   DateTime?

@@ -119,8 +119,17 @@ export const paymentService = {
         });
 
         document.body.appendChild(form);
-        form.submit();
-        // Note: Do not remove the form immediately as it may cancel the submission
+
+        // Use setTimeout to ensure form is fully in DOM before submission
+        setTimeout(() => {
+          form.submit();
+          // Remove form after submission to clean up
+          setTimeout(() => {
+            if (document.body.contains(form)) {
+              document.body.removeChild(form);
+            }
+          }, 1000);
+        }, 100);
       }
 
       return paymentData;
