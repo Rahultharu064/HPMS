@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Search, Filter, Crown, Star, Users, Eye, Edit, Trash2, XCircle } from 'lucide-react'
+import { Search, Filter, Crown, Star, Users, Eye, Edit, Trash2, XCircle, Check, AlertTriangle } from 'lucide-react'
 import { guestService } from '../../../services/guestService'
 import Header from '../Layout/Header'
 import Sidebar from '../Layout/Sidebar'
+import toast from 'react-hot-toast'
 
 const Guests = () => {
   const location = useLocation()
@@ -15,6 +16,9 @@ const Guests = () => {
   const [loading, setLoading] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [editForm, setEditForm] = useState({ firstName: '', lastName: '', email: '', phone: '' })
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const sidebarItems = [
     { icon: 'LayoutDashboard', label: 'Dashboard', key: 'dashboard' },
     { icon: 'Users', label: 'Reservations', key: 'reservations' },
@@ -63,8 +67,66 @@ const Guests = () => {
   const vipBadge = (status) => ({ platinum: 'bg-purple-100 text-purple-700', gold: 'bg-yellow-100 text-yellow-700', silver: 'bg-gray-100 text-gray-700', bronze: 'bg-orange-100 text-orange-700' }[status] || 'bg-gray-100 text-gray-700')
   const vipIcon = (status) => status === 'platinum' ? <Crown size={16}/> : <Star size={16}/>
 
-  const open = (type, item) => { setModalType(type); setSelected(item) }
-  const close = () => { setModalType(''); setSelected(null) }
+  const open = (type, item) => {
+    setModalType(type)
+    setSelected(item)
+    if (type === 'edit') {
+      setEditForm({
+        firstName: item.firstName || '',
+        lastName: item.lastName || '',
+        email: item.email || '',
+        phone: item.phone || ''
+      })
+    }
+  }
+  const close = () => {
+    setModalType('')
+    setSelected(null)
+    setEditForm({ firstName: '', lastName: '', email: '', phone: '' })
+  }
+
+  const handleEdit = async () => {
+    if (!selected) return
+    try {
+      setSaving(true)
+      await guestService.updateGuest(selected.id, editForm)
+      toast.success('Guest updated successfully')
+      // Refresh guests list
+      const res = await guestService.getGuests({ page: 1, limit: 20, search: searchQuery })
+      const list = res?.data || []
+      const mapped = list.map(g => ({
+        ...g,
+        vipStatus: g.vipStatus || 'silver',
+        loyaltyPoints: g.loyaltyPoints || 0,
+        totalStays: g.bookings?.length || 0,
+        lastVisit: g.bookings?.[0]?.createdAt || ''
+      }))
+      setGuests(mapped)
+      close()
+    } catch (e) {
+      console.error('Failed to update guest', e)
+      toast.error(e.message || 'Failed to update guest')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!selected) return
+    try {
+      setDeleting(true)
+      await guestService.deleteGuest(selected.id)
+      toast.success('Guest deleted successfully')
+      // Remove from local state
+      setGuests(prev => prev.filter(g => g.id !== selected.id))
+      close()
+    } catch (e) {
+      console.error('Failed to delete guest', e)
+      toast.error(e.message || 'Failed to delete guest')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   const content = (
     <div className="space-y-6">
@@ -131,14 +193,86 @@ const Guests = () => {
         ))}
       </div>
 
-      {selected && (
+      {selected && modalType === 'edit' && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-3xl mx-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 capitalize">{modalType} guest</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Edit Guest</h3>
               <button onClick={close} className="text-gray-400 hover:text-gray-600"><XCircle size={24}/></button>
             </div>
-            <div className="text-sm text-gray-700">Details and form go here.</div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                <input
+                  type="text"
+                  value={editForm.firstName}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, firstName: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                <input
+                  type="text"
+                  value={editForm.lastName}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, lastName: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <input
+                  type="tel"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={close} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancel</button>
+              <button onClick={handleEdit} disabled={saving} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2">
+                {saving ? 'Saving...' : 'Save'} {saving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selected && modalType === 'delete' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Delete Guest</h3>
+              <button onClick={close} className="text-gray-400 hover:text-gray-600"><XCircle size={24}/></button>
+            </div>
+            <div className="flex items-start gap-3 mb-4">
+              <AlertTriangle className="w-6 h-6 text-red-500 mt-0.5" />
+              <div>
+                <p className="text-gray-900 font-medium">Are you sure you want to delete this guest?</p>
+                <p className="text-sm text-gray-600 mt-1">This action cannot be undone. The guest will be permanently removed from the system.</p>
+              </div>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3 mb-4">
+              <p className="text-sm text-gray-700"><strong>{selected.firstName} {selected.lastName}</strong></p>
+              <p className="text-sm text-gray-600">{selected.email}</p>
+              <p className="text-sm text-gray-600">{selected.phone}</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={close} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancel</button>
+              <button onClick={handleDelete} disabled={deleting} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2">
+                {deleting ? 'Deleting...' : 'Delete'} {deleting && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -174,5 +308,3 @@ const Guests = () => {
 }
 
 export default Guests
-
-

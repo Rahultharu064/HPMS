@@ -66,6 +66,15 @@ export const guestService = {
       apiDebug.error('Error uploading guest photo:', error)
       throw error
     }
+  },
+  async deleteGuest(id) {
+    try {
+      return await apiRequest(`/api/guests/${id}`, {
+        method: 'DELETE'
+      })
+    } catch (error) {
+      apiDebug.error('Error deleting guest:', error)
+      throw error
+    }
   }
 }
-

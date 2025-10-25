@@ -41,11 +41,11 @@ const Rooms = () => {
       const queryFilters = { ...cleanFilters, sort: sortBy }
 
       console.log('Fetching rooms with filters:', cleanFilters)
-      
+
       const response = await roomService.getRooms(page, limit, queryFilters)
-      
+
       console.log('API Response:', response)
-      
+
       setRooms(response.data || [])
       setPagination({
         currentPage: response.currentPage || 1,
@@ -187,14 +187,14 @@ const Rooms = () => {
   return (
     <div className="min-h-screen">
       <Header />
-      
+
       {/* Hero Section */}
       <section className="pt-24 pb-16 bg-gradient-to-br from-blue-900 to-purple-900 text-white">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">Our Rooms & Suites</h1>
             <p className="text-xl text-white/90 mb-8">
-              Discover our carefully designed accommodations, each offering unique amenities 
+              Discover our carefully designed accommodations, each offering unique amenities
               and breathtaking views for an unforgettable stay.
             </p>
           </div>
@@ -211,8 +211,8 @@ const Rooms = () => {
                 <div className="flex-1">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       placeholder="Search rooms..."
                       value={filters.search}
                       onChange={handleSearch}
@@ -223,7 +223,7 @@ const Rooms = () => {
 
                 {/* Filters */}
                 <div className="flex flex-wrap gap-4">
-                  <select 
+                  <select
                     value={filters.roomType}
                     onChange={(e) => handleFilterChange('roomType', e.target.value)}
                     className="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -279,7 +279,7 @@ const Rooms = () => {
 
                 {/* View Mode */}
                 <div className="flex gap-2">
-                  <button 
+                  <button
                     onClick={() => setViewMode('grid')}
                     className={`p-3 rounded-xl transition-colors ${
                       viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
@@ -287,7 +287,7 @@ const Rooms = () => {
                   >
                     <Grid size={20} />
                   </button>
-                  <button 
+                  <button
                     onClick={() => setViewMode('list')}
                     className={`p-3 rounded-xl transition-colors ${
                       viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
@@ -306,14 +306,14 @@ const Rooms = () => {
               <p className="text-gray-600">
                 Showing {pagination.total} rooms available
               </p>
-              <button 
+              <button
                 onClick={() => fetchRooms(1)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
               >
                 Refresh
               </button>
             </div>
-            <select 
+            <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -344,39 +344,45 @@ const Rooms = () => {
           {/* Rooms Grid/List */}
           {!loading && (
             <div className={`${
-              viewMode === 'grid' 
-                ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8' 
+              viewMode === 'grid'
+                ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'
                 : 'space-y-6'
             }`}>
               {rooms.map((room) => {
                 const amenities = getRoomAmenities(room)
                 const IconComponent = getAmenityIcon(amenities[0])
                 return (
-                  <div key={room.id} className={`group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 ${
+                  <div key={room.id} className={`group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] ${
                     viewMode === 'list' ? 'flex' : ''
                   }`}>
                     {/* Image */}
                     <div className={`relative overflow-hidden ${
                       viewMode === 'list' ? 'w-80 h-64' : 'h-64'
                     }`}>
-                      <img 
-                        src={getRoomImage(room)} 
+                      <img
+                        src={getRoomImage(room)}
                         alt={room.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       <div className="absolute top-4 right-4 flex gap-2">
-                        <button className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
-                          <Heart size={20} className="text-gray-600 hover:text-red-500" />
+                        <button className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-all duration-300 hover:scale-110 shadow-lg">
+                          <Heart size={20} className="text-gray-600 hover:text-red-500 transition-colors" />
                         </button>
                       </div>
-                      <div className="absolute bottom-4 left-4">
-                        <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
+                      <div className="absolute bottom-4 left-4 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                        <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 shadow-lg">
                           <div className="flex items-center gap-1">
-                            <Star className="fill-yellow-400 text-yellow-400" size={16} />
+                            <Star className="fill-yellow-400 text-yellow-400 animate-pulse" size={16} />
                             <span className="text-sm font-semibold text-gray-900">{(room.ratingAvg ?? 0).toFixed(1)}</span>
                           </div>
                           <span className="text-xs text-gray-600">({room.ratingCount ?? 0})</span>
                         </div>
+                      </div>
+                      <div className="absolute top-4 left-4">
+                        <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+                          {room.roomType}
+                        </span>
                       </div>
                     </div>
 
@@ -384,18 +390,20 @@ const Rooms = () => {
                     <div className={`p-6 ${viewMode === 'list' ? 'flex-1' : ''}`}>
                       <div className="flex justify-between items-start mb-4">
                         <div>
-                          <h3 className="text-xl font-bold text-gray-900 mb-1">{room.name}</h3>
-                          <p className="text-gray-600 mb-2">{room.description}</p>
-                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors duration-300">{room.name}</h3>
+                          <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
                             <div className="flex items-center gap-1">
-                              <Users size={16} />
+                              <Users size={16} className="text-blue-500" />
                               <span>{room.maxAdults} Guests</span>
                             </div>
-                            <span>{room.size} sqm</span>
+                            <span className="flex items-center gap-1">
+                              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                              {room.size} sqm
+                            </span>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-bold text-blue-600">₹{room.price.toLocaleString()}</p>
+                          <p className="text-3xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text">₹{room.price.toLocaleString()}</p>
                           <p className="text-sm text-gray-500">per night</p>
                         </div>
                       </div>
@@ -405,14 +413,14 @@ const Rooms = () => {
                         {amenities.slice(0, 3).map((amenity, index) => {
                           const IconComponent = getAmenityIcon(amenity)
                           return (
-                            <div key={index} className="flex items-center gap-1 bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm">
+                            <div key={index} className="flex items-center gap-1 bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 px-3 py-2 rounded-full text-sm font-medium hover:from-blue-100 hover:to-purple-100 transition-all duration-300 hover:scale-105">
                               <IconComponent size={14} />
                               <span>{amenity}</span>
                             </div>
                           )
                         })}
                         {amenities.length > 3 && (
-                          <div className="flex items-center gap-1 bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm">
+                          <div className="flex items-center gap-1 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-600 px-3 py-2 rounded-full text-sm font-medium">
                             <span>+{amenities.length - 3} more</span>
                           </div>
                         )}
@@ -420,15 +428,16 @@ const Rooms = () => {
 
                       {/* Action Buttons */}
                       <div className="flex gap-3">
-                        <Link 
+                        <Link
                           to={`/rooms/${room.id}`}
-                          className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center py-3 rounded-xl font-semibold hover:shadow-lg transition-all hover:scale-105"
+                          className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105 hover:from-blue-700 hover:to-purple-700 relative overflow-hidden group"
                         >
-                          View Details
+                          <span className="relative z-10">View Details</span>
+                          <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         </Link>
-                        <Link 
-                          to={`/rooms/${room.id}/book`} 
-                          className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+                        <Link
+                          to={`/rooms/${room.id}/book`}
+                          className="px-6 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl hover:border-blue-500 hover:text-blue-600 transition-all duration-300 hover:shadow-lg hover:scale-105 font-medium"
                         >
                           Book Now
                         </Link>
@@ -443,7 +452,7 @@ const Rooms = () => {
           {/* Pagination */}
           {!loading && pagination.totalPages > 1 && (
             <div className="flex justify-center items-center gap-4 mt-12">
-              <button 
+              <button
                 onClick={() => fetchRooms(pagination.currentPage - 1)}
                 disabled={pagination.currentPage === 1}
                 className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
@@ -453,7 +462,7 @@ const Rooms = () => {
               <span className="text-gray-600">
                 Page {pagination.currentPage} of {pagination.totalPages}
               </span>
-              <button 
+              <button
                 onClick={() => fetchRooms(pagination.currentPage + 1)}
                 disabled={pagination.currentPage === pagination.totalPages}
                 className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"

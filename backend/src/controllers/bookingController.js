@@ -324,7 +324,7 @@ export const createBooking = async (req, res) => {
 
     // Create booking and initial payment record in a transaction
     const method = String(body.paymentMethod ?? 'cash').toLowerCase()
-    const isInstantConfirm = ['cash', 'card', 'esewa', 'khalti'].includes(method)
+    const isInstantConfirm = ['cash', 'card'].includes(method)
 
     const result = await prisma.$transaction(async (tx) => {
       const booking = await tx.booking.create({

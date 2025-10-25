@@ -102,15 +102,14 @@ export const paymentService = {
   async handleEsewaPayment(paymentData) {
     try {
       const { payment_url, form_data } = paymentData.gatewayResponse;
-      
+
       if (payment_url && form_data) {
         // Create form and submit to eSewa
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = payment_url;
-        // Submit in the same tab so backend return redirects back into the app
         form.target = '_self';
-        
+
         Object.keys(form_data).forEach(key => {
           const input = document.createElement('input');
           input.type = 'hidden';
@@ -118,12 +117,12 @@ export const paymentService = {
           input.value = form_data[key];
           form.appendChild(input);
         });
-        
+
         document.body.appendChild(form);
         form.submit();
-        document.body.removeChild(form);
+        // Note: Do not remove the form immediately as it may cancel the submission
       }
-      
+
       return paymentData;
     } catch (error) {
       apiDebug.error('Error handling eSewa payment:', error)
