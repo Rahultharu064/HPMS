@@ -323,6 +323,9 @@ export const createBooking = async (req, res) => {
     const totalAmount = nights * room.price;
 
     // Create booking and initial payment record in a transaction
+    const method = String(body.paymentMethod ?? 'cash').toLowerCase()
+    const isInstantConfirm = ['cash', 'card', 'esewa', 'khalti'].includes(method)
+
     const result = await prisma.$transaction(async (tx) => {
       const booking = await tx.booking.create({
         data: {
@@ -333,11 +336,10 @@ export const createBooking = async (req, res) => {
           adults: body.adults,
           children: body.children ?? 0,
           totalAmount,
-          status: 'pending',
+          status: isInstantConfirm ? 'confirmed' : 'pending',
         },
       });
 
-      const method = String(body.paymentMethod ?? 'cash').toLowerCase()
       let payment = null
       if (method === 'cash' || method === 'card') {
         payment = await tx.payment.create({
@@ -363,6 +365,23 @@ export const createBooking = async (req, res) => {
 
       return { booking, payment };
     });
+
+    // Send booking success email for confirmed bookings
+    if (result.booking.status === 'confirmed') {
+      try {
+        // Fetch the complete booking with guest and room data
+        const completeBooking = await prisma.booking.findUnique({
+          where: { id: result.booking.id },
+          include: { guest: true, room: true }
+        });
+        if (completeBooking) {
+          await sendBookingSuccessEmail(completeBooking);
+        }
+      } catch (emailError) {
+        console.error('Failed to send booking success email:', emailError);
+        // Don't fail the booking creation if email fails
+      }
+    }
 
     try {
       const io = getIO();
@@ -516,7 +535,14 @@ export const updateBooking = async (req, res) => {
     // Send booking success email if status changed to 'confirmed'
     if (body.status === 'confirmed' && existingBooking.status !== 'confirmed') {
       try {
-        await sendBookingSuccessEmail(updatedBooking);
+        // Fetch the complete booking with guest and room data
+        const completeBooking = await prisma.booking.findUnique({
+          where: { id: updatedBooking.id },
+          include: { guest: true, room: true }
+        });
+        if (completeBooking) {
+          await sendBookingSuccessEmail(completeBooking);
+        }
       } catch (emailError) {
         console.error('Failed to send booking success email:', emailError);
         // Don't fail the booking update if email fails

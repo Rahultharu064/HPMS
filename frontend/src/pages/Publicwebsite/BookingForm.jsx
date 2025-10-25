@@ -339,15 +339,15 @@ const BookingForm = () => {
       
       // Payment handling
       const method = String(values.paymentMethod || 'cash').toLowerCase()
-      if (method === 'cash' || method === 'card') {
-        // For cash/card, backend already created a completed payment; just go to confirmation
+      if (method === 'cash' || method === 'card' || method === 'esewa' || method === 'khalti') {
+        // For cash/card/esewa/khalti, backend already created a completed payment and confirmed booking; just go to confirmation
         navigate(`/booking/confirm/${booking.id}`)
       } else {
-        // For online methods, create a payment and handle redirection
-        const paymentResponse = await paymentService.createPayment({ 
-          bookingId: booking.id, 
-          method, 
-          amount 
+        // For other online methods, create a payment and handle redirection
+        const paymentResponse = await paymentService.createPayment({
+          bookingId: booking.id,
+          method,
+          amount
         })
         if (method === 'khalti') {
           await paymentService.handleKhaltiPayment(paymentResponse)
