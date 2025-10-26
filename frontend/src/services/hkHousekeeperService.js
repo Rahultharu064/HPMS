@@ -25,10 +25,10 @@ export const hkHousekeeperService = {
   async uploadPhoto(id, file) {
     const form = new FormData()
     form.append('file', file)
-    const res = await fetch(`/api/housekeepers/${id}/photo`, { method: 'POST', body: form })
-    const json = await res.json()
-    if (!res.ok) throw new Error(json.error || 'Failed to upload photo')
-    return json
+    return await apiRequest(`/api/housekeepers/${id}/photo`, {
+      method: 'POST',
+      body: form
+    })
   },
   async deletePhoto(id) {
     return await apiRequest(`/api/housekeepers/${id}/photo`, { method: 'DELETE' })
