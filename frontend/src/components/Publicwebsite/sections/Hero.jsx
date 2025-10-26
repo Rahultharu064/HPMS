@@ -1,170 +1,160 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Calendar, Users, MapPin, Star, Play, ArrowRight, Search, Filter } from 'lucide-react'
+import { Calendar, MapPin, Users, Search } from "lucide-react";
+import React, { useState } from "react";
 
-const Hero = () => {
-  const [searchData, setSearchData] = useState({
-    checkIn: '',
-    checkOut: '',
-    guests: 1,
-    location: 'Kathmandu'
-  })
-
-  const handleSearch = (e) => {
-    e.preventDefault()
-    // Handle search logic here
-    console.log('Search data:', searchData)
-  }
+export default function Hero() {
+  const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
+  const [guests, setGuests] = useState("2");
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Video/Image */}
+    <div className="relative w-full min-h-screen flex items-center justify-center overflow-hidden bg-gray-900">
+      {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
-        <div className="w-full h-full bg-gradient-to-br from-blue-900/90 via-purple-900/80 to-indigo-900/90">
-          <img 
-            src="https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
-            alt="Luxury Hotel"
-            className="w-full h-full object-cover opacity-30"
-          />
-        </div>
+        <img
+          src="https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBob3RlbCUyMGxvYmJ5fGVufDF8fHx8MTc2MTM2NTkzM3ww&ixlib=rb-4.1.0&q=80&w=1920"
+          alt="Luxury Hotel"
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.target.style.display = 'none';
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/30"></div>
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 text-center text-white">
-        <div className="max-w-4xl mx-auto">
+      {/* Hero Content */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="text-center mb-12">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-6 py-2 mb-8">
-            <Star className="fill-yellow-400 text-yellow-400" size={20} />
-            <span className="font-semibold">Luxury Hotel & Resort</span>
-            <span className="text-yellow-400">•</span>
-            <span>4.8 Rating</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-6">
+            <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></span>
+            <span className="text-amber-100 text-sm tracking-wide">Premium Hospitality Experience</span>
           </div>
 
           {/* Main Heading */}
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-            Experience
-            <span className="block bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+          <h1 className="text-white mb-8 tracking-tight">
+            <span className="block text-6xl sm:text-7xl lg:text-8xl font-black uppercase tracking-tighter leading-none">
+              Welcome to
+            </span>
+            <span className="block text-7xl sm:text-8xl lg:text-9xl mt-3 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 bg-clip-text text-transparent font-black uppercase tracking-tighter leading-none drop-shadow-2xl" style={{textShadow: '0 0 80px rgba(251, 191, 36, 0.5)'}}>
               Luxury
             </span>
-            Like Never Before
+            <span className="block text-3xl sm:text-4xl lg:text-5xl mt-6 font-light tracking-wide italic text-gray-100">
+              Your Perfect Stay Awaits
+            </span>
           </h1>
 
-          {/* Subtitle */}
-          <p className="text-xl md:text-2xl text-white/90 mb-12 max-w-2xl mx-auto leading-relaxed">
-            Discover the perfect blend of modern comfort and traditional hospitality 
-            in the heart of Kathmandu. Your dream vacation starts here.
+          {/* Subheading */}
+          <p className="text-gray-100 text-xl sm:text-2xl max-w-3xl mx-auto leading-relaxed font-light tracking-wide">
+            Experience world-class comfort and hospitality<span className="text-amber-300 font-normal"> · </span>Book your dream getaway with exclusive rates<span className="text-amber-300 font-normal"> · </span>Personalized service
           </p>
+        </div>
 
-          {/* Search Form */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 mb-12 max-w-4xl mx-auto">
-            <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Location */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-white/80">Location</label>
+        {/* Booking Form Card */}
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-6 sm:p-8 border border-gray-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {/* Location Input */}
+              <div className="relative">
+                <label className="block text-gray-700 text-sm font-medium mb-2">
+                  Destination
+                </label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                  <select 
-                    value={searchData.location}
-                    onChange={(e) => setSearchData({...searchData, location: e.target.value})}
-                    className="w-full pl-10 pr-4 py-3 bg-white rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="Kathmandu">Kathmandu</option>
-                    <option value="Pokhara">Pokhara</option>
-                    <option value="Chitwan">Chitwan</option>
-                    <option value="Lumbini">Lumbini</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Check In */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-white/80">Check In</label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                  <input 
-                    type="date"
-                    value={searchData.checkIn}
-                    onChange={(e) => setSearchData({...searchData, checkIn: e.target.value})}
-                    className="w-full pl-10 pr-4 py-3 bg-white rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Where to?"
+                    className="w-full pl-10 h-12 border border-gray-300 rounded-md focus:border-amber-500 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                 </div>
               </div>
 
-              {/* Check Out */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-white/80">Check Out</label>
+              {/* Check-in Date */}
+              <div className="relative">
+                <label className="block text-gray-700 text-sm font-medium mb-2">
+                  Check In
+                </label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                  <input 
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
+                  <input
                     type="date"
-                    value={searchData.checkOut}
-                    onChange={(e) => setSearchData({...searchData, checkOut: e.target.value})}
-                    className="w-full pl-10 pr-4 py-3 bg-white rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={checkIn}
+                    onChange={(e) => setCheckIn(e.target.value)}
+                    className="w-full pl-10 h-12 border border-gray-300 rounded-md focus:border-amber-500 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Check-out Date */}
+              <div className="relative">
+                <label className="block text-gray-700 text-sm font-medium mb-2">
+                  Check Out
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
+                  <input
+                    type="date"
+                    value={checkOut}
+                    onChange={(e) => setCheckOut(e.target.value)}
+                    className="w-full pl-10 h-12 border border-gray-300 rounded-md focus:border-amber-500 focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Guests */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-white/80">Guests</label>
+              <div className="relative">
+                <label className="block text-gray-700 text-sm font-medium mb-2">
+                  Guests
+                </label>
                 <div className="relative">
-                  <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                  <select 
-                    value={searchData.guests}
-                    onChange={(e) => setSearchData({...searchData, guests: parseInt(e.target.value)})}
-                    className="w-full pl-10 pr-4 py-3 bg-white rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
+                  <select
+                    value={guests}
+                    onChange={(e) => setGuests(e.target.value)}
+                    className="w-full h-12 pl-10 pr-4 border border-gray-300 rounded-md focus:border-amber-500 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white appearance-none cursor-pointer"
                   >
-                    <option value={1}>1 Guest</option>
-                    <option value={2}>2 Guests</option>
-                    <option value={3}>3 Guests</option>
-                    <option value={4}>4 Guests</option>
-                    <option value={5}>5+ Guests</option>
+                    <option value="1">1 Guest</option>
+                    <option value="2">2 Guests</option>
+                    <option value="3">3 Guests</option>
+                    <option value="4">4 Guests</option>
+                    <option value="5+">5+ Guests</option>
                   </select>
                 </div>
               </div>
-            </form>
+            </div>
 
             {/* Search Button */}
-            <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
-              <button 
-                type="submit"
-                className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg transition-all hover:scale-105"
-              >
-                <Search size={20} />
-                Search Rooms
-              </button>
-              <button className="flex items-center justify-center gap-2 bg-white/20 backdrop-blur-sm text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/30 transition-all">
-                <Filter size={20} />
-                Advanced Search
-              </button>
-            </div>
-          </div>
-
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link 
-              to="/rooms"
-              className="flex items-center gap-2 bg-white text-gray-900 px-8 py-4 rounded-xl font-semibold hover:bg-gray-100 transition-all hover:scale-105"
+            <button 
+              className="w-full h-14 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2"
             >
-              Explore Rooms
-              <ArrowRight size={20} />
-            </Link>
-            <button className="flex items-center gap-2 bg-transparent border-2 border-white text-white px-8 py-4 rounded-xl font-semibold hover:bg-white hover:text-gray-900 transition-all">
-              <Play size={20} />
-              Watch Video
+              <Search className="w-5 h-5" />
+              Search Available Rooms
             </button>
           </div>
+
+          {/* Stats Section */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 text-center border border-white/50 shadow-lg">
+              <div className="text-3xl font-bold text-amber-600 mb-1">500+</div>
+              <div className="text-gray-700 text-sm">Luxury Rooms</div>
+            </div>
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 text-center border border-white/50 shadow-lg">
+              <div className="text-3xl font-bold text-amber-600 mb-1">50+</div>
+              <div className="text-gray-700 text-sm">Destinations</div>
+            </div>
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 text-center border border-white/50 shadow-lg">
+              <div className="text-3xl font-bold text-amber-600 mb-1">98%</div>
+              <div className="text-gray-700 text-sm">Happy Guests</div>
+            </div>
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 text-center border border-white/50 shadow-lg">
+              <div className="text-3xl font-bold text-amber-600 mb-1">24/7</div>
+              <div className="text-gray-700 text-sm">Support</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
-        <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center">
-          <div className="w-1 h-3 bg-white/50 rounded-full mt-2 animate-bounce"></div>
-        </div>
-      </div>
-    </section>
-  )
+      {/* Decorative Elements */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent z-10"></div>
+    </div>
+  );
 }
-
-export default Hero

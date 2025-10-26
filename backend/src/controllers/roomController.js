@@ -306,10 +306,10 @@ export const getAllRooms = async (req, res) => {
 
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { roomType: { contains: search, mode: "insensitive" } },
-        { roomNumber: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } }
+        { name: { contains: search } },
+        { roomType: { contains: search } },
+        { roomNumber: { contains: search } },
+        { description: { contains: search } }
       ];
     }
 

@@ -2,15 +2,16 @@ import express from 'express'
 import { validateBody } from '../middleware/validate.js'
 import upload from '../middleware/upload.js'
 import { bookingSchema } from '../validation/bookingValidation.js'
-import { 
-  createBooking, 
-  getBookingById, 
-  getAllBookings, 
-  updateBooking, 
-  cancelBooking, 
-  deleteBooking, 
-  getBookingStats, 
-  uploadIdProof 
+import {
+  createBooking,
+  getBookingById,
+  getAllBookings,
+  updateBooking,
+  cancelBooking,
+  deleteBooking,
+  getBookingStats,
+  uploadIdProof,
+  createBookingWorkflowLog
 } from '../controllers/bookingController.js'
 
 const router = express.Router()
@@ -38,5 +39,8 @@ router.patch('/:id/cancel', cancelBooking)
 
 // Delete booking
 router.delete('/:id', deleteBooking)
+
+// Create booking workflow log (check-in/check-out)
+router.post('/:id/workflow', createBookingWorkflowLog)
 
 export default router

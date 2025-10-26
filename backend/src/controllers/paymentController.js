@@ -1,6 +1,7 @@
 import prisma from "../config/client.js";
 import request from 'request';
-import crypto from 'crypto'
+import crypto from 'crypto';
+import { sendBookingSuccessEmail } from "../services/emailService.js";
 
 // Get available payment gateways
 export const getPaymentGateways = async (req, res) => {
@@ -570,6 +571,19 @@ export const handleEsewaReturn = async (req, res) => {
         // Also mark any other pending payments (e.g., default cash placeholder) as completed
         await prisma.payment.updateMany({ where: { bookingId, status: 'pending' }, data: { status: 'completed' } }).catch(()=>{})
         await prisma.booking.update({ where: { id: bookingId }, data: { status: 'confirmed', updatedAt: new Date() } }).catch(()=>{})
+        // Send booking success email for eSewa payments
+        try {
+          const completeBooking = await prisma.booking.findUnique({
+            where: { id: bookingId },
+            include: { guest: true, room: true }
+          });
+          if (completeBooking) {
+            await sendBookingSuccessEmail(completeBooking);
+          }
+        } catch (emailError) {
+          console.error('Failed to send booking success email for eSewa:', emailError);
+          // Don't fail the payment flow if email fails
+        }
         return res.redirect(`${frontend}/booking/success/${bookingId}`)
       }
       return res.redirect(frontend)

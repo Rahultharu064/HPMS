@@ -4,7 +4,7 @@ import {
   Star, Users, Wifi, Car, Coffee, Dumbbell, Heart,
   Calendar, ChevronLeft, ChevronRight, Play, X,
   Bed, Square, Clock, Shield, CreditCard, ArrowLeft,
-  ChevronDown, Plus, Minus
+  ChevronDown, Plus, Minus, Sparkles, MapPin, Award, CheckCircle
 } from 'lucide-react'
 import Header from '../../components/Publicwebsite/Layout/Header'
 import Footer from '../../components/Publicwebsite/Layout/Footer'
@@ -282,18 +282,18 @@ const RoomDetail = () => {
   const videos = room.video || []
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <Header />
 
       {/* Back Button */}
-      <div className="pt-24 pb-4">
+      <div className="pt-32 pb-8">
         <div className="container mx-auto px-4">
           <button
             onClick={() => navigate('/rooms')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            className="flex items-center gap-3 bg-white/80 backdrop-blur-xl px-6 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 font-semibold text-gray-700 hover:text-blue-600"
           >
             <ArrowLeft size={20} />
-            Back to Rooms
+            Back to Luxury Rooms
           </button>
         </div>
       </div>
@@ -301,84 +301,125 @@ const RoomDetail = () => {
       <main className="pb-20">
         <div className="container mx-auto px-4">
           {/* Room Header */}
-          <div className="mb-8">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex flex-col lg:flex-row justify-between items-start gap-6">
+          <div className="mb-12">
+            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
+              <div className="flex flex-col lg:flex-row justify-between items-start gap-8">
                 <div className="flex-1">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-4">{room.name}</h1>
-
-                  {/* Key Stats Row */}
-                  <div className="flex flex-wrap items-center gap-4 mb-4">
-                    <div className="flex items-center gap-2 bg-yellow-50 px-3 py-1 rounded-full">
-                      <Star className="fill-yellow-400 text-yellow-400" size={16} />
-                      <span className="font-semibold text-gray-900">{reviewsSummary.ratingCount > 0 ? reviewsSummary.ratingAvg.toFixed(1) : '0.0'}</span>
-                      <span className="text-gray-600">({reviewsSummary.ratingCount} reviews)</span>
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-full font-bold text-lg tracking-wide">
+                      <Sparkles className="animate-pulse" size={20} />
+                      {room.roomType || 'Luxury Room'}
+                      <Sparkles className="animate-pulse" size={20} />
                     </div>
-
-                    <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full">
-                      <Users className="text-blue-600" size={16} />
-                      <span className="font-semibold text-gray-900">{room.maxAdults} Adults</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full">
-                      <Square className="text-green-600" size={16} />
-                      <span className="font-semibold text-gray-900">{room.size} sqm</span>
-                    </div>
-
-                    <div className="flex items-center gap-2 bg-purple-50 px-3 py-1 rounded-full">
-                      <Bed className="text-purple-600" size={16} />
-                      <span className="font-semibold text-gray-900">{room.numBeds} {room.numBeds > 1 ? 'Beds' : 'Bed'}</span>
+                    <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-full font-semibold text-sm">
+                      <CheckCircle size={16} className="inline mr-2" />
+                      Available Now
                     </div>
                   </div>
 
-                  <p className="text-gray-700 leading-relaxed mb-4">{room.description}</p>
+                  <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-6 leading-tight">{room.name}</h1>
+
+                  {/* Key Stats Row */}
+                  <div className="flex flex-wrap items-center gap-6 mb-8">
+                    <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-6 py-3 rounded-2xl shadow-lg">
+                      <Star className="fill-white text-white animate-pulse" size={20} />
+                      <span className="font-bold text-lg">{reviewsSummary.ratingCount > 0 ? reviewsSummary.ratingAvg.toFixed(1) : '0.0'}</span>
+                      <span className="text-white/90">({reviewsSummary.ratingCount} reviews)</span>
+                    </div>
+
+                    <div className="flex items-center gap-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-6 py-3 rounded-2xl shadow-lg">
+                      <Users size={20} />
+                      <span className="font-bold">{room.maxAdults} Adults</span>
+                    </div>
+
+                    <div className="flex items-center gap-3 bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-3 rounded-2xl shadow-lg">
+                      <Square size={20} />
+                      <span className="font-bold">{room.size} sqm</span>
+                    </div>
+
+                    <div className="flex items-center gap-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-2xl shadow-lg">
+                      <Bed size={20} />
+                      <span className="font-bold">{room.numBeds} {room.numBeds > 1 ? 'Beds' : 'Bed'}</span>
+                    </div>
+                  </div>
+
+                  <p className="text-xl text-gray-700 leading-relaxed mb-8 max-w-3xl">{room.description}</p>
 
                   {/* Additional Details */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center p-3 bg-gray-50 rounded-lg">
-                      <div className="text-sm text-gray-500">Floor</div>
-                      <div className="font-semibold text-gray-900">{room.floor}</div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl shadow-lg border border-blue-200">
+                      <div className="text-sm text-blue-600 font-semibold mb-2">Floor Level</div>
+                      <div className="text-2xl font-black text-blue-800">{room.floor}</div>
                     </div>
-                    <div className="text-center p-3 bg-gray-50 rounded-lg">
-                      <div className="text-sm text-gray-500">Max Children</div>
-                      <div className="font-semibold text-gray-900">{room.maxChildren}</div>
+                    <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl shadow-lg border border-purple-200">
+                      <div className="text-sm text-purple-600 font-semibold mb-2">Max Children</div>
+                      <div className="text-2xl font-black text-purple-800">{room.maxChildren}</div>
                     </div>
-                    <div className="text-center p-3 bg-gray-50 rounded-lg">
-                      <div className="text-sm text-gray-500">Room Type</div>
-                      <div className="font-semibold text-gray-900">{room.type || 'Standard'}</div>
+                    <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl shadow-lg border border-green-200">
+                      <div className="text-sm text-green-600 font-semibold mb-2">Room Category</div>
+                      <div className="text-lg font-bold text-green-800">{room.type || 'Premium'}</div>
                     </div>
-                    <div className="text-center p-3 bg-gray-50 rounded-lg">
-                      <div className="text-sm text-gray-500">Status</div>
-                      <div className="font-semibold text-green-600">Available</div>
+                    <div className="text-center p-6 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-2xl shadow-lg border border-emerald-200">
+                      <div className="text-sm text-emerald-600 font-semibold mb-2">Availability</div>
+                      <div className="text-lg font-bold text-emerald-800">✓ Ready</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Price Card */}
-                <div className="lg:min-w-[280px]">
-                  <div className="bg-blue-600 rounded-lg p-6 text-white">
-                    <div className="text-center mb-4">
-                      <div className="text-3xl font-bold mb-1">₹{room.price.toLocaleString()}</div>
-                      <div className="text-blue-100">per night</div>
+                <div className="lg:min-w-[320px]">
+                  <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-600 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden">
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 opacity-10">
+                      <div className="absolute top-4 right-4 w-20 h-20 bg-white rounded-full"></div>
+                      <div className="absolute bottom-4 left-4 w-16 h-16 bg-white rounded-full"></div>
                     </div>
 
-                    <div className="space-y-3 mb-6">
-                      <div className="flex justify-between items-center bg-white/10 rounded-lg p-3">
-                        <span className="text-sm">Includes taxes</span>
-                        <span className="font-semibold">13%</span>
+                    <div className="relative z-10">
+                      <div className="text-center mb-6">
+                        <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-4">
+                          <Award className="text-yellow-300" size={16} />
+                          <span className="text-sm font-semibold">Best Price Guaranteed</span>
+                        </div>
+                        <div className="text-4xl font-black mb-2">₹{room.price.toLocaleString()}</div>
+                        <div className="text-blue-100 font-medium">per night</div>
                       </div>
-                      <div className="flex justify-between items-center bg-white/10 rounded-lg p-3">
-                        <span className="text-sm">Free cancellation</span>
-                        <span className="font-semibold">24h</span>
+
+                      <div className="space-y-4 mb-8">
+                        <div className="flex justify-between items-center bg-white/15 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle size={16} className="text-green-300" />
+                            <span className="text-sm">Includes all taxes</span>
+                          </div>
+                          <span className="font-bold">13%</span>
+                        </div>
+                        <div className="flex justify-between items-center bg-white/15 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+                          <div className="flex items-center gap-2">
+                            <Shield size={16} className="text-green-300" />
+                            <span className="text-sm">Free cancellation</span>
+                          </div>
+                          <span className="font-bold">24h</span>
+                        </div>
+                        <div className="flex justify-between items-center bg-white/15 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+                          <div className="flex items-center gap-2">
+                            <MapPin size={16} className="text-green-300" />
+                            <span className="text-sm">Prime location</span>
+                          </div>
+                          <span className="font-bold">✓</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => navigate(`/rooms/${room.id}/book`)}
+                        className="w-full bg-white text-blue-600 py-4 rounded-2xl font-bold hover:bg-gray-50 transition-all duration-300 hover:scale-105 shadow-xl hover:shadow-2xl text-lg"
+                      >
+                        Book Your Stay
+                      </button>
+
+                      <div className="mt-4 text-center">
+                        <p className="text-sm text-blue-100">✨ Instant confirmation</p>
                       </div>
                     </div>
-
-                    <button
-                      onClick={() => navigate(`/rooms/${room.id}/book`)}
-                      className="w-full bg-white text-blue-600 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
-                    >
-                      Book Now
-                    </button>
                   </div>
                 </div>
               </div>
@@ -386,71 +427,87 @@ const RoomDetail = () => {
           </div>
 
           {/* Image Gallery */}
-          <div className="mb-8">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="mb-12">
+            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Image */}
                 <div className="lg:col-span-2">
-                  <div className="relative rounded-lg overflow-hidden shadow-sm group cursor-pointer" onClick={() => setShowLightbox(true)}>
+                  <div className="relative rounded-3xl overflow-hidden shadow-2xl group cursor-pointer hover:shadow-3xl transition-all duration-500" onClick={() => setShowLightbox(true)}>
                     <img
                       src={getRoomImage(images[currentImageIndex])}
                       alt={room.name}
-                      className="w-full h-64 lg:h-80 object-cover"
+                      className="w-full h-80 lg:h-96 object-cover group-hover:scale-105 transition-transform duration-700"
                     />
+
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
                     {/* Navigation Arrows */}
                     {images.length > 1 && (
                       <>
                         <button
                           onClick={(e) => { e.stopPropagation(); prevImage(); }}
-                          className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center text-gray-700 hover:bg-white transition-colors shadow-sm"
+                          className="absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/90 backdrop-blur-lg rounded-full flex items-center justify-center text-gray-700 hover:bg-white hover:scale-110 transition-all duration-300 shadow-xl"
                         >
-                          <ChevronLeft size={20} />
+                          <ChevronLeft size={24} />
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); nextImage(); }}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center text-gray-700 hover:bg-white transition-colors shadow-sm"
+                          className="absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-white/90 backdrop-blur-lg rounded-full flex items-center justify-center text-gray-700 hover:bg-white hover:scale-110 transition-all duration-300 shadow-xl"
                         >
-                          <ChevronRight size={20} />
+                          <ChevronRight size={24} />
                         </button>
                       </>
                     )}
 
                     {/* Image Counter */}
                     {images.length > 1 && (
-                      <div className="absolute bottom-2 right-2 bg-black/60 text-white px-3 py-1 rounded text-sm">
+                      <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-lg text-white px-4 py-2 rounded-full text-sm font-semibold shadow-xl">
                         {currentImageIndex + 1} / {images.length}
                       </div>
                     )}
+
+                    {/* Click to View */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="bg-white/90 backdrop-blur-lg rounded-full px-6 py-3 shadow-xl">
+                        <span className="text-gray-900 font-semibold">Click to enlarge</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 {/* Thumbnail Grid */}
-                <div className="space-y-4">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Room Gallery</h4>
-                  <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
+                      <Heart className="text-white" size={20} />
+                    </div>
+                    <h4 className="text-xl font-bold text-gray-900">Room Gallery</h4>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
                     {images.slice(0, 4).map((image, index) => (
                       <div
                         key={index}
-                        className={`relative rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-md ${
-                          index === currentImageIndex ? 'ring-2 ring-blue-500' : ''
+                        className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 ${
+                          index === currentImageIndex ? 'ring-4 ring-blue-500 shadow-xl' : 'shadow-lg'
                         }`}
                         onClick={() => setCurrentImageIndex(index)}
                       >
                         <img
                           src={getRoomImage(image)}
                           alt={`${room.name} ${index + 1}`}
-                          className="w-full h-20 object-cover"
+                          className="w-full h-24 object-cover"
                         />
                         {index === currentImageIndex && (
-                          <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
-                            <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                              <div className="w-1 h-1 bg-white rounded-full"></div>
+                          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 to-purple-500/30 flex items-center justify-center backdrop-blur-sm">
+                            <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-lg">
+                              <CheckCircle size={16} className="text-blue-600" />
                             </div>
                           </div>
                         )}
                         {index === 3 && images.length > 4 && (
-                          <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-white font-bold text-lg">
+                          <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-black/60 flex items-center justify-center text-white font-bold text-xl backdrop-blur-sm">
                             +{images.length - 4}
                           </div>
                         )}
@@ -459,19 +516,37 @@ const RoomDetail = () => {
                   </div>
 
                   {/* Gallery Stats */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="text-center">
-                      <div className="text-xl font-bold text-gray-900">{images.length}</div>
-                      <div className="text-sm text-gray-600">Photos</div>
+                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-100">
+                    <div className="text-center mb-4">
+                      <div className="text-3xl font-black text-transparent bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text">{images.length}</div>
+                      <div className="text-sm text-gray-600 font-semibold">High-Res Photos</div>
                     </div>
                     {videos.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="pt-4 border-t border-blue-200">
                         <div className="text-center">
-                          <div className="text-xl font-bold text-blue-600">{videos.length}</div>
-                          <div className="text-sm text-gray-600">Video Tour{videos.length > 1 ? 's' : ''}</div>
+                          <div className="text-3xl font-black text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text">{videos.length}</div>
+                          <div className="text-sm text-gray-600 font-semibold">Video Tour{videos.length > 1 ? 's' : ''}</div>
                         </div>
                       </div>
                     )}
+
+                    {/* Quick Actions */}
+                    <div className="mt-6 space-y-3">
+                      <button
+                        onClick={() => setShowLightbox(true)}
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105"
+                      >
+                        View All Photos
+                      </button>
+                      {videos.length > 0 && (
+                        <button
+                          onClick={() => setShowVideo(true)}
+                          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105"
+                        >
+                          🎥 Watch Video Tour
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -480,55 +555,67 @@ const RoomDetail = () => {
 
           {/* Video Tour */}
           {videos.length > 0 && (
-            <div className="mb-8">
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="text-center mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Virtual Room Tour</h3>
-                  <p className="text-gray-600">Experience the room in immersive video</p>
+            <div className="mb-12">
+              <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-full font-bold text-lg mb-4">
+                    <Sparkles className="animate-pulse" size={20} />
+                    Virtual Room Tour
+                    <Sparkles className="animate-pulse" size={20} />
+                  </div>
+                  <h3 className="text-3xl font-black text-gray-900 mb-4">Immersive Experience</h3>
+                  <p className="text-xl text-gray-600 max-w-2xl mx-auto">Step inside our luxury accommodations with our interactive video tours</p>
                 </div>
 
-                <div className="relative rounded-lg overflow-hidden shadow-sm group max-w-4xl mx-auto">
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl group max-w-5xl mx-auto hover:shadow-3xl transition-all duration-500">
                   <img
                     src={getRoomImage(images[0])}
                     alt="Video thumbnail"
-                    className="w-full h-48 lg:h-64 object-cover"
+                    className="w-full h-64 lg:h-80 object-cover group-hover:scale-105 transition-transform duration-700"
                   />
-                  <div className="absolute inset-0 bg-black/40"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
 
                   <button
                     onClick={() => setShowVideo(true)}
-                    className="absolute inset-0 flex items-center justify-center hover:bg-black/50 transition-colors"
+                    className="absolute inset-0 flex items-center justify-center hover:bg-black/30 transition-all duration-300 group/btn"
                   >
-                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg">
-                      <Play className="text-gray-900 ml-1" size={24} />
+                    <div className="w-20 h-20 bg-white/95 backdrop-blur-lg rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all duration-300">
+                      <Play className="text-gray-900 ml-1 group-hover/btn:text-blue-600 transition-colors" size={32} />
                     </div>
                   </button>
 
-                  <div className="absolute bottom-4 left-4 text-white">
-                    <div className="text-lg font-semibold mb-1">Watch Tour</div>
-                    <div className="text-sm opacity-90">Interactive Experience</div>
+                  <div className="absolute bottom-6 left-6 text-white">
+                    <div className="text-2xl font-black mb-2">Watch Virtual Tour</div>
+                    <div className="text-lg opacity-90 font-medium">Interactive 360° Experience</div>
                   </div>
 
-                  <div className="absolute top-4 right-4 bg-black/60 text-white px-3 py-1 rounded text-sm">
+                  <div className="absolute top-6 right-6 bg-black/70 backdrop-blur-lg text-white px-4 py-2 rounded-full text-sm font-bold shadow-xl">
                     {videos.length} Video{videos.length > 1 ? 's' : ''} Available
+                  </div>
+
+                  {/* Floating Elements */}
+                  <div className="absolute top-6 left-6 flex gap-3">
+                    <div className="bg-white/90 backdrop-blur-lg rounded-full px-4 py-2 shadow-xl">
+                      <span className="text-gray-900 font-bold text-sm">HD Quality</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 max-w-4xl mx-auto">
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-2xl mb-2">🎥</div>
-                    <div className="font-semibold text-gray-900">HD Quality</div>
-                    <div className="text-sm text-gray-600">Crystal clear visuals</div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 max-w-5xl mx-auto">
+                  <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl shadow-lg border border-blue-200 hover:shadow-xl transition-all duration-300 hover:scale-105">
+                    <div className="text-4xl mb-4">🎥</div>
+                    <div className="font-bold text-gray-900 text-lg mb-2">4K Ultra HD</div>
+                    <div className="text-gray-600 font-medium">Crystal clear visuals</div>
                   </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-2xl mb-2">🔄</div>
-                    <div className="font-semibold text-gray-900">360° View</div>
-                    <div className="text-sm text-gray-600">Explore every angle</div>
+                  <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl shadow-lg border border-purple-200 hover:shadow-xl transition-all duration-300 hover:scale-105">
+                    <div className="text-4xl mb-4">🔄</div>
+                    <div className="font-bold text-gray-900 text-lg mb-2">360° Interactive</div>
+                    <div className="text-gray-600 font-medium">Explore every angle</div>
                   </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <div className="text-2xl mb-2">🎧</div>
-                    <div className="font-semibold text-gray-900">Audio Guide</div>
-                    <div className="text-sm text-gray-600">Narrated experience</div>
+                  <div className="text-center p-6 bg-gradient-to-br from-pink-50 to-pink-100 rounded-2xl shadow-lg border border-pink-200 hover:shadow-xl transition-all duration-300 hover:scale-105">
+                    <div className="text-4xl mb-4">🎧</div>
+                    <div className="font-bold text-gray-900 text-lg mb-2">Audio Narration</div>
+                    <div className="text-gray-600 font-medium">Guided experience</div>
                   </div>
                 </div>
               </div>

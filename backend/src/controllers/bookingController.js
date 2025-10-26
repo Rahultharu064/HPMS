@@ -472,9 +472,10 @@ export const updateBooking = async (req, res) => {
       }
 
       // Check-in: pending -> confirmed, not before check-in date
+      // Allow confirmed -> confirmed for workflow completion
       if (nextStatus === 'confirmed') {
-        if (currentStatus !== 'pending') {
-          return res.status(400).json({ success: false, error: 'Only pending bookings can be checked in' });
+        if (currentStatus !== 'pending' && currentStatus !== 'confirmed') {
+          return res.status(400).json({ success: false, error: 'Invalid status for check-in' });
         }
         if (today < ci) {
           return res.status(400).json({ success: false, error: 'Cannot check in before check-in date' });
