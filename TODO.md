@@ -1,22 +1,33 @@
-# Hero.jsx Modernization Plan
+# Advanced Booking Packages & Promotions Implementation
 
-## Tasks
-- [x] Update background with sophisticated gradient and animated floating particles
-- [x] Refine main heading and subtitle with better typography and fade-in animations
-- [x] Enhance stats section with hover animations and improved icons
-- [x] Modernize search form with advanced styling, focus states, and smooth transitions
-- [x] Add elegant animations to CTA buttons (pulse, scale on hover)
-- [x] Implement subtle parallax effect for background movement
-- [x] Ensure full responsiveness and modern CSS usage
+## Backend Schema & Models
+- [x] Extend Prisma schema with Package, Promotion, Coupon models
+- [x] Add BookingPackage and BookingPromotion junction models
+- [x] Run database migrations
 
-## Progress
-- [x] Analyze Hero.jsx component
-- [x] Create modernization plan
-- [x] Get user approval
-- [x] Update background with sophisticated gradient and animated floating particles
-- [x] Refine main heading and subtitle with better typography and fade-in animations
-- [x] Enhance stats section with hover animations and improved icons
-- [x] Modernize search form with advanced styling, focus states, and smooth transitions
-- [x] Add elegant animations to CTA buttons (pulse, scale on hover)
-- [x] Implement subtle parallax effect for background movement
-- [x] Ensure full responsiveness and modern CSS usage
+## Backend Controllers & Logic
+- [x] Create packageController.js for package management
+- [x] Create promotionController.js for promotion management
+- [x] Create couponController.js for coupon management
+- [x] Update bookingController.js to handle packages, promotions, coupons in pricing
+- [x] Update booking validation schema
+
+## Backend Routes
+- [x] Create package routes
+- [x] Create promotion routes
+- [x] Create coupon routes
+
+## Frontend Components
+- [x] Create PackageSelection component
+- [x] Create CouponInput component
+- [x] Create PromotionDisplay component
+
+## Frontend Integration
+- [x] Update BookingForm.jsx to integrate package selection and coupon application
+- [x] Update booking service to handle new fields
+- [x] Update booking summary calculation
+
+## Testing & Validation
+- [ ] Test complete booking flow with packages and promotions
+- [ ] Verify pricing calculations
+- [ ] Test coupon validation and application

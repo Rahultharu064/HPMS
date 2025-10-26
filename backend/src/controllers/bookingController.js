@@ -300,9 +300,76 @@ export const createBooking = async (req, res) => {
       }
     });
 
-    // Compute totals (server-side authoritative)
+    // Compute totals (server-side authoritative) with packages/promotions/coupons
     const nights = diffNights(checkIn, checkOut);
-    const totalAmount = nights * room.price;
+    let baseAmount = nights * room.price;
+    let discountAmount = 0;
+    let packageId = null;
+    let promotionId = null;
+    let couponCode = null;
+
+    // Apply package if provided
+    if (body.packageId) {
+      const pkg = await prisma.package.findUnique({
+        where: { id: Number(body.packageId), active: true }
+      });
+      if (pkg && new Date() >= pkg.validFrom && new Date() <= pkg.validTo) {
+        if (pkg.type === 'fixed') {
+          baseAmount = pkg.value;
+        } else if (pkg.type === 'percent') {
+          baseAmount = baseAmount * (1 - pkg.value / 100);
+        }
+        packageId = pkg.id;
+      }
+    }
+
+    // Apply promotion if provided
+    if (body.promotionId) {
+      const promo = await prisma.promotion.findUnique({
+        where: { id: Number(body.promotionId), active: true }
+      });
+      if (promo && new Date() >= promo.validFrom && new Date() <= promo.validTo) {
+        // Check if promotion applies to this room
+        let applicableRooms = null;
+        try {
+          applicableRooms = promo.applicableRooms ? JSON.parse(promo.applicableRooms) : null;
+        } catch (e) {
+          console.warn('Invalid applicableRooms JSON for promotion:', promo.id, e.message);
+          // If JSON is invalid, treat as no restrictions
+        }
+        if (!applicableRooms || applicableRooms.includes(room.id)) {
+          if (promo.discountType === 'fixed') {
+            discountAmount += promo.discountValue;
+          } else if (promo.discountType === 'percent') {
+            discountAmount += baseAmount * (promo.discountValue / 100);
+          }
+          promotionId = promo.id;
+        }
+      }
+    }
+
+    // Apply coupon if provided
+    if (body.couponCode) {
+      const coupon = await prisma.coupon.findUnique({
+        where: { code: body.couponCode, active: true }
+      });
+      if (coupon && new Date() >= coupon.validFrom && new Date() <= coupon.validTo) {
+        // Check usage limit
+        if (!coupon.usageLimit || coupon.usedCount < coupon.usageLimit) {
+          if (coupon.discountType === 'fixed') {
+            discountAmount += coupon.discountValue;
+          } else if (coupon.discountType === 'percent') {
+            discountAmount += baseAmount * (coupon.discountValue / 100);
+          }
+          couponCode = coupon.code;
+        }
+      }
+    }
+
+    // Calculate final amounts
+    const discountedAmount = Math.max(0, baseAmount - discountAmount);
+    const taxAmount = discountedAmount * 0.13; // 13% tax
+    const finalAmount = discountedAmount + taxAmount;
 
     // Create booking and initial payment record in a transaction
     const method = String(body.paymentMethod ?? 'cash').toLowerCase()
@@ -317,10 +384,22 @@ export const createBooking = async (req, res) => {
           checkOut,
           adults: body.adults,
           children: body.children ?? 0,
-          totalAmount,
+          totalAmount: finalAmount,
+          discountAmount,
+          packageId,
+          promotionId,
+          couponCode,
           status: isInstantConfirm ? 'confirmed' : 'pending',
         },
       });
+
+      // Increment coupon usage if applied
+      if (couponCode) {
+        await tx.coupon.update({
+          where: { code: couponCode },
+          data: { usedCount: { increment: 1 } }
+        });
+      }
 
       let payment = null
       if (method === 'cash' || method === 'card') {
@@ -328,7 +407,7 @@ export const createBooking = async (req, res) => {
           data: {
             bookingId: booking.id,
             method,
-            amount: totalAmount,
+            amount: finalAmount,
             status: 'completed',
           },
         });

@@ -10,6 +10,9 @@ import facilityRoutes from "./routes/facilityRoutes.js";
 import housekeeperRoutes from "./routes/housekeeperRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import settingsRoutes from "./routes/settingsRoutes.js";
+import packageRoutes from "./routes/packageRoutes.js";
+import promotionRoutes from "./routes/promotionRoutes.js";
+import couponRoutes from "./routes/couponRoutes.js";
 import dotenv from "dotenv";
 import prisma from "./config/client.js";
 dotenv.config();
@@ -48,6 +51,9 @@ app.use("/api/facilities", facilityRoutes);
 app.use("/api/housekeepers", housekeeperRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/packages", packageRoutes);
+app.use("/api/promotions", promotionRoutes);
+app.use("/api/coupons", couponRoutes);
 
 app.get("/", (req, res) => res.send("HPMS API running"));
 

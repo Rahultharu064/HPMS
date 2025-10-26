@@ -148,7 +148,12 @@ export const bookingSchema = Joi.object({
   paymentMethod: Joi.string().valid('Cash', 'cash', 'Card', 'card', 'Online', 'online', 'esewa', 'khalti').optional(),
   status: Joi.string().lowercase().valid('pending', 'confirmed', 'cancelled', 'completed').default('pending'),
   totalAmount: Joi.number().min(0),
-  specialRequests: Joi.string().allow('').max(1000)
+  specialRequests: Joi.string().allow('').max(1000),
+
+  // New optional fields for packages, promotions, coupons
+  packageId: Joi.number().integer().positive().optional(),
+  promotionId: Joi.number().integer().positive().optional(),
+  couponCode: Joi.string().max(50).optional()
 }).custom((value, helpers) => {
   // Enforce: either provide guestId, or provide all guest fields
   if (!value.guestId) {

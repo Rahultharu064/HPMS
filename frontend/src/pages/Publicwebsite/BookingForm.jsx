@@ -7,7 +7,10 @@ import { bookingService } from '../../services/bookingService'
 import { guestService } from '../../services/guestService'
 import { roomService } from '../../services/roomService'
 import { paymentService } from '../../services/paymentService'
+import { couponService } from '../../services/couponService'
 import PaymentOptions from '../../components/booking/PaymentOptions'
+import PackageSelection from '../../components/Publicwebsite/PackageSelection'
+import CouponInput from '../../components/Publicwebsite/CouponInput'
 
 import Header from '../../components/Publicwebsite/Layout/Header'
 import Footer from '../../components/Publicwebsite/Layout/Footer'
@@ -30,7 +33,10 @@ const baseSchema = z.object({
   adults: z.coerce.number().int().min(1),
   children: z.coerce.number().int().min(0).optional().default(0),
   paymentMethod: z.string().min(1),
-  specialRequest: z.string().max(1000).optional().default('')
+  specialRequest: z.string().max(1000).optional().default(''),
+  // New optional fields for packages and coupons
+  packageId: z.number().optional(),
+  couponCode: z.string().optional()
 })
 
 // Normalize free-text nationality to ISO-2 for South Asia
@@ -164,6 +170,11 @@ const BookingForm = () => {
   const [submitting, setSubmitting] = useState(false)
   const [room, setRoom] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [selectedPackage, setSelectedPackage] = useState(null)
+  const [couponCode, setCouponCode] = useState('')
+  const [couponError, setCouponError] = useState('')
+  const [couponSuccess, setCouponSuccess] = useState('')
+  const [couponLoading, setCouponLoading] = useState(false)
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
     resolver: zodResolver(schema),
@@ -210,12 +221,31 @@ const BookingForm = () => {
 
   const calculateTotal = () => {
     if (!room || !watchedValues.checkIn || !watchedValues.checkOut) return 0
-    
+
     const checkIn = new Date(watchedValues.checkIn)
     const checkOut = new Date(watchedValues.checkOut)
     const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24))
-    
-    return nights * room.price
+    let baseAmount = nights * room.price
+
+    // Apply package discount
+    if (selectedPackage) {
+      if (selectedPackage.type === 'percent') {
+        baseAmount = baseAmount * (1 - selectedPackage.value / 100)
+      } else if (selectedPackage.type === 'fixed') {
+        baseAmount = selectedPackage.value
+      }
+    }
+
+    // Apply coupon discount (simplified - in real implementation, validate server-side)
+    let discountAmount = 0
+    if (couponCode && couponSuccess) {
+      // Mock discount calculation - replace with actual API response
+      discountAmount = baseAmount * 0.1 // 10% discount for demo
+    }
+
+    const discountedAmount = Math.max(0, baseAmount - discountAmount)
+    const taxAmount = discountedAmount * 0.13 // 13% tax
+    return discountedAmount + taxAmount
   }
 
   const resolveRoomImageUrl = () => {
@@ -303,11 +333,13 @@ const BookingForm = () => {
       
       // Create booking (exclude idProof from payload; it's uploaded separately)
       const { idProof: _omit, profilePhoto: _omit2, ...cleanValues } = values
-      const payload = { 
-        ...cleanValues, 
+      const payload = {
+        ...cleanValues,
         roomId: Number(roomId),
         checkIn: values.checkIn,
-        checkOut: values.checkOut
+        checkOut: values.checkOut,
+        packageId: selectedPackage?.id,
+        couponCode: couponCode || undefined
       }
       
       const res = await bookingService.createBooking(payload)
@@ -508,6 +540,41 @@ const BookingForm = () => {
                     </div>
                   </div>
 
+                  {/* Packages & Promotions */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Packages & Promotions</h3>
+                    <div className="space-y-4">
+                      <PackageSelection
+                        selectedPackage={selectedPackage}
+                        onPackageSelect={setSelectedPackage}
+                        roomId={roomId}
+                        checkIn={watchedValues.checkIn}
+                        checkOut={watchedValues.checkOut}
+                      />
+
+                      <CouponInput
+                        couponCode={couponCode}
+                        onCouponChange={setCouponCode}
+                        onCouponApply={async (code) => {
+                          setCouponLoading(true)
+                          setCouponError('')
+                          setCouponSuccess('')
+                          try {
+                            const response = await couponService.validateCoupon(code)
+                            setCouponSuccess(`Coupon applied: ${response.discount}% off`)
+                          } catch (error) {
+                            setCouponError(error.response?.data?.error || 'Invalid coupon code')
+                          } finally {
+                            setCouponLoading(false)
+                          }
+                        }}
+                        loading={couponLoading}
+                        error={couponError}
+                        success={couponSuccess}
+                      />
+                    </div>
+                  </div>
+
                   {/* Special Request */}
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Special Request</h3>
@@ -600,29 +667,48 @@ const BookingForm = () => {
                     </div>
                     
                     <div className="border-t pt-4">
-                      <div className="flex justify-between text-sm text-gray-600 mb-2">
-                        <span>Room Rate (per night)</span>
-                        <span>₹{room.price.toLocaleString()}</span>
-                      </div>
-                      
                       {watchedValues.checkIn && watchedValues.checkOut && (
                         <>
+                          <div className="flex justify-between text-sm text-gray-600 mb-2">
+                            <span>Room Rate (per night)</span>
+                            <span>₹{room.price.toLocaleString()}</span>
+                          </div>
                           <div className="flex justify-between text-sm text-gray-600 mb-2">
                             <span>Nights</span>
                             <span>{Math.ceil((new Date(watchedValues.checkOut) - new Date(watchedValues.checkIn)) / (1000 * 60 * 60 * 24))}</span>
                           </div>
+
+                          {selectedPackage && (
+                            <div className="flex justify-between text-sm text-green-600 mb-2">
+                              <span>Package: {selectedPackage.name}</span>
+                              <span>
+                                {selectedPackage.type === 'percent'
+                                  ? `-${selectedPackage.value}%`
+                                  : `-₹${(Math.ceil((new Date(watchedValues.checkOut) - new Date(watchedValues.checkIn)) / (1000 * 60 * 60 * 24)) * room.price * selectedPackage.value / 100).toLocaleString()}`
+                                }
+                              </span>
+                            </div>
+                          )}
+
+                          {couponSuccess && (
+                            <div className="flex justify-between text-sm text-green-600 mb-2">
+                              <span>Coupon Applied</span>
+                              <span>-10%</span>
+                            </div>
+                          )}
+
                           <div className="flex justify-between text-sm text-gray-600 mb-2">
-                            <span>Subtotal</span>
-                            <span>₹{calculateTotal().toLocaleString()}</span>
+                            <span>Subtotal (after discounts)</span>
+                            <span>₹{(calculateTotal() / 1.13).toLocaleString()}</span>
                           </div>
                           <div className="flex justify-between text-sm text-gray-600 mb-2">
                             <span>Taxes & Fees (13%)</span>
-                            <span>₹{(calculateTotal() * 0.13).toLocaleString()}</span>
+                            <span>₹{(calculateTotal() / 1.13 * 0.13).toLocaleString()}</span>
                           </div>
                           <div className="border-t pt-2">
                             <div className="flex justify-between font-bold text-lg">
                               <span>Total</span>
-                              <span className="text-blue-600">₹{(calculateTotal() * 1.13).toLocaleString()}</span>
+                              <span className="text-blue-600">₹{calculateTotal().toLocaleString()}</span>
                             </div>
                           </div>
                         </>
