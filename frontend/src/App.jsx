@@ -80,6 +80,10 @@ const App = () => {
       element: <BookingForm />
     },
     {
+      path: "/booking",
+      element: <BookingForm />
+    },
+    {
       path: "/booking/confirm/:id",
       element: <BookingConfirmation />
     },

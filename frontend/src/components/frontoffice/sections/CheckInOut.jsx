@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { Search, Users, Bed, Clock, CheckCircle, XCircle, Download } from 'lucide-react'
 import { bookingService } from '../../../services/bookingService'
 import { exportToCsv } from '../../../utils/exportCsv'
+import toast from 'react-hot-toast'
 
 const CheckInOut = () => {
   const [tab, setTab] = useState('checkin')
@@ -9,15 +10,17 @@ const CheckInOut = () => {
   const [checkOuts, setCheckOuts] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
   const [modal, setModal] = useState({ open: false, type: '', item: null })
-  const [wf, setWf] = useState({ idType: '', idNumber: '', remarks: '' })
+  const [wf, setWf] = useState({ idType: '', idNumber: '', remarks: '', earlyCheckOut: false })
+  const [selectedCheckInDate, setSelectedCheckInDate] = useState(new Date().toISOString().slice(0,10))
+  const [selectedCheckOutDate, setSelectedCheckOutDate] = useState(new Date().toISOString().slice(0,10))
+
 
   const loadData = useCallback(async () => {
-    const today = new Date().toISOString().slice(0,10)
     try {
-      // Today check-ins (arrivals): include status pending or confirmed
+      // Check-ins (arrivals): include status pending or confirmed for selected date
       const [ciPending, ciConfirmed] = await Promise.all([
-        bookingService.getAllBookings({ checkIn: today, status: 'pending', limit: 100 }),
-        bookingService.getAllBookings({ checkIn: today, status: 'confirmed', limit: 100 })
+        bookingService.getAllBookings({ checkIn: selectedCheckInDate, status: 'pending', limit: 100 }),
+        bookingService.getAllBookings({ checkIn: selectedCheckInDate, status: 'confirmed', limit: 100 })
       ])
       const ciMerged = [...(ciPending?.data || []), ...(ciConfirmed?.data || [])]
       const ciSeen = new Set()
@@ -34,8 +37,8 @@ const CheckInOut = () => {
       }))
       setCheckIns(ciData)
 
-      // Today check-outs (departures): guests currently confirmed and leaving today
-      const co = await bookingService.getAllBookings({ checkOut: today, status: 'confirmed', limit: 100 })
+      // Check-outs (departures): guests currently confirmed and leaving on selected date
+      const co = await bookingService.getAllBookings({ checkOut: selectedCheckOutDate, status: 'confirmed', limit: 100 })
       const coData = (co?.data || []).map(b => ({
         id: b.id,
         guest: [b.guest?.firstName, b.guest?.lastName].filter(Boolean).join(' ') || '—',
@@ -52,34 +55,81 @@ const CheckInOut = () => {
     } catch (e) {
       console.error('Failed to load check-in/out', e)
     }
-  }, [])
+  }, [selectedCheckInDate, selectedCheckOutDate])
 
   useEffect(() => { loadData() }, [loadData])
 
   const filteredCheckIns = checkIns.filter(g => g.guest.toLowerCase().includes(searchQuery.toLowerCase()) || g.room.includes(searchQuery) || g.bookingId.toLowerCase().includes(searchQuery.toLowerCase()))
   const filteredCheckOuts = checkOuts.filter(g => g.guest.toLowerCase().includes(searchQuery.toLowerCase()) || g.room.includes(searchQuery))
 
-  const open = (type, item) => { setModal({ open: true, type, item }); setWf({ idType: '', idNumber: '', remarks: '' }) }
-  const close = () => { setModal({ open: false, type: '', item: null }); setWf({ idType: '', idNumber: '', remarks: '' }) }
+  const open = (type, item) => { setModal({ open: true, type, item }); setWf({ idType: '', idNumber: '', remarks: '', earlyCheckOut: false }) }
+  const close = () => { setModal({ open: false, type: '', item: null }); setWf({ idType: '', idNumber: '', remarks: '', earlyCheckOut: false }) }
 
   const complete = async () => {
     try {
+      console.log('Starting check-in/out process for booking:', modal.item.id, 'Type:', modal.type)
+      let responseMessage = ''
+
       if (modal.type === 'checkin') {
+        console.log('Processing check-in for booking:', modal.item.id, 'Current status:', modal.item.status)
+
         // Only update status if it's pending; if already confirmed, just add workflow log
         if (modal.item.status === 'pending') {
-          await bookingService.updateBooking(modal.item.id, { status: 'confirmed' })
+          console.log('Updating booking status to confirmed')
+          const res = await bookingService.updateBooking(modal.item.id, { status: 'confirmed' })
+          console.log('Update response:', res)
+          responseMessage = res.message || 'Check-in completed successfully'
+        } else if (modal.item.status === 'confirmed') {
+          responseMessage = 'Check-in workflow completed successfully'
         }
-        await bookingService.addWorkflowLog(modal.item.id, { type: 'checkin', idType: wf.idType, idNumber: wf.idNumber, remarks: wf.remarks })
+
+        console.log('Adding check-in workflow log')
+        await bookingService.addWorkflowLog(modal.item.id, {
+          type: 'checkin',
+          idType: wf.idType,
+          idNumber: wf.idNumber,
+          remarks: wf.remarks
+        })
+
+        // If early check-out is selected, also complete check-out
+        if (wf.earlyCheckOut) {
+          console.log('Processing early check-out')
+          const res = await bookingService.updateBooking(modal.item.id, { status: 'completed' })
+          console.log('Early checkout update response:', res)
+          await bookingService.addWorkflowLog(modal.item.id, {
+            type: 'checkout',
+            idType: wf.idType,
+            idNumber: wf.idNumber,
+            remarks: wf.remarks
+          })
+          responseMessage = res.message || 'Early check-out completed successfully'
+        }
       }
+
       if (modal.type === 'checkout') {
-        await bookingService.updateBooking(modal.item.id, { status: 'completed' })
-        await bookingService.addWorkflowLog(modal.item.id, { type: 'checkout', idType: wf.idType, idNumber: wf.idNumber, remarks: wf.remarks })
+        console.log('Processing check-out for booking:', modal.item.id)
+        const res = await bookingService.updateBooking(modal.item.id, { status: 'completed' })
+        console.log('Checkout update response:', res)
+        await bookingService.addWorkflowLog(modal.item.id, {
+          type: 'checkout',
+          idType: wf.idType,
+          idNumber: wf.idNumber,
+          remarks: wf.remarks
+        })
+        responseMessage = res.message || 'Check-out completed successfully'
       }
+
+      console.log('Process completed successfully, setting message:', responseMessage)
+      toast.success(responseMessage)
       close()
+
       // Auto-refresh lists after status update
+      console.log('Reloading data...')
       await loadData()
+
     } catch (e) {
-      console.error(e)
+      console.error('Error during check-in/out process:', e)
+      toast.error(`Failed to complete ${modal.type}: ${e.message || 'Unknown error'}`)
       close()
     }
   }
@@ -114,9 +164,33 @@ const CheckInOut = () => {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Search by guest, room, or booking ID..." className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+        <div className="flex gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Search by guest, room, or booking ID..." className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+          </div>
+          {tab === 'checkin' && (
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Check-in Date</label>
+              <input
+                type="date"
+                value={selectedCheckInDate}
+                onChange={e => setSelectedCheckInDate(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
+          {tab === 'checkout' && (
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Check-out Date</label>
+              <input
+                type="date"
+                value={selectedCheckOutDate}
+                onChange={e => setSelectedCheckOutDate(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -125,8 +199,8 @@ const CheckInOut = () => {
           {filteredCheckIns.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
               <Users size={48} className="mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Check-ins Today</h3>
-              <p className="text-gray-600">There are no guests scheduled to check in today.</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Check-ins on {new Date(selectedCheckInDate).toLocaleDateString()}</h3>
+              <p className="text-gray-600">There are no guests scheduled to check in on this date.</p>
             </div>
           ) : (
             filteredCheckIns.map(g => (
@@ -172,8 +246,8 @@ const CheckInOut = () => {
           {filteredCheckOuts.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
               <XCircle size={48} className="mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Check-outs Today</h3>
-              <p className="text-gray-600">There are no guests scheduled to check out today.</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Check-outs on {new Date(selectedCheckOutDate).toLocaleDateString()}</h3>
+              <p className="text-gray-600">There are no guests scheduled to check out on this date.</p>
             </div>
           ) : (
             filteredCheckOuts.map(g => (
@@ -279,6 +353,19 @@ const CheckInOut = () => {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              {modal.type === 'checkin' && (
+                <div className="md:col-span-3">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={wf.earlyCheckOut}
+                      onChange={e=>setWf(s=>({ ...s, earlyCheckOut: e.target.checked }))}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-gray-700">Check-out guest early</span>
+                  </label>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-3 mt-6">

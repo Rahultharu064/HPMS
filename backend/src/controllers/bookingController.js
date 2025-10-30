@@ -615,7 +615,15 @@ export const updateBooking = async (req, res) => {
       const io = getIO();
       io && io.emit('fo:booking:updated', { booking: updatedBooking })
     } catch {}
-    res.json({ success: true, booking: updatedBooking });
+
+    let message = '';
+    if (body.status === 'confirmed') {
+      message = 'Check-in completed successfully';
+    } else if (body.status === 'completed') {
+      message = 'Check-out completed successfully';
+    }
+
+    res.json({ success: true, booking: updatedBooking, message });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: 'Failed to update booking' });

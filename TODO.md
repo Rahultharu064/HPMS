@@ -1,33 +1,9 @@
-# Advanced Booking Packages & Promotions Implementation
+# TODO: Add Early Check-in/Out Feature
 
-## Backend Schema & Models
-- [x] Extend Prisma schema with Package, Promotion, Coupon models
-- [x] Add BookingPackage and BookingPromotion junction models
-- [x] Run database migrations
-
-## Backend Controllers & Logic
-- [x] Create packageController.js for package management
-- [x] Create promotionController.js for promotion management
-- [x] Create couponController.js for coupon management
-- [x] Update bookingController.js to handle packages, promotions, coupons in pricing
-- [x] Update booking validation schema
-
-## Backend Routes
-- [x] Create package routes
-- [x] Create promotion routes
-- [x] Create coupon routes
-
-## Frontend Components
-- [x] Create PackageSelection component
-- [x] Create CouponInput component
-- [x] Create PromotionDisplay component
-
-## Frontend Integration
-- [x] Update BookingForm.jsx to integrate package selection and coupon application
-- [x] Update booking service to handle new fields
-- [x] Update booking summary calculation
-
-## Testing & Validation
-- [ ] Test complete booking flow with packages and promotions
-- [ ] Verify pricing calculations
-- [ ] Test coupon validation and application
+## Tasks
+- [ ] Update CheckInOut.jsx to add date pickers for selecting check-in and check-out dates (default to today)
+- [ ] Modify loadData function in CheckInOut.jsx to fetch bookings based on selected dates
+- [ ] Remove date guards in updateBooking controller to allow early check-in/out
+- [ ] Add validation to prevent future dates for check-outs but allow early check-outs
+- [ ] Test early check-in/out functionality
+- [ ] Ensure UI updates correctly for selected dates
