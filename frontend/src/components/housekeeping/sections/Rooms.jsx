@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Loader2 } from 'lucide-react'
+import { Plus, Loader2, PlayCircle, StopCircle, Clock3 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { roomService } from '../../../services/roomService'
 import { allowedStatuses } from '../../../constants/roomStatus'
 import { toast } from 'react-hot-toast'
 import { getSocket } from '../../../utils/socket'
+import { hkCleaningService } from '../../../services/hkCleaningService'
 
 const Rooms = ({ darkMode }) => {
   const [rooms, setRooms] = useState([])
@@ -12,6 +13,7 @@ const Rooms = ({ darkMode }) => {
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterFloor, setFilterFloor] = useState('all')
   const [pendingStatus, setPendingStatus] = useState({})
+  const [inProgress, setInProgress] = useState({}) // roomId -> activeLogId
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -23,7 +25,16 @@ const Rooms = ({ darkMode }) => {
         if (filterStatus !== 'all') params.status = filterStatus
         if (filterFloor !== 'all') params.floor = String(filterFloor)
         const res = await roomService.getStatusMap(params)
-        if (mounted) setRooms(res.data || [])
+        if (mounted) {
+          const list = res.data || []
+          setRooms(list)
+          // capture in-progress map
+          const map = {}
+          for (const r of list) {
+            if (r.cleaningInProgress && r.activeLogId) map[r.id] = r.activeLogId
+          }
+          setInProgress(map)
+        }
       } catch (e) {
         console.error(e)
       } finally {
@@ -45,15 +56,44 @@ const Rooms = ({ darkMode }) => {
       if (filterStatus !== 'all') params.status = filterStatus
       if (filterFloor !== 'all') params.floor = String(filterFloor)
       roomService.getStatusMap(params)
-        .then(res => setRooms(res.data || []))
+        .then(res => {
+          const list = res.data || []
+          setRooms(list)
+          const map = {}
+          for (const r of list) {
+            if (r.cleaningInProgress && r.activeLogId) map[r.id] = r.activeLogId
+          }
+          setInProgress(map)
+        })
         .catch((e) => console.error(e))
       if (room.status === 'needs-cleaning') {
         toast.success(`Room #${room.roomNumber} marked Needs Cleaning`)
       }
     }
     socket.on('hk:room:status', handler)
+    // also refresh on cleaning events
+    const refresh = () => {
+      const params = {}
+      if (filterStatus !== 'all') params.status = filterStatus
+      if (filterFloor !== 'all') params.floor = String(filterFloor)
+      roomService.getStatusMap(params)
+        .then(res => {
+          const list = res.data || []
+          setRooms(list)
+          const map = {}
+          for (const r of list) {
+            if (r.cleaningInProgress && r.activeLogId) map[r.id] = r.activeLogId
+          }
+          setInProgress(map)
+        })
+        .catch((e) => console.error(e))
+    }
+    socket.on('hk:cleaning:start', refresh)
+    socket.on('hk:cleaning:finish', refresh)
     return () => {
       socket.off('hk:room:status', handler)
+      socket.off('hk:cleaning:start', refresh)
+      socket.off('hk:cleaning:finish', refresh)
     }
   }, [filterStatus, filterFloor])
 
@@ -64,6 +104,37 @@ const Rooms = ({ darkMode }) => {
       case 'occupied': return 'from-blue-400 to-indigo-500'
       case 'maintenance': return 'from-orange-400 to-amber-500'
       default: return 'from-gray-400 to-gray-500'
+    }
+  }
+
+  const startCleaning = async (roomId) => {
+    try {
+      const res = await hkCleaningService.startCleaning({ roomId })
+      const logId = res?.log?.id
+      setInProgress(prev => ({ ...prev, [roomId]: logId }))
+      toast.success('Cleaning started')
+    } catch (e) {
+      console.error(e)
+      toast.error(e?.message || 'Failed to start cleaning')
+    }
+  }
+
+  const finishCleaning = async (roomId) => {
+    try {
+      const logId = inProgress[roomId]
+      await hkCleaningService.finishCleaning({ roomId, logId, outcome: 'CLEAN' })
+      setInProgress(prev => { const n = { ...prev }; delete n[roomId]; return n })
+      toast.success('Cleaning finished')
+      // refresh list to get updated status and lastCleanedAt
+      const params = {}
+      if (filterStatus !== 'all') params.status = filterStatus
+      if (filterFloor !== 'all') params.floor = String(filterFloor)
+      const res = await roomService.getStatusMap(params)
+      const list = res.data || []
+      setRooms(list)
+    } catch (e) {
+      console.error(e)
+      toast.error(e?.message || 'Failed to finish cleaning')
     }
   }
 
@@ -120,6 +191,15 @@ const Rooms = ({ darkMode }) => {
                     <span className={`inline-block px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-gradient-to-r ${getStatusColor(room.status)} mr-3`}>
                       {room.status.replace('-', ' ')}
                     </span>
+                    {inProgress[room.id] ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full">
+                        <Clock3 className="w-3 h-3" /> In Progress
+                      </span>
+                    ) : room.lastCleanedAt ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-gray-600">
+                        <Clock3 className="w-3 h-3" /> Last cleaned {new Date(room.lastCleanedAt).toLocaleString()}
+                      </span>
+                    ) : null}
                     <select
                       value={pendingStatus[room.id] ?? room.status}
                       onChange={(e) => setPendingStatus(ps => ({ ...ps, [room.id]: e.target.value }))}
@@ -132,6 +212,23 @@ const Rooms = ({ darkMode }) => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-2">
+                      {inProgress[room.id] ? (
+                        <button
+                          onClick={() => finishCleaning(room.id)}
+                          className="px-3 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1"
+                          title="Finish Cleaning"
+                        >
+                          <StopCircle className="w-4 h-4" /> Finish
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => startCleaning(room.id)}
+                          className="px-3 py-2 rounded-xl bg-amber-600 text-white hover:bg-amber-700 flex items-center gap-1"
+                          title="Start Cleaning"
+                        >
+                          <PlayCircle className="w-4 h-4" /> Start
+                        </button>
+                      )}
                       <button
                         onClick={async () => {
                           const newStatus = pendingStatus[room.id] ?? room.status
