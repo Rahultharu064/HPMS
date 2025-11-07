@@ -414,8 +414,16 @@ export const getRoomById = async (req, res) => {
       include: { amenity: true, image: true, video: true }
     });
     if (!room) return res.status(404).json({ success: false, error: "Room not found" });
-    const ratingCount = 0;
-    const ratingAvg = 0;
+
+    // Calculate review aggregates
+    const aggregate = await prisma.review.aggregate({
+      _avg: { rating: true },
+      _count: { _all: true },
+      where: { roomId: id }
+    });
+    const ratingAvg = Number(aggregate._avg.rating ?? 0);
+    const ratingCount = Number(aggregate._count._all ?? 0);
+
     res.json({ success: true, room: { ...room, ratingAvg, ratingCount } });
   } catch (err) {
     console.error(err);
@@ -483,21 +491,43 @@ export const getSimilarRooms = async (req, res) => {
     
     // Find similar rooms (same type, different room, available)
     const similarRooms = await prisma.room.findMany({
-      where: { 
+      where: {
         roomType: currentRoom.roomType,
         id: { not: id },
         status: "available"
       },
-      include: { 
-        amenity: true, 
-        image: true, 
+      include: {
+        amenity: true,
+        image: true,
         video: true
       },
       orderBy: { price: "asc" },
       take: 4
     });
-    const enriched = similarRooms.map(r => ({ ...r, ratingAvg: 0, ratingCount: 0 }));
-    
+
+    // Enrich with review aggregates
+    const roomIds = similarRooms.map(r => r.id);
+    let ratingByRoom = new Map();
+    if (roomIds.length > 0) {
+      const aggregates = await prisma.review.groupBy({
+        by: ['roomId'],
+        where: { roomId: { in: roomIds } },
+        _avg: { rating: true },
+        _count: { _all: true }
+      });
+      for (const a of aggregates) {
+        ratingByRoom.set(a.roomId, {
+          ratingAvg: Number(a._avg.rating ?? 0),
+          ratingCount: Number(a._count._all ?? 0)
+        });
+      }
+    }
+    const enriched = similarRooms.map(r => ({
+      ...r,
+      ratingAvg: ratingByRoom.get(r.id)?.ratingAvg ?? 0,
+      ratingCount: ratingByRoom.get(r.id)?.ratingCount ?? 0
+    }));
+
     res.json({ success: true, data: enriched });
   } catch (err) {
     console.error(err);

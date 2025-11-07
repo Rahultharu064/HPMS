@@ -4,6 +4,7 @@ import Header from '../../components/Publicwebsite/Layout/Header'
 import Footer from '../../components/Publicwebsite/Layout/Footer'
 import { Star, Users, Wifi, Car, Coffee, Dumbbell, Heart, Search, Filter, Grid, List, Loader2, Sparkles, ChevronLeft, ChevronRight, SlidersHorizontal, ArrowRight } from 'lucide-react'
 import { roomService } from '../../services/roomService'
+import { roomTypeService } from '../../services/roomTypeService'
 import { buildMediaUrl } from '../../utils/media'
 
 const Rooms = () => {
@@ -17,6 +18,8 @@ const Rooms = () => {
   })
   const [viewMode, setViewMode] = useState('grid')
   const [hoveredCard, setHoveredCard] = useState(null)
+  const [hoveredReviews, setHoveredReviews] = useState({})
+  const [roomTypes, setRoomTypes] = useState([])
   const [filters, setFilters] = useState({
     search: '',
     roomType: 'all',
@@ -135,10 +138,36 @@ const Rooms = () => {
     }
   }, [filters, sortBy])
 
-  // Fetch rooms on component mount and when filters change
+  // Fetch rooms and room types on component mount
   useEffect(() => {
     fetchRooms(1)
+    fetchRoomTypes()
   }, [fetchRooms])
+
+  // Fetch reviews on hover
+  const fetchRoomReviews = async (roomId) => {
+    if (hoveredReviews[roomId]) return // Already fetched
+
+    try {
+      const response = await roomService.getRoomReviews(roomId)
+      setHoveredReviews(prev => ({
+        ...prev,
+        [roomId]: response
+      }))
+    } catch (error) {
+      console.error('Error fetching reviews:', error)
+    }
+  }
+
+  // Fetch room types
+  const fetchRoomTypes = async () => {
+    try {
+      const response = await roomTypeService.getRoomTypes(1, 100) // Get all room types
+      setRoomTypes(response.data || [])
+    } catch (error) {
+      console.error('Error fetching room types:', error)
+    }
+  }
 
   // Handle filter changes
   const handleFilterChange = (field, value) => {
@@ -245,11 +274,11 @@ const Rooms = () => {
                       className="pl-10 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 bg-white/80 backdrop-blur-sm appearance-none cursor-pointer"
                     >
                       <option value="all">All Types</option>
-                      <option value="Room">Rooms</option>
-                      <option value="Suite">Suites</option>
-                      <option value="Deluxe">Deluxe</option>
-                      <option value="Executive">Executive</option>
-                      <option value="Presidential">Presidential</option>
+                      {roomTypes.map((type) => (
+                        <option key={type.id} value={type.name}>
+                          {type.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -399,7 +428,10 @@ const Rooms = () => {
                     key={room.id}
                     className="group relative animate-fade-in-up"
                     style={{ animationDelay: `${index * 100}ms` }}
-                    onMouseEnter={() => setHoveredCard(room.id)}
+                    onMouseEnter={() => {
+                      setHoveredCard(room.id)
+                      fetchRoomReviews(room.id)
+                    }}
                     onMouseLeave={() => setHoveredCard(null)}
                   >
                     {/* Glow Effect */}
@@ -437,9 +469,9 @@ const Rooms = () => {
                           <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md rounded-full px-4 py-2 shadow-lg">
                             <Star className="fill-yellow-400 text-yellow-400" size={16} />
                             <span className="text-sm font-bold text-gray-900">
-                              {typeof room?.ratingAvg === 'number' ? room.ratingAvg.toFixed(1) : '0.0'}
+                              {hoveredReviews[room.id] ? hoveredReviews[room.id].ratingAvg.toFixed(1) : (typeof room?.ratingAvg === 'number' ? room.ratingAvg.toFixed(1) : '0.0')}
                             </span>
-                            <span className="text-xs text-gray-500">({room?.ratingCount ?? 0})</span>
+                            <span className="text-xs text-gray-500">({hoveredReviews[room.id] ? hoveredReviews[room.id].ratingCount : (room?.ratingCount ?? 0)})</span>
                           </div>
                         </div>
 
