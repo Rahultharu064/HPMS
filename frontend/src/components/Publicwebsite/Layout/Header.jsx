@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Menu, X, Phone, Mail, MapPin, Star, Search, User, Heart, ShoppingCart } from 'lucide-react'
+import { Menu, X, Phone, Mail, MapPin, Star, Search, User, Heart, ShoppingCart, Home, Bed, Info, Settings } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const Header = () => {
@@ -16,12 +16,11 @@ const Header = () => {
   }, [])
 
   const navItems = [
-    { name: 'Home', path: '/' },
-    { name: 'Rooms', path: '/rooms' },
-    { name: 'About', path: '/about' },
-    { name: 'Facilities', path: '/facilities' },
-    
-    { name: 'Contact', path: '/contact' }
+    { name: 'Home', path: '/', icon: Home },
+    { name: 'Rooms', path: '/rooms', icon: Bed },
+    { name: 'About', path: '/about', icon: Info },
+    { name: 'Facilities', path: '/facilities', icon: Settings },
+    { name: 'Contact', path: '/contact', icon: Phone }
   ]
 
   return (
@@ -65,10 +64,10 @@ const Header = () => {
 
       {/* Main Header */}
       <header className={`fixed w-full z-50 transition-all duration-300 ${
-        isScrolled 
-          ? 'bg-white/95 backdrop-blur-md shadow-lg' 
+        isScrolled
+          ? 'bg-white/95 backdrop-blur-md shadow-lg'
           : 'bg-transparent'
-      }`}>
+      } sticky top-0`}>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between py-4">
             {/* Logo */}
@@ -76,11 +75,11 @@ const Header = () => {
               <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
                 H
               </div>
-              <div>
-                <h1 className={`text-2xl font-bold ${isScrolled ? 'text-gray-900' : 'text-white'}`}>
+              <div className=" px-3 py-1 rounded-lg">
+                <h1 className={`text-2xl font-bold ${isScrolled ? 'text-blue-600' : 'text-blue-600'}`}>
                   HamroStay
                 </h1>
-                <p className={`text-sm ${isScrolled ? 'text-gray-600' : 'text-white/80'}`}>
+                <p className={`text-sm ${isScrolled ? 'text-blue-400' : 'text-blue-400'}`}>
                   Luxury Hotel & Resort
                 </p>
               </div>
@@ -92,10 +91,9 @@ const Header = () => {
                 <Link
                   key={item.name}
                   to={item.path}
-                  className={`font-medium transition-colors hover:text-blue-600 ${
-                    isScrolled ? 'text-gray-700' : 'text-white'
-                  }`}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full font-semibold hover:shadow-lg transition-all hover:scale-105 flex items-center gap-2"
                 >
+                  <item.icon size={18} />
                   {item.name}
                 </Link>
               ))}

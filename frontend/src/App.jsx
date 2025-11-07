@@ -5,6 +5,7 @@ import Home from './pages/Publicwebsite/Home'
 import PublicRooms from './pages/Publicwebsite/Rooms'
 import PublicFacilities from './pages/Publicwebsite/Facilities'
 import OwnerRooms from './components/owner/sections/Rooms'
+import RoomTypes from './components/owner/sections/RoomTypes'
 import Facilities from './components/owner/sections/Facilities'
 import RoomDetail from './pages/Publicwebsite/RoomDetail'
 import BookingForm from './pages/Publicwebsite/BookingForm'
@@ -21,6 +22,7 @@ import Dashboard from './components/frontoffice/sections/Dashboard'
 import Reservations from './components/frontoffice/sections/Reservations'
 import OfflineReservation from './components/frontoffice/sections/OfflineReservation'
 import RoomStatus from './components/frontoffice/sections/RoomStatus'
+import RoomAvailability from './components/frontoffice/sections/RoomAvailability'
 import CheckInOut from './components/frontoffice/sections/CheckInOut'
 import Billing from './components/frontoffice/sections/Billing'
 import Reports from './components/frontoffice/sections/Reports'
@@ -113,6 +115,7 @@ const App = () => {
         { path: "create-room", element: <CreateRoom /> },
         { path: "ota", element: <OTA /> },
         { path: "owneroom", element: <OwnerRooms /> },
+        { path: "room-types", element: <RoomTypes /> },
         { path: "facilities", element: <Facilities /> }
       ]
     },
@@ -127,6 +130,7 @@ const App = () => {
         { path: "reservations/:id", element: <ReservationDetail /> },
         { path: "new-reservation", element: <OfflineReservation /> },
         { path: "rooms", element: <RoomStatus /> },
+        { path: "room-availability", element: <RoomAvailability /> },
         { path: "checkin", element: <CheckInOut /> },
         { path: "billing", element: <Billing /> },
         { path: "guests", element: <Guests /> },

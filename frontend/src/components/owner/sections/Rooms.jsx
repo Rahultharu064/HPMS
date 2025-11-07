@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react'
-import { Plus, Eye, Edit, Trash2, Loader2, RefreshCw } from 'lucide-react'
+import { Plus, Eye, Edit, Trash2, Loader2, RefreshCw, Settings } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { roomService } from '../../../services/roomService'
 import UpdateRoom from './UpdateRoom'
@@ -122,6 +122,11 @@ const Rooms = ({ darkMode, onSelectRoom }) => {
     navigate('/owner-admin/create-room')
   }
 
+  // Handle add room type - navigate to room types page
+  const handleAddRoomType = () => {
+    navigate('/owner-admin/room-types')
+  }
+
   // Handle successful update
   const handleUpdateSuccess = () => {
     fetchRooms(pagination.currentPage)
@@ -154,19 +159,26 @@ const Rooms = ({ darkMode, onSelectRoom }) => {
         <div className="flex justify-between items-center mb-6">
           <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Room Management</h3>
           <div className="flex gap-3">
-            <button 
+            <button
               onClick={() => fetchRooms(pagination.currentPage)}
               disabled={loading}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 ${
-                darkMode 
-                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                darkMode
+                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
                   : 'border-gray-300 text-gray-700 hover:bg-gray-100'
               } transition-colors disabled:opacity-50`}
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
               <span>Refresh</span>
             </button>
-            <button 
+            <button
+              onClick={handleAddRoomType}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-2xl hover:shadow-lg transition-all"
+            >
+              <Settings size={20} />
+              <span>Add Room Type</span>
+            </button>
+            <button
               onClick={handleAddRoom}
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:shadow-lg transition-all"
             >

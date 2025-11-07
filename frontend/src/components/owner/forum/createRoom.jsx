@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { createRoom, resetCreatedRoom } from '../../../redux/roomSlice'
 import { toast } from 'react-hot-toast'
+import { Plus } from 'lucide-react'
+import { roomTypeService } from '../../../services/roomTypeService'
 
 const initialForm = {
   name: '',
@@ -27,6 +29,8 @@ export default function CreateRoom() {
   const [amenities, setAmenities] = useState([])
   const [images, setImages] = useState([])
   const [videos, setVideos] = useState([])
+  const [roomTypes, setRoomTypes] = useState([])
+  const [loadingRoomTypes, setLoadingRoomTypes] = useState(true)
 
   const imgInputRef = useRef(null)
   const vidInputRef = useRef(null)
@@ -46,6 +50,24 @@ export default function CreateRoom() {
   useEffect(() => {
     if (createError) toast.error(String(createError))
   }, [createError])
+
+  // Fetch room types on component mount
+  useEffect(() => {
+    const fetchRoomTypes = async () => {
+      try {
+        setLoadingRoomTypes(true)
+        const response = await roomTypeService.getRoomTypes(1, 100) // Get all room types
+        setRoomTypes(response.data || [])
+      } catch (error) {
+        toast.error('Failed to load room types')
+        console.error('Error fetching room types:', error)
+      } finally {
+        setLoadingRoomTypes(false)
+      }
+    }
+
+    fetchRoomTypes()
+  }, [])
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -138,7 +160,17 @@ export default function CreateRoom() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-6">Create New Room</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-semibold">Create New Room</h1>
+        <button
+          type="button"
+          onClick={() => window.location.href = '/owner-admin/room-types'}
+          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:shadow-lg transition-all transform hover:scale-105"
+        >
+          <Plus size={20} />
+          <span>Add Room Type</span>
+        </button>
+      </div>
 
       <form onSubmit={onSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -148,14 +180,15 @@ export default function CreateRoom() {
           </div>
           <div>
             <label className="text-sm">Room Type *</label>
-            <select name="roomType" value={form.roomType} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2">
-              <option value="">Select room type</option>
-              <option value="standard">Standard</option>
-              <option value="deluxe">Deluxe</option>
-              <option value="suite">Suite</option>
-              <option value="presidential">Presidential Suite</option>
-              <option value="family">Family Room</option>
-              <option value="luxury">Executive Room</option>
+            <select name="roomType" value={form.roomType} onChange={handleChange} className="mt-1 w-full border rounded px-3 py-2" disabled={loadingRoomTypes}>
+              <option value="">
+                {loadingRoomTypes ? 'Loading room types...' : 'Select room type'}
+              </option>
+              {roomTypes.map((roomType) => (
+                <option key={roomType.id} value={roomType.id}>
+                  {roomType.name}
+                </option>
+              ))}
             </select>
           </div>
           <div>

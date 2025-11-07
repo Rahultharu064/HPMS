@@ -16,7 +16,8 @@ import {
   getRoomsStatusMap,
   updateRoomStatus,
   addRoomNote,
-  addRoomMedia
+  addRoomMedia,
+  getRoomAvailability
 } from "../controllers/roomController.js";
 
 const router = express.Router();
@@ -40,6 +41,9 @@ router.get("/status-map", getRoomsStatusMap);
 
 // Get featured rooms
 router.get("/featured", getFeaturedRooms);
+
+// Get room availability by type
+router.get("/availability", getRoomAvailability);
 
 // Get by id
 router.get("/:id", getRoomById);

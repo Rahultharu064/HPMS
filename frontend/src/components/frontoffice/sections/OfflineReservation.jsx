@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { Calendar, Clock, Users, MapPin, CreditCard, CheckCircle, Upload, Phone, Mail, User as UserIcon, Car, Plane, Home as HomeIcon } from 'lucide-react'
 import { bookingService } from '../../../services/bookingService'
 import { roomService } from '../../../services/roomService'
@@ -116,9 +116,9 @@ const OfflineReservation = () => {
     return baseAmount + tax - discount - formData.advancePayment
   }
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = useCallback((field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
-  }
+  }, [])
 
   const nextStep = () => { if (currentStep < 5) setCurrentStep(currentStep + 1) }
   const prevStep = () => { if (currentStep > 1) setCurrentStep(currentStep - 1) }
@@ -154,7 +154,7 @@ const OfflineReservation = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-          <input type="text" value={formData.fullName} onChange={(e) => handleInputChange('fullName', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="Enter full name" />
+          <input type="text" value={formData.fullName || ''} onChange={(e) => handleInputChange('fullName', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="Enter full name" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
@@ -169,29 +169,29 @@ const OfflineReservation = () => {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
-          <input type="date" value={formData.dateOfBirth} onChange={(e) => handleInputChange('dateOfBirth', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" />
+          <input type="date" value={formData.dateOfBirth || ''} onChange={(e) => handleInputChange('dateOfBirth', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Nationality</label>
-          <input type="text" value={formData.nationality} onChange={(e) => handleInputChange('nationality', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="Enter nationality" />
+          <input type="text" value={formData.nationality || ''} onChange={(e) => handleInputChange('nationality', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="Enter nationality" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
           <div className="relative">
             <Phone className="absolute left-3 top-3 text-gray-400" size={20} />
-            <input type="tel" value={formData.phoneNumber} onChange={(e) => handleInputChange('phoneNumber', e.target.value)} className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="+977 98XXXXXXXX" />
+            <input type="tel" value={formData.phoneNumber || ''} onChange={(e) => handleInputChange('phoneNumber', e.target.value)} className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="+977 98XXXXXXXX" />
           </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
           <div className="relative">
             <Mail className="absolute left-3 top-3 text-gray-400" size={20} />
-            <input type="email" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="guest@email.com" />
+            <input type="email" value={formData.email || ''} onChange={(e) => handleInputChange('email', e.target.value)} className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="guest@email.com" />
           </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Government ID Type</label>
-          <select value={formData.idType} onChange={(e) => handleInputChange('idType', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent">
+          <select value={formData.idType || ''} onChange={(e) => handleInputChange('idType', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent">
             <option value="">Select ID Type</option>
             <option value="passport">Passport</option>
             <option value="citizenship">Citizenship</option>
@@ -201,7 +201,7 @@ const OfflineReservation = () => {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">ID Number</label>
-          <input type="text" value={formData.idNumber} onChange={(e) => handleInputChange('idNumber', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="Enter ID number" />
+          <input type="text" value={formData.idNumber || ''} onChange={(e) => handleInputChange('idNumber', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="Enter ID number" />
         </div>
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">Upload ID Proof</label>
@@ -213,11 +213,11 @@ const OfflineReservation = () => {
         </div>
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">Permanent Address</label>
-          <textarea value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} rows={3} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="Enter permanent address" />
+          <textarea value={formData.address || ''} onChange={(e) => handleInputChange('address', e.target.value)} rows={3} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="Enter permanent address" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Mode of Arrival</label>
-          <select value={formData.modeOfArrival} onChange={(e) => handleInputChange('modeOfArrival', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent">
+          <select value={formData.modeOfArrival || ''} onChange={(e) => handleInputChange('modeOfArrival', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent">
             <option value="">Select arrival mode</option>
             <option value="car">Car</option>
             <option value="bus">Bus</option>
@@ -237,7 +237,7 @@ const OfflineReservation = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Reservation Source</label>
-          <select value={formData.source} onChange={(e) => handleInputChange('source', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent">
+          <select value={formData.source || ''} onChange={(e) => handleInputChange('source', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent">
             <option value="offline">Offline (Front Desk)</option>
             <option value="website">Online (Website)</option>
             <option value="agency">Travel Agency</option>
@@ -247,35 +247,35 @@ const OfflineReservation = () => {
           <label className="block text-sm font-medium text-gray-700 mb-2">Check-in Date</label>
           <div className="relative">
             <Calendar className="absolute left-3 top-3 text-gray-400" size={20} />
-            <input type="date" value={formData.checkInDate} onChange={(e) => handleInputChange('checkInDate', e.target.value)} className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" />
+            <input type="date" value={formData.checkInDate || ''} onChange={(e) => handleInputChange('checkInDate', e.target.value)} className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" />
           </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Check-out Date</label>
           <div className="relative">
             <Calendar className="absolute left-3 top-3 text-gray-400" size={20} />
-            <input type="date" value={formData.checkOutDate} onChange={(e) => handleInputChange('checkOutDate', e.target.value)} className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" />
+            <input type="date" value={formData.checkOutDate || ''} onChange={(e) => handleInputChange('checkOutDate', e.target.value)} className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" />
           </div>
         </div>
         <div>
           <label className="block text sm font-medium text-gray-700 mb-2">Arrival Time</label>
           <div className="relative">
             <Clock className="absolute left-3 top-3 text-gray-400" size={20} />
-            <input type="time" value={formData.arrivalTime} onChange={(e) => handleInputChange('arrivalTime', e.target.value)} className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" />
+            <input type="time" value={formData.arrivalTime || ''} onChange={(e) => handleInputChange('arrivalTime', e.target.value)} className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" />
           </div>
         </div>
         <div>
           <label className="block text sm font-medium text-gray-700 mb-2">Departure Time</label>
           <div className="relative">
             <Clock className="absolute left-3 top-3 text-gray-400" size={20} />
-            <input type="time" value={formData.departureTime} onChange={(e) => handleInputChange('departureTime', e.target.value)} className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" />
+            <input type="time" value={formData.departureTime || ''} onChange={(e) => handleInputChange('departureTime', e.target.value)} className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" />
           </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Number of Adults</label>
           <div className="flex items-center">
             <button type="button" onClick={() => handleInputChange('adults', Math.max(1, formData.adults - 1))} className="p-2 bg-gray-200 rounded-l-lg hover:bg-gray-300">-</button>
-            <input type="number" value={formData.adults} onChange={(e) => handleInputChange('adults', parseInt(e.target.value) || 1)} className="w-full p-3 border-t border-b border-gray-300 text-center focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" min="1" />
+            <input type="number" value={formData.adults || 1} onChange={(e) => handleInputChange('adults', parseInt(e.target.value) || 1)} className="w-full p-3 border-t border-b border-gray-300 text-center focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" min="1" />
             <button type="button" onClick={() => handleInputChange('adults', formData.adults + 1)} className="p-2 bg-gray-200 rounded-r-lg hover:bg-gray-300">+</button>
           </div>
         </div>
@@ -283,13 +283,13 @@ const OfflineReservation = () => {
           <label className="block text-sm font-medium text-gray-700 mb-2">Number of Children</label>
           <div className="flex items-center">
             <button type="button" onClick={() => handleInputChange('children', Math.max(0, formData.children - 1))} className="p-2 bg-gray-200 rounded-l-lg hover:bg-gray-300">-</button>
-            <input type="number" value={formData.children} onChange={(e) => handleInputChange('children', parseInt(e.target.value) || 0)} className="w-full p-3 border-t border-b border-gray-300 text-center focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" min="0" />
+            <input type="number" value={formData.children || 0} onChange={(e) => handleInputChange('children', parseInt(e.target.value) || 0)} className="w-full p-3 border-t border-b border-gray-300 text-center focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" min="0" />
             <button type="button" onClick={() => handleInputChange('children', formData.children + 1)} className="p-2 bg-gray-200 rounded-r-lg hover:bg-gray-300">+</button>
           </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Room Type</label>
-          <select value={formData.roomType} onChange={(e) => handleInputChange('roomType', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent">
+          <select value={formData.roomType || ''} onChange={(e) => handleInputChange('roomType', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent">
             <option value="">Select room type</option>
             <option value="single">Single</option>
             <option value="double">Double</option>
@@ -299,7 +299,7 @@ const OfflineReservation = () => {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Number of Rooms</label>
-          <select value={formData.numberOfRooms} onChange={(e) => handleInputChange('numberOfRooms', parseInt(e.target.value))} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent">
+          <select value={formData.numberOfRooms || 1} onChange={(e) => handleInputChange('numberOfRooms', parseInt(e.target.value))} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent">
             {[1,2,3,4,5].map(num => (
               <option key={num} value={num}>{num} Room{num > 1 ? 's' : ''}</option>
             ))}
@@ -307,11 +307,11 @@ const OfflineReservation = () => {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Room Rate (NPR)</label>
-          <input type="number" value={formData.roomRate} onChange={(e) => handleInputChange('roomRate', parseFloat(e.target.value) || 0)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="0" />
+          <input type="number" value={formData.roomRate || 0} onChange={(e) => handleInputChange('roomRate', parseFloat(e.target.value) || 0)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="0" />
         </div>
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">Purpose of Stay (Optional)</label>
-          <textarea value={formData.purposeOfStay} onChange={(e) => handleInputChange('purposeOfStay', e.target.value)} rows={3} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="Business, leisure, conference, etc." />
+          <textarea value={formData.purposeOfStay || ''} onChange={(e) => handleInputChange('purposeOfStay', e.target.value)} rows={3} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="Business, leisure, conference, etc." />
         </div>
       </div>
     </div>
@@ -343,7 +343,7 @@ const OfflineReservation = () => {
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Special Requests</label>
-        <textarea value={formData.specialRequests} onChange={(e) => handleInputChange('specialRequests', e.target.value)} rows={4} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="Near elevator, wheelchair access, extra bed, quiet room, etc." />
+        <textarea value={formData.specialRequests || ''} onChange={(e) => handleInputChange('specialRequests', e.target.value)} rows={4} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="Near elevator, wheelchair access, extra bed, quiet room, etc." />
       </div>
     </div>
   )
@@ -354,7 +354,7 @@ const OfflineReservation = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-          <select value={formData.paymentMethod} onChange={(e) => handleInputChange('paymentMethod', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent">
+          <select value={formData.paymentMethod || ''} onChange={(e) => handleInputChange('paymentMethod', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent">
             <option value="">Select payment method</option>
             <option value="cash">Cash</option>
             <option value="card">Card</option>
@@ -364,11 +364,11 @@ const OfflineReservation = () => {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Advance Payment (NPR)</label>
-          <input type="number" value={formData.advancePayment} onChange={(e) => handleInputChange('advancePayment', parseFloat(e.target.value) || 0)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="0" />
+          <input type="number" value={formData.advancePayment || 0} onChange={(e) => handleInputChange('advancePayment', parseFloat(e.target.value) || 0)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="0" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Discount Coupon Code</label>
-          <input type="text" value={formData.discountCode} onChange={(e) => handleInputChange('discountCode', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="Enter coupon code" />
+          <input type="text" value={formData.discountCode || ''} onChange={(e) => handleInputChange('discountCode', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent" placeholder="Enter coupon code" />
         </div>
       </div>
       <div className="bg-[#F8FFF4] rounded-lg p-6">
@@ -391,7 +391,7 @@ const OfflineReservation = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Booking Status</label>
-          <select value={formData.bookingStatus} onChange={(e) => handleInputChange('bookingStatus', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent">
+          <select value={formData.bookingStatus || 'pending'} onChange={(e) => handleInputChange('bookingStatus', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent">
             <option value="pending">Pending</option>
             <option value="confirmed">Confirmed</option>
             <option value="cancelled">Cancelled</option>

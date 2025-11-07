@@ -96,6 +96,16 @@ export const roomService = {
     }
   },
 
+  // Get room availability by type
+  async getRoomAvailability() {
+    try {
+      return await apiRequest('/api/rooms/availability')
+    } catch (error) {
+      apiDebug.error('Error fetching room availability:', error)
+      throw error
+    }
+  },
+
   // Delete room
   async deleteRoom(id) {
     try {
@@ -107,14 +117,14 @@ export const roomService = {
       return result
     } catch (error) {
       apiDebug.error('Error deleting room:', error)
-      
+
       // Provide more specific error messages
       if (error.message.includes('Room not found')) {
         throw new Error('Room not found. It may have already been deleted.')
       } else if (error.message.includes('Failed to delete room')) {
         throw new Error('Failed to delete room. Please check the backend logs for details.')
       }
-      
+
       throw error
     }
   },

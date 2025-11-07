@@ -601,17 +601,84 @@ export const updateRoom = async (req, res) => {
   }
 };
 
+// GET /api/rooms/availability → Room availability by type for front office
+export const getRoomAvailability = async (req, res) => {
+  try {
+    // Get all rooms with their status
+    const rooms = await prisma.room.findMany({
+      select: {
+        id: true,
+        roomType: true,
+        status: true,
+        price: true,
+        maxAdults: true,
+        maxChildren: true,
+        numBeds: true,
+        size: true,
+        image: {
+          select: {
+            url: true
+          },
+          take: 1
+        }
+      }
+    });
+
+    // Group rooms by type and count availability
+    const availabilityByType = {};
+
+    rooms.forEach(room => {
+      const type = room.roomType;
+      if (!availabilityByType[type]) {
+        availabilityByType[type] = {
+          roomType: type,
+          total: 0,
+          available: 0,
+          occupied: 0,
+          maintenance: 0,
+          price: room.price,
+          maxAdults: room.maxAdults,
+          maxChildren: room.maxChildren || 0,
+          numBeds: room.numBeds,
+          size: room.size,
+          thumbnail: room.image?.[0]?.url || null
+        };
+      }
+
+      availabilityByType[type].total += 1;
+
+      if (room.status === 'available') {
+        availabilityByType[type].available += 1;
+      } else if (room.status === 'occupied') {
+        availabilityByType[type].occupied += 1;
+      } else if (room.status === 'maintenance') {
+        availabilityByType[type].maintenance += 1;
+      }
+    });
+
+    // Convert to array and sort by room type
+    const availability = Object.values(availabilityByType).sort((a, b) =>
+      a.roomType.localeCompare(b.roomType)
+    );
+
+    res.json({ success: true, data: availability });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Failed to fetch room availability' });
+  }
+};
+
 // Delete room + files + related rows
 export const deleteRoom = async (req, res) => {
   try {
     const id = Number(req.params.id);
     console.log(`Attempting to delete room with ID: ${id}`);
-    
+
     const existing = await prisma.room.findUnique({
       where: { id },
       include: { image: true, video: true, amenity: true }
     });
-    
+
     if (!existing) {
       console.log(`Room with ID ${id} not found`);
       return res.status(404).json({ success: false, error: "Room not found" });
@@ -626,7 +693,7 @@ export const deleteRoom = async (req, res) => {
         removeFileIfExists(path.join(process.cwd(), img.url));
       }
     }
-    
+
     for (const vid of existing.video) {
       if (vid.url) {
         console.log(`Removing video file: ${vid.url}`);
@@ -636,15 +703,75 @@ export const deleteRoom = async (req, res) => {
 
     // Delete related records first (due to foreign key constraints)
     console.log('Deleting related records...');
-    
+
+    // First, handle bookings and their dependencies
+    const bookings = await prisma.booking.findMany({
+      where: { roomId: id },
+      select: { id: true }
+    });
+
+    for (const booking of bookings) {
+      // Delete payments for this booking
+      await prisma.payment.deleteMany({ where: { bookingId: booking.id } });
+      console.log(`Deleted payments for booking ${booking.id}`);
+
+      // Delete workflow logs for this booking
+      await prisma.bookingWorkflowLog.deleteMany({ where: { bookingId: booking.id } });
+      console.log(`Deleted workflow logs for booking ${booking.id}`);
+
+      // Delete guest requests for this booking
+      await prisma.guestRequest.deleteMany({ where: { bookingId: booking.id } });
+      console.log(`Deleted guest requests for booking ${booking.id}`);
+
+      // Delete housekeeping tasks for this booking
+      await prisma.hkTask.deleteMany({ where: { bookingId: booking.id } });
+      console.log(`Deleted hkTasks for booking ${booking.id}`);
+    }
+
+    // Delete all bookings for this room
+    await prisma.booking.deleteMany({ where: { roomId: id } });
+    console.log('Deleted bookings');
+
+    // Delete reviews
+    await prisma.review.deleteMany({ where: { roomId: id } });
+    console.log('Deleted reviews');
+
+    // Delete cleaning logs
+    await prisma.cleaningLog.deleteMany({ where: { roomId: id } });
+    console.log('Deleted cleaning logs');
+
+    // Delete inspections
+    await prisma.inspection.deleteMany({ where: { roomId: id } });
+    console.log('Deleted inspections');
+
+    // Delete guest requests
+    await prisma.guestRequest.deleteMany({ where: { roomId: id } });
+    console.log('Deleted guest requests');
+
+    // Delete maintenance tickets
+    await prisma.maintenanceTicket.deleteMany({ where: { roomId: id } });
+    console.log('Deleted maintenance tickets');
+
+    // Delete inventory transactions
+    await prisma.inventoryTxn.deleteMany({ where: { roomId: id } });
+    console.log('Deleted inventory transactions');
+
+    // Delete lost and found items
+    await prisma.lostFound.deleteMany({ where: { roomId: id } });
+    console.log('Deleted lost and found items');
+
+    // Delete housekeeping tasks (this will cascade to cleaning logs and inventory txns)
+    await prisma.hkTask.deleteMany({ where: { roomId: id } });
+    console.log('Deleted housekeeping tasks');
+
     // Delete amenities
     await prisma.amenity.deleteMany({ where: { roomId: id } });
     console.log('Deleted amenities');
-    
+
     // Delete images
     await prisma.image.deleteMany({ where: { roomId: id } });
     console.log('Deleted images');
-    
+
     // Delete videos
     await prisma.video.deleteMany({ where: { roomId: id } });
     console.log('Deleted videos');
@@ -661,10 +788,10 @@ export const deleteRoom = async (req, res) => {
       code: err.code,
       meta: err.meta
     });
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: "Failed to delete room",
-      details: err.message 
+      details: err.message
     });
   }
 };

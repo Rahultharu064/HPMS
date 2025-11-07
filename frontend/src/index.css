@@ -1,1 +1,95 @@
 @import "tailwindcss";
+
+/* Mobile responsiveness for iPhone devices */
+@media screen and (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  html {
+    font-size: 12px;
+  }
+}
+
+/* iPhone specific styles */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari specific styles */
+  body {
+    -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Prevent zoom on input focus */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* Ensure proper scaling on all iPhone models */
+@media screen and (max-device-width: 896px) and (-webkit-min-device-pixel-ratio: 2) {
+  body {
+    font-size: 14px;
+  }
+}
+
+/* iPhone SE and older models */
+@media screen and (max-device-width: 667px) {
+  html {
+    font-size: 12px;
+  }
+}
+
+/* iPhone 12 and 13 series */
+@media screen and (max-device-width: 844px) and (-webkit-min-device-pixel-ratio: 3) {
+  html {
+    font-size: 14px;
+  }
+}
+
+/* iPhone 14 and 15 series */
+@media screen and (max-device-width: 896px) and (-webkit-min-device-pixel-ratio: 2) {
+  html {
+    font-size: 14px;
+  }
+}
+
+/* iPhone 14 Pro Max and 15 Pro Max */
+@media screen and (max-device-width: 896px) and (-webkit-min-device-pixel-ratio: 3) {
+  html {
+    font-size: 15px;
+  }
+}
+
+/* General mobile optimizations */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: text;
+  -khtml-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* Prevent horizontal scroll */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Ensure buttons and links are touch-friendly */
+button, a, input, select, textarea {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Improve readability on small screens */
+@media screen and (max-width: 480px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}

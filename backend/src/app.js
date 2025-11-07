@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import roomRoutes from "./routes/roomRoutes.js";
+import roomTypeRoutes from "./routes/roomTypeRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import guestRoutes from "./routes/guestRoutes.js";
 import paymentRoutes from "./routes/paymentsRoutes.js";
@@ -43,6 +44,7 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 
 app.use("/api/rooms", roomRoutes);
+app.use("/api/room-types", roomTypeRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/guests", guestRoutes);
 app.use("/api/payments", paymentRoutes);

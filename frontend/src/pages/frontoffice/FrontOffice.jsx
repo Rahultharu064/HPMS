@@ -4,6 +4,7 @@ import Sidebar from '../../components/frontoffice/Layout/Sidebar'
 import Dashboard from '../../components/frontoffice/sections/Dashboard'
 import Reservations from '../../components/frontoffice/sections/Reservations'
 import RoomStatus from '../../components/frontoffice/sections/RoomStatus'
+import RoomAvailability from '../../components/frontoffice/sections/RoomAvailability'
 import CheckInOut from '../../components/frontoffice/sections/CheckInOut'
 import Billing from '../../components/frontoffice/sections/Billing'
 import Guests from '../../components/frontoffice/sections/Guests'
@@ -22,6 +23,7 @@ const FrontOffice = () => {
     { icon: 'Users', label: 'Reservations', key: 'reservations', path: '/front-office/reservations' },
     { icon: 'Plus', label: 'Offline Reservation', key: 'new-reservation', path: '/front-office/new-reservation' },
     { icon: 'Bed', label: 'Room Status', key: 'rooms', path: '/front-office/rooms' },
+    { icon: 'Bed', label: 'Room Availability', key: 'room-availability', path: '/front-office/room-availability' },
     { icon: 'CheckCircle', label: 'Check-in/out', key: 'checkin', path: '/front-office/checkin' },
     { icon: 'CreditCard', label: 'Billing & Payment', key: 'billing', path: '/front-office/billing' },
     { icon: 'Users', label: 'Guest Profiles', key: 'guests', path: '/front-office/guests' },
