@@ -319,6 +319,9 @@ model Booking {
   promotion Promotion? @relation(fields: [promotionId], references: [id])
   coupon    Coupon?    @relation(fields: [couponCode], references: [code])
 
+  // Extra services relation
+  extraServices BookingExtraService[]
+
   @@map("booking")
 }
 
@@ -595,4 +598,39 @@ model Inspection {
 
   @@index([roomId, status])
   @@map("inspection")
+}
+
+// =====================
+// Extra Services Models
+// =====================
+
+model ExtraService {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?  @db.Text
+  price       Float
+  category    String   // e.g., 'food', 'amenity', 'transport'
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+
+  bookingExtraServices BookingExtraService[]
+
+  @@map("extra_service")
+}
+
+model BookingExtraService {
+  id            Int      @id @default(autoincrement())
+  bookingId     Int
+  extraServiceId Int
+  quantity      Int      @default(1)
+  unitPrice     Float
+  totalPrice    Float
+  addedAt       DateTime @default(now())
+
+  booking      Booking      @relation(fields: [bookingId], references: [id])
+  extraService ExtraService @relation(fields: [extraServiceId], references: [id])
+
+  @@index([bookingId])
+  @@map("booking_extra_service")
 }

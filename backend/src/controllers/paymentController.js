@@ -150,15 +150,28 @@ export const createPayment = async (req, res) => {
     // Validate booking exists
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
-      include: { guest: true, room: true }
+      include: {
+        guest: true,
+        room: true,
+        extraServices: {
+          include: {
+            extraService: true
+          }
+        }
+      }
     });
 
     if (!booking) {
       return res.status(404).json({ success: false, error: "Booking not found" });
     }
 
-    // Determine amount (fallback to booking total)
-    const amt = amount ? parseFloat(amount) : Number(booking.totalAmount || 0)
+    // Calculate total amount including extra services
+    let totalAmount = Number(booking.totalAmount || 0);
+    const extraServicesTotal = booking.extraServices.reduce((sum, es) => sum + Number(es.totalPrice), 0);
+    totalAmount += extraServicesTotal;
+
+    // Determine amount (fallback to calculated total)
+    const amt = amount ? parseFloat(amount) : totalAmount;
     if (!Number.isFinite(amt) || amt <= 0) {
       return res.status(400).json({ success: false, error: "Invalid amount" });
     }
@@ -677,7 +690,19 @@ export const getPaymentHistory = async (req, res) => {
 
     const payments = await prisma.payment.findMany({
       where: { bookingId: parseInt(bookingId) },
-      include: { booking: { include: { room: true, guest: true } } },
+      include: {
+        booking: {
+          include: {
+            room: true,
+            guest: true,
+            extraServices: {
+              include: {
+                extraService: true
+              }
+            }
+          }
+        }
+      },
       orderBy: { createdAt: 'desc' }
     });
 

@@ -6,6 +6,7 @@ import Sidebar from '../../components/owner/Layout/Sidebar'
 import Dashboard from '../../components/owner/sections/Dashboard'
 import Rooms from '../../components/owner/sections/Rooms'
 import Facilities from '../../components/owner/sections/Facilities'
+import ExtraServicesAdmin from '../../components/owner/sections/ExtraServicesAdmin'
 
 const OwnerAdmin = () => {
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -65,6 +66,8 @@ const OwnerAdmin = () => {
       navigate('/owner-admin/ota')
     } else if (activeTab === 'facilities') {
       navigate('/owner-admin/facilities')
+    } else if (activeTab === 'extra-services') {
+      navigate('/owner-admin/extra-services')
     }
     // Add more route mappings here as new child routes are introduced
   }, [activeTab, navigate])
@@ -75,6 +78,7 @@ const OwnerAdmin = () => {
     if (path.startsWith('/owner-admin/ota')) setActiveTab('ota')
     else if (path.startsWith('/owner-admin/owneroom')) setActiveTab('rooms')
     else if (path.startsWith('/owner-admin/facilities')) setActiveTab('facilities')
+    else if (path.startsWith('/owner-admin/extra-services')) setActiveTab('extra-services')
     else if (path.startsWith('/owner-admin')) setActiveTab('dashboard')
   }, [location.pathname])
 
@@ -82,6 +86,7 @@ const OwnerAdmin = () => {
     { icon: 'LayoutDashboard', label: 'Dashboard', key: 'dashboard' },
     { icon: 'Hotel', label: 'Rooms', key: 'rooms', route: '/owner-admin/owneroom' },
     { icon: 'Sparkles', label: 'Facilities', key: 'facilities', route: '/owner-admin/facilities' },
+    { icon: 'Package', label: 'Extra Services', key: 'extra-services', route: '/owner-admin/extra-services' },
     { icon: 'Users', label: 'Users', key: 'users' },
     { icon: 'Globe', label: 'OTA Sync', key: 'ota', route: '/owner-admin/ota' },
     { icon: 'DollarSign', label: 'Finance', key: 'finance' },
@@ -110,6 +115,12 @@ const OwnerAdmin = () => {
       case 'facilities':
         return (
           <Facilities
+            darkMode={darkMode}
+          />
+        )
+      case 'extra-services':
+        return (
+          <ExtraServicesAdmin
             darkMode={darkMode}
           />
         )
@@ -165,6 +176,7 @@ const OwnerAdmin = () => {
                   {activeTab === 'dashboard' && 'Welcome back! Here is your property overview'}
                   {activeTab === 'rooms' && 'Manage all rooms and their availability'}
                   {activeTab === 'facilities' && 'Manage hotel facilities and services'}
+                  {activeTab === 'extra-services' && 'Manage additional services offered to guests'}
                   {activeTab === 'users' && 'Manage staff accounts and permissions'}
                   {activeTab === 'ota' && 'Manage connections with Online Travel Agencies'}
                   {activeTab === 'finance' && 'Track revenue, expenses, and transactions'}

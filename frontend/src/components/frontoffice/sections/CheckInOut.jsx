@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Search, Users, Bed, Clock, CheckCircle, XCircle, Download } from 'lucide-react'
+import { Search, Users, Bed, Clock, CheckCircle, XCircle, Download, Plus } from 'lucide-react'
 import { bookingService } from '../../../services/bookingService'
 import { exportToCsv } from '../../../utils/exportCsv'
 import toast from 'react-hot-toast'
+import ExtraServices from './ExtraServices'
 
 const CheckInOut = () => {
   const [tab, setTab] = useState('checkin')
@@ -226,13 +227,22 @@ const CheckInOut = () => {
                       <p className="text-sm text-gray-500">{g.checkIn} to {g.checkOut}</p>
                       <p className="text-sm font-medium text-gray-900">₹{g.amount.toLocaleString()}</p>
                     </div>
-                    <button
-                      onClick={()=>open('checkin', g)}
-                      className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all transform hover:scale-105 shadow-lg flex items-center gap-2"
-                    >
-                      <CheckCircle size={16}/>
-                      {g.status === 'confirmed' ? 'Complete Check-in' : 'Check-in'}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={()=>open('checkin', g)}
+                        className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all transform hover:scale-105 shadow-lg flex items-center gap-2"
+                      >
+                        <CheckCircle size={16}/>
+                        {g.status === 'confirmed' ? 'Complete Check-in' : 'Check-in'}
+                      </button>
+                      <button
+                        onClick={() => setModal({ open: true, type: 'services', item: g })}
+                        className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-2 rounded-lg hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105 shadow-lg flex items-center gap-2"
+                      >
+                        <Plus size={16}/>
+                        Services
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -286,7 +296,19 @@ const CheckInOut = () => {
         </div>
       )}
 
-      {modal.open && (
+      {modal.open && modal.type === 'services' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Extra Services for {modal.item?.guest}</h3>
+              <button onClick={close} className="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <ExtraServices bookingId={modal.item?.id} />
+          </div>
+        </div>
+      )}
+
+      {modal.open && modal.type !== 'services' && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-2xl mx-4">
             <div className="flex items-center justify-between mb-4">

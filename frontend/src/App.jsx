@@ -7,6 +7,7 @@ import PublicFacilities from './pages/Publicwebsite/Facilities'
 import OwnerRooms from './components/owner/sections/Rooms'
 import RoomTypes from './components/owner/sections/RoomTypes'
 import Facilities from './components/owner/sections/Facilities'
+import ExtraServicesAdmin from './components/owner/sections/ExtraServicesAdmin'
 import RoomDetail from './pages/Publicwebsite/RoomDetail'
 import BookingForm from './pages/Publicwebsite/BookingForm'
 import BookingConfirmation from './pages/Publicwebsite/BookingConfirmation'
@@ -111,12 +112,13 @@ const App = () => {
       element: <OwnerAdmin />,
       
       children: [
-        { index: true, element: <Navigate to="/owner-admin/create-room" replace /> },
+        { index: true, element: <Navigate to="/owner-admin/dashboard" replace /> },
         { path: "create-room", element: <CreateRoom /> },
         { path: "ota", element: <OTA /> },
         { path: "owneroom", element: <OwnerRooms /> },
         { path: "room-types", element: <RoomTypes /> },
-        { path: "facilities", element: <Facilities /> }
+        { path: "facilities", element: <Facilities /> },
+        { path: "extra-services", element: <ExtraServicesAdmin /> }
       ]
     },
     //frontoffice routes

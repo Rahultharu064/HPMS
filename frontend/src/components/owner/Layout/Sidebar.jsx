@@ -1,8 +1,8 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Hotel, Sparkles, Users, Globe, DollarSign, BarChart3, Settings } from 'lucide-react'
+import { LayoutDashboard, Hotel, Sparkles, Users, Globe, DollarSign, BarChart3, Settings, Package } from 'lucide-react'
 
-const iconMap = { LayoutDashboard, Hotel, Sparkles, Users, Globe, DollarSign, BarChart3, Settings }
+const iconMap = { LayoutDashboard, Hotel, Sparkles, Users, Globe, DollarSign, BarChart3, Settings, Package }
 
 const Sidebar = ({ darkMode, sidebarOpen, activeTab, setActiveTab, items, selectedRoom }) => {
   const navigate = useNavigate()

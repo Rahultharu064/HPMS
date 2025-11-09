@@ -194,7 +194,12 @@ export const getAllBookings = async (req, res) => {
         include: {
           guest: true,
           room: { include: { image: true, video: true } },
-          payments: true
+          payments: true,
+          extraServices: {
+            include: {
+              extraService: true
+            }
+          }
         },
         skip,
         take: limit,
@@ -235,6 +240,11 @@ export const getBookingById = async (req, res) => {
           }
         },
         payments: true,
+        extraServices: {
+          include: {
+            extraService: true
+          }
+        }
       }
     });
     if (!booking) return res.status(404).json({ success: false, error: 'Booking not found' });

@@ -1,4 +1,16 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+
+export { API_BASE_URL };
+
+// Create an axios-like API object
+const api = {
+  get: (url) => apiRequest(url, { method: 'GET' }),
+  post: (url, data) => apiRequest(url, { method: 'POST', body: JSON.stringify(data) }),
+  put: (url, data) => apiRequest(url, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (url) => apiRequest(url, { method: 'DELETE' }),
+};
+
+export default api;
 
 // API Debug Helper
 export const apiDebug = {
