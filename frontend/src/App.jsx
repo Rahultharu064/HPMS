@@ -36,6 +36,10 @@ import HKSchedule from './components/housekeeping/sections/Schedule'
 import HKStaff from './components/housekeeping/sections/Staff'
 import HKReports from './components/housekeeping/sections/Reports'
 import HKSettings from './components/housekeeping/sections/Settings'
+import Register from './components/auth/Register'
+import Login from './components/auth/Login'
+import GuestProfile from './pages/Publicwebsite/GuestProfile'
+import Users from './components/owner/sections/Users'
 
 
 
@@ -95,6 +99,18 @@ const App = () => {
       element: <BookingSuccess />
     },
     {
+      path: "/register",
+      element: <Register />
+    },
+    {
+      path: "/login",
+      element: <Login />
+    },
+    {
+      path: "/profile",
+      element: <GuestProfile />
+    },
+    {
       path: "/guest/profile",
       element: <Guests />
     },
@@ -118,7 +134,8 @@ const App = () => {
         { path: "owneroom", element: <OwnerRooms /> },
         { path: "room-types", element: <RoomTypes /> },
         { path: "facilities", element: <Facilities /> },
-        { path: "extra-services", element: <ExtraServicesAdmin /> }
+        { path: "extra-services", element: <ExtraServicesAdmin /> },
+        {path: "users", element: <Users />}
       ]
     },
     //frontoffice routes

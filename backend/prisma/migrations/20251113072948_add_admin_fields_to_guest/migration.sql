@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `guest` ADD COLUMN `isActive` BOOLEAN NOT NULL DEFAULT true,
+    ADD COLUMN `role` VARCHAR(191) NULL DEFAULT 'guest';

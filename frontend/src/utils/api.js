@@ -56,6 +56,13 @@ export const apiRequest = async (url, options = {}) => {
     const headers = {
       ...(options.headers || {}),
     };
+
+    // Add authorization header if token exists
+    const token = localStorage.getItem('token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     // Only set JSON content-type when NOT sending FormData
     if (!isFormData && !headers["Content-Type"]) {
       headers["Content-Type"] = "application/json";

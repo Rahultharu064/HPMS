@@ -18,7 +18,7 @@ export const getPaymentGateways = async (req, res) => {
         code: 'esewa',
         name: 'eSewa',
         description: 'Pay with eSewa',
-        icon: 'https://esewa.com.np/static/img/logo.png',
+        icon: 'C:\\Users\\Dell\\Downloads/esewa.png',
         enabled: true
       },
       {

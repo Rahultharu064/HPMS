@@ -15,6 +15,7 @@ import packageRoutes from "./routes/packageRoutes.js";
 import promotionRoutes from "./routes/promotionRoutes.js";
 import couponRoutes from "./routes/couponRoutes.js";
 import extraServiceRoutes from "./routes/extraServiceRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 import dotenv from "dotenv";
 import prisma from "./config/client.js";
 dotenv.config();
@@ -44,6 +45,7 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 
 
+app.use("/api/auth", authRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/room-types", roomTypeRoutes);
 app.use("/api/bookings", bookingRoutes);

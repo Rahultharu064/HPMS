@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Menu, X, Phone, Mail, MapPin, Star, Search, User, Heart, ShoppingCart, Home, Bed, Info, Settings } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import authService from '../../../services/authService'
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -102,28 +103,44 @@ const Header = () => {
             {/* Action Buttons */}
             <div className="flex items-center gap-4">
               {/* Search */}
-              <button className={`p-2 rounded-full transition-colors ${
-                isScrolled 
-                  ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' 
-                  : 'bg-white/20 text-white hover:bg-white/30'
+              <button className={`p-2 rounded-full transition-colors border-2 ${
+                isScrolled
+                  ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700'
+                  : 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600 hover:border-blue-600'
               }`}>
                 <Search size={20} />
               </button>
 
               {/* User Account */}
-              <button className={`p-2 rounded-full transition-colors ${
-                isScrolled 
-                  ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' 
-                  : 'bg-white/20 text-white hover:bg-white/30'
-              }`}>
-                <User size={20} />
-              </button>
+              {authService.isAuthenticated() ? (
+                <Link
+                  to="/profile"
+                  className={`p-2 rounded-full transition-colors border-2 ${
+                    isScrolled
+                      ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700'
+                      : 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600 hover:border-blue-600'
+                  }`}
+                >
+                  <User size={20} />
+                </Link>
+              ) : (
+                <Link
+                  to="/login"
+                  className={`p-2 rounded-full transition-colors border-2 ${
+                    isScrolled
+                      ? 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
+                      : 'bg-white/20 text-white border-white/30 hover:bg-white/30'
+                  }`}
+                >
+                  <User size={20} />
+                </Link>
+              )}
 
               {/* Wishlist */}
-              <button className={`p-2 rounded-full transition-colors ${
-                isScrolled 
-                  ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' 
-                  : 'bg-white/20 text-white hover:bg-white/30'
+              <button className={`p-2 rounded-full transition-colors border-2 ${
+                isScrolled
+                  ? 'bg-red-600 text-white border-red-600 hover:bg-red-700 hover:border-red-700'
+                  : 'bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600'
               }`}>
                 <Heart size={20} />
               </button>

@@ -264,21 +264,27 @@ model Review {
 
 // App models used throughout controllers
 model Guest {
-  id            Int       @id @default(autoincrement())
-  firstName     String
-  lastName      String
-  email         String
-  phone         String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @default(now())
-  dateOfBirth   DateTime?
-  modeOfArrival String?
-  photoUrl      String?
-  loyaltyLevel  String?
-  vip           Boolean?
-  nationality   String?
-  idType        String?
-  idNumber      String?
+  id                Int       @id @default(autoincrement())
+  firstName         String
+  lastName          String
+  email             String    @unique
+  phone             String
+  password          String?   // Hashed password for auth
+  isVerified        Boolean   @default(false) // Email verification
+  verificationToken String?   // Token for email verification
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @default(now())
+  dateOfBirth       DateTime?
+  modeOfArrival     String?
+  photoUrl          String?
+  loyaltyLevel      String?
+  vip               Boolean?
+  nationality       String?
+  idType            String?
+  idNumber          String?
+  // Admin fields
+  role              String?   @default("guest") // guest, admin, owner
+  isActive          Boolean   @default(true)
 
   bookings Booking[]
 

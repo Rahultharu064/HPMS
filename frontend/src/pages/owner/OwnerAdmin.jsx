@@ -1,12 +1,13 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { DollarSign, Hotel, TrendingUp, Users } from 'lucide-react'
+import { DollarSign, Hotel, TrendingUp, Users as UsersIcon } from 'lucide-react'
 import Header from '../../components/owner/Layout/Header'
 import Sidebar from '../../components/owner/Layout/Sidebar'
 import Dashboard from '../../components/owner/sections/Dashboard'
 import Rooms from '../../components/owner/sections/Rooms'
 import Facilities from '../../components/owner/sections/Facilities'
 import ExtraServicesAdmin from '../../components/owner/sections/ExtraServicesAdmin'
+import Users from '../../components/owner/sections/Users'
 
 const OwnerAdmin = () => {
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -87,7 +88,7 @@ const OwnerAdmin = () => {
     { icon: 'Hotel', label: 'Rooms', key: 'rooms', route: '/owner-admin/owneroom' },
     { icon: 'Sparkles', label: 'Facilities', key: 'facilities', route: '/owner-admin/facilities' },
     { icon: 'Package', label: 'Extra Services', key: 'extra-services', route: '/owner-admin/extra-services' },
-    { icon: 'Users', label: 'Users', key: 'users' },
+    { icon: 'Users', label: 'Users', key: 'users', route: '/owner-admin/users' },
     { icon: 'Globe', label: 'OTA Sync', key: 'ota', route: '/owner-admin/ota' },
     { icon: 'DollarSign', label: 'Finance', key: 'finance' },
     { icon: 'BarChart3', label: 'Reports', key: 'reports' },
@@ -98,7 +99,7 @@ const OwnerAdmin = () => {
     { label: 'Total Revenue', value: `₹${revenue.toLocaleString()}`, icon: DollarSign, change: '+12.5%', color: 'blue' },
     { label: 'Occupancy Rate', value: `${occupancy}%`, icon: Hotel, change: '+8.2%', color: 'emerald' },
     { label: 'Avg Room Rate', value: `₹${avgRate.toLocaleString()}`, icon: TrendingUp, change: '+5.7%', color: 'purple' },
-    { label: 'Staff Productivity', value: `${productivity}%`, icon: Users, change: '+3.1%', color: 'amber' }
+    { label: 'Staff Productivity', value: `${productivity}%`, icon: UsersIcon, change: '+3.1%', color: 'amber' }
   ]), [revenue, occupancy, avgRate, productivity])
 
   const renderContent = useCallback(() => {
@@ -121,6 +122,12 @@ const OwnerAdmin = () => {
       case 'extra-services':
         return (
           <ExtraServicesAdmin
+            darkMode={darkMode}
+          />
+        )
+      case 'users':
+        return (
+          <Users
             darkMode={darkMode}
           />
         )
@@ -177,7 +184,7 @@ const OwnerAdmin = () => {
                   {activeTab === 'rooms' && 'Manage all rooms and their availability'}
                   {activeTab === 'facilities' && 'Manage hotel facilities and services'}
                   {activeTab === 'extra-services' && 'Manage additional services offered to guests'}
-                  {activeTab === 'users' && 'Manage staff accounts and permissions'}
+                  {activeTab === 'users' && 'Manage registered users and their account information'}
                   {activeTab === 'ota' && 'Manage connections with Online Travel Agencies'}
                   {activeTab === 'finance' && 'Track revenue, expenses, and transactions'}
                   {activeTab === 'reports' && 'Generate and view detailed reports'}
