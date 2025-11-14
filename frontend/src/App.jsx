@@ -38,8 +38,13 @@ import HKReports from './components/housekeeping/sections/Reports'
 import HKSettings from './components/housekeeping/sections/Settings'
 import Register from './components/auth/Register'
 import Login from './components/auth/Login'
+import AdminLogin from './components/auth/AdminLogin'
+import StaffLogin from './components/auth/StaffLogin'
+import HousekeepingLogin from './components/auth/HousekeepingLogin'
 import GuestProfile from './pages/Publicwebsite/GuestProfile'
 import Users from './components/owner/sections/Users'
+import OwnerDashboard from './components/owner/sections/Dashboard'
+import ProtectedAdminRoute from './components/auth/ProtectedAdminRoute'
 
 
 
@@ -107,6 +112,18 @@ const App = () => {
       element: <Login />
     },
     {
+      path: "/admin/login",
+      element: <AdminLogin />
+    },
+    {
+      path: "/staff/login",
+      element: <StaffLogin />
+    },
+    {
+      path: "/housekeeping/login",
+      element: <HousekeepingLogin />
+    },
+    {
       path: "/profile",
       element: <GuestProfile />
     },
@@ -125,10 +142,11 @@ const App = () => {
     // Owner Admin Routes
     {
       path: "/owner-admin",
-      element: <OwnerAdmin />,
-      
+      element: <ProtectedAdminRoute><OwnerAdmin /></ProtectedAdminRoute>,
+
       children: [
         { index: true, element: <Navigate to="/owner-admin/dashboard" replace /> },
+        {path:"dashboard", element: <OwnerDashboard /> },
         { path: "create-room", element: <CreateRoom /> },
         { path: "ota", element: <OTA /> },
         { path: "owneroom", element: <OwnerRooms /> },

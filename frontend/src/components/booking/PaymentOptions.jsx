@@ -40,12 +40,15 @@ const PaymentOptions = ({ value, onChange, gateways = [] }) => {
 
   const getGatewayIcon = (code) => {
     const icons = {
-      'khalti': Smartphone,
-      'esewa': Smartphone,
       'cash': Banknote,
       'card': CreditCard
     }
     return icons[code] || CreditCard
+  }
+
+  const getGatewayImage = (code) => {
+    // Removed image support for khalti and esewa to use styled text instead
+    return null
   }
 
   const getGatewayColor = (code) => {
@@ -98,13 +101,26 @@ const PaymentOptions = ({ value, onChange, gateways = [] }) => {
               }`}
               onClick={() => handleGatewayChange(gateway.code)}
             >
-              <div className="flex items-center space-x-3">
-                <div className={`p-2 rounded-lg ${colorClass}`}>
-                  <IconComponent size={24} />
-                </div>
+              <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900">{gateway.name}</h4>
-                  <p className="text-sm text-gray-600">{gateway.description}</p>
+                  {gateway.code === 'khalti' ? (
+                    <span className="text-2xl font-bold text-purple-600">Khalti</span>
+                  ) : gateway.code === 'esewa' ? (
+                    <div className="flex items-center space-x-2">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-base"
+                        style={{ backgroundColor: '#60BB46' }}
+                      >
+                        e
+                      </div>
+                      <span className="text-lg font-normal text-black" style={{ fontFamily: 'Arial, sans-serif' }}>Sewa</span>
+                    </div>
+                  ) : (
+                    <>
+                      <h4 className="font-semibold text-gray-900">{gateway.name}</h4>
+                      <p className="text-sm text-gray-600">{gateway.description}</p>
+                    </>
+                  )}
                 </div>
                 <div className="flex items-center">
                   <input
@@ -113,7 +129,7 @@ const PaymentOptions = ({ value, onChange, gateways = [] }) => {
                     value={gateway.code}
                     checked={isSelected}
                     onChange={() => handleGatewayChange(gateway.code)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    className="w-2 h-2 text-blue-600 border-gray-200 focus:ring-blue-500"
                   />
                 </div>
               </div>

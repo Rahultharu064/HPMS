@@ -41,7 +41,7 @@ const Dashboard = ({ darkMode, kpis }) => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpis.map((kpi, idx) => (
+        {kpis && kpis.map((kpi, idx) => (
           <div key={idx} className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
             <div className="flex justify-between items-start mb-4">
               <div className={`p-3 rounded-2xl bg-${kpi.color}-100`}>

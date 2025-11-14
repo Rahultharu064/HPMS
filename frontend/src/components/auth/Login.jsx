@@ -26,7 +26,15 @@ const Login = () => {
       await authService.login(formData);
       navigate('/profile'); // Redirect to profile or dashboard
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      const errorMessage = err.message || 'Login failed';
+      setError(errorMessage);
+
+      // If guest not found, clear any existing tokens and redirect to login
+      if (errorMessage === 'Guest not found') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        // Stay on login page
+      }
     } finally {
       setLoading(false);
     }

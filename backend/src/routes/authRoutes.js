@@ -9,6 +9,14 @@ import {
   updateProfile,
   uploadPhoto,
   getUserBookings,
+  requestAdminOtp,
+  loginAdmin,
+  setupAdminPassword,
+  loginAdminWithPassword,
+  loginStaff,
+  loginHousekeeping,
+  logoutAdmin,
+  getAdminProfile,
 } from '../controllers/authController.js';
 import { authenticate } from '../middleware/auth.js';
 import multer from 'multer';
@@ -52,5 +60,20 @@ router.get('/guest/profile', authenticate, getProfile);
 router.put('/guest/profile', authenticate, updateProfile);
 router.post('/guest/upload-photo', authenticate, upload.single('photo'), uploadPhoto);
 router.get('/guest/bookings', authenticate, getUserBookings);
+
+// Admin routes
+router.post('/admin/request-otp', requestAdminOtp);
+router.post('/admin/verify-otp', loginAdmin);
+router.post('/admin/setup-password', setupAdminPassword);
+router.post('/admin/login-password', loginAdminWithPassword);
+router.post('/admin/logout', authenticate, logoutAdmin);
+router.get('/admin/profile', authenticate, getAdminProfile);
+router.post('/admin/upload-photo', authenticate, upload.single('photo'), uploadPhoto);
+
+// Staff routes
+router.post('/staff/login', loginStaff);
+
+// Housekeeping routes
+router.post('/housekeeping/login', loginHousekeeping);
 
 export default router;

@@ -1,6 +1,29 @@
 import prisma from "../../config/client.js";
 import { getIO } from "../../socket.js";
 
+// Helper function to create notification
+const createNotification = async (type, message, sender = null, meta = null) => {
+  try {
+    const notification = await prisma.notification.create({
+      data: {
+        type,
+        message,
+        sender,
+        meta
+      }
+    });
+
+    // Emit notification event via Socket.IO
+    const io = getIO();
+    io && io.emit('notification:new', { notification });
+
+    return notification;
+  } catch (err) {
+    console.error('Failed to create notification:', err);
+    return null;
+  }
+};
+
 // GET /api/hk/tasks
 export const listTasks = async (req, res) => {
   try {
@@ -83,6 +106,15 @@ export const createTask = async (req, res) => {
     });
     const io = getIO();
     io && io.emit('hk:task:created', { task });
+
+    // Create notification for new housekeeping task
+    await createNotification(
+      'housekeeping',
+      `New ${task.type} task created for room ${task.room.roomNumber}: ${task.title}`,
+      'system',
+      { taskId: task.id, roomId: task.roomId, type: 'new_task' }
+    );
+
     // If this is a cleaning task, ensure the room appears in the cleaning schedule
     // by marking it as 'needs-cleaning' and notifying listeners.
     if (task.type === 'cleaning') {
@@ -130,6 +162,16 @@ export const updateTask = async (req, res) => {
     });
     const io = getIO();
     io && io.emit('hk:task:updated', { task });
+
+    // Create notification for task status change
+    if (body.status && body.status !== task.status) {
+      await createNotification(
+        'housekeeping',
+        `Task status changed to ${body.status} for room ${task.room.roomNumber}: ${task.title}`,
+        'system',
+        { taskId: task.id, roomId: task.roomId, type: 'status_change', oldStatus: task.status, newStatus: body.status }
+      );
+    }
     res.json({ success: true, task });
   } catch (err) {
     console.error(err);

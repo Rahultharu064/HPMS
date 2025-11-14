@@ -40,7 +40,13 @@ const GuestProfile = () => {
         phone: data.guest.phone || '',
       });
     } catch (err) {
-      toast.error('Failed to load profile');
+      if (err.message.includes('Guest not found') || err.response?.status === 404) {
+        toast.error('Your account was not found. Please log in again.');
+        authService.logout();
+        navigate('/login');
+      } else {
+        toast.error('Failed to load profile');
+      }
     }
   };
 
@@ -49,7 +55,13 @@ const GuestProfile = () => {
       const data = await authService.getUserBookings();
       setBookings(data.bookings || []);
     } catch (err) {
-      toast.error('Failed to load bookings');
+      if (err.message.includes('Guest not found') || err.response?.status === 404) {
+        toast.error('Your account was not found. Please log in again.');
+        authService.logout();
+        navigate('/login');
+      } else {
+        toast.error('Failed to load bookings');
+      }
     }
   };
 
@@ -67,7 +79,13 @@ const GuestProfile = () => {
       toast.success('Profile updated successfully!');
       setEditing(false);
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Update failed');
+      if (err.message.includes('Guest not found') || err.response?.status === 404) {
+        toast.error('Your account was not found. Please log in again.');
+        authService.logout();
+        navigate('/login');
+      } else {
+        toast.error(err.response?.data?.error || 'Update failed');
+      }
     } finally {
       setLoading(false);
     }
@@ -95,7 +113,13 @@ const GuestProfile = () => {
       toast.success('Profile photo updated successfully!');
       await fetchProfile(); // Refresh profile data
     } catch (err) {
-      toast.error('Failed to upload photo');
+      if (err.message.includes('Guest not found') || err.response?.status === 404) {
+        toast.error('Your account was not found. Please log in again.');
+        authService.logout();
+        navigate('/login');
+      } else {
+        toast.error('Failed to upload photo');
+      }
     } finally {
       setUploadingPhoto(false);
     }

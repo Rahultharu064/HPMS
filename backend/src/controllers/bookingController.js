@@ -6,6 +6,29 @@ import { createWorker } from 'tesseract.js'
 import { getIO } from "../socket.js";
 import { sendBookingSuccessEmail } from "../services/emailService.js";
 
+// Helper function to create notification
+const createNotification = async (type, message, sender = null, meta = null) => {
+  try {
+    const notification = await prisma.notification.create({
+      data: {
+        type,
+        message,
+        sender,
+        meta
+      }
+    });
+
+    // Emit notification event via Socket.IO
+    const io = getIO();
+    io && io.emit('notification:new', { notification });
+
+    return notification;
+  } catch (err) {
+    console.error('Failed to create notification:', err);
+    return null;
+  }
+};
+
 const diffNights = (checkIn, checkOut) => {
   const ms = checkOut.getTime() - checkIn.getTime();
   const nights = Math.ceil(ms / (1000 * 60 * 60 * 24));
@@ -296,10 +319,11 @@ export const createBooking = async (req, res) => {
       return res.status(409).json({ success: false, error: 'Room not available for selected dates' });
     }
 
-    // Create new guest - always create a new guest record for each booking
-    // This avoids unique constraint issues and maintains data integrity
-    const guest = await prisma.guest.create({
-      data: {
+    // Find or create guest - use existing guest if email already exists, otherwise create new
+    const guest = await prisma.guest.upsert({
+      where: { email: body.email },
+      update: {}, // No updates needed if guest exists
+      create: {
         firstName: body.firstName,
         lastName: body.lastName,
         email: body.email,
@@ -457,6 +481,14 @@ export const createBooking = async (req, res) => {
     try {
       const io = getIO();
       io && io.emit('fo:booking:created', { booking: result.booking })
+
+      // Create notification for new booking
+      await createNotification(
+        'booking',
+        `New booking created for ${result.booking.guest.firstName} ${result.booking.guest.lastName} in room ${result.booking.room.roomNumber}`,
+        'system',
+        { bookingId: result.booking.id, type: 'new' }
+      );
     } catch {}
 
     res.status(201).json({ success: true, ...result });
@@ -624,6 +656,16 @@ export const updateBooking = async (req, res) => {
     try {
       const io = getIO();
       io && io.emit('fo:booking:updated', { booking: updatedBooking })
+
+      // Create notification for booking status change
+      if (body.status && body.status !== existingBooking.status) {
+        await createNotification(
+          'booking',
+          `Booking status changed to ${body.status} for ${updatedBooking.guest.firstName} ${updatedBooking.guest.lastName} in room ${updatedBooking.room.roomNumber}`,
+          'system',
+          { bookingId: updatedBooking.id, type: 'status_change', oldStatus: existingBooking.status, newStatus: body.status }
+        );
+      }
     } catch {}
 
     let message = '';

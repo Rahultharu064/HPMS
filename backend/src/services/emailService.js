@@ -19,6 +19,8 @@ const createTransporter = () => {
   });
 };
 
+export { createTransporter };
+
 // Send booking success email
 export const sendBookingSuccessEmail = async (booking) => {
   try {

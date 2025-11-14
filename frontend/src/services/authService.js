@@ -1,5 +1,4 @@
-import api from '../utils/api';
-import { apiRequest } from '../utils/api';
+import api, { apiRequest } from '../utils/api';
 
 const authService = {
   register: async (data) => {
@@ -22,28 +21,68 @@ const authService = {
   },
 
   getProfile: async () => {
-    const response = await api.get('/api/auth/guest/profile');
-    return response;
+    try {
+      const response = await api.get('/api/auth/guest/profile');
+      return response;
+    } catch (error) {
+      if (error.message.includes('Guest not found') || error.response?.status === 404) {
+        // Clear local storage and throw specific error
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        throw new Error('Guest not found');
+      }
+      throw error;
+    }
   },
 
   updateProfile: async (data) => {
-    const response = await api.put('/api/auth/guest/profile', data);
-    return response;
+    try {
+      const response = await api.put('/api/auth/guest/profile', data);
+      return response;
+    } catch (error) {
+      if (error.message.includes('Guest not found') || error.response?.status === 404) {
+        // Clear local storage and throw specific error
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        throw new Error('Guest not found');
+      }
+      throw error;
+    }
   },
 
   uploadPhoto: async (file) => {
-    const formData = new FormData();
-    formData.append('photo', file);
-    const response = await apiRequest('/api/auth/guest/upload-photo', {
-      method: 'POST',
-      body: formData
-    });
-    return response;
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+      const response = await apiRequest('/api/auth/guest/upload-photo', {
+        method: 'POST',
+        body: formData
+      });
+      return response;
+    } catch (error) {
+      if (error.message.includes('Guest not found') || error.response?.status === 404) {
+        // Clear local storage and throw specific error
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        throw new Error('Guest not found');
+      }
+      throw error;
+    }
   },
 
   getUserBookings: async () => {
-    const response = await api.get('/api/auth/guest/bookings');
-    return response;
+    try {
+      const response = await api.get('/api/auth/guest/bookings');
+      return response;
+    } catch (error) {
+      if (error.message.includes('Guest not found') || error.response?.status === 404) {
+        // Clear local storage and throw specific error
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        throw new Error('Guest not found');
+      }
+      throw error;
+    }
   },
 
   forgotPassword: async (email) => {
@@ -54,6 +93,82 @@ const authService = {
   resetPassword: async (token, newPassword) => {
     const response = await api.post('/api/auth/guest/reset-password', { token, newPassword });
     return response;
+  },
+
+  requestAdminOtp: async (email) => {
+    const response = await api.post('/api/auth/admin/request-otp', { email });
+    return response;
+  },
+
+  verifyAdminOtp: async (email, otp) => {
+    const response = await api.post('/api/auth/admin/verify-otp', { email, otp });
+    return response;
+  },
+
+  checkAdminOtpStatus: async (email) => {
+    const response = await api.post('/api/auth/admin/verify-otp', { email });
+    return response;
+  },
+
+  setupAdminPassword: async (email, password) => {
+    const response = await api.post('/api/auth/admin/setup-password', { email, password });
+    if (response.token) {
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+    }
+    return response;
+  },
+
+  loginAdminWithPassword: async (email, password) => {
+    const response = await api.post('/api/auth/admin/login-password', { email, password });
+    if (response.token) {
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+    }
+    return response;
+  },
+
+  loginStaff: async (pin) => {
+    const response = await api.post('/api/auth/staff/login', { pin });
+    if (response.token) {
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+    }
+    return response;
+  },
+
+  loginHousekeeping: async (accessCode) => {
+    const response = await api.post('/api/auth/housekeeping/login', { accessCode });
+    if (response.token) {
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+    }
+    return response;
+  },
+
+  getAdminProfile: async () => {
+    try {
+      const response = await api.get('/api/auth/admin/profile');
+      return response;
+    } catch (error) {
+      console.error('Failed to fetch admin profile:', error);
+      throw error;
+    }
+  },
+
+  uploadAdminPhoto: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+      const response = await apiRequest('/api/auth/admin/upload-photo', {
+        method: 'POST',
+        body: formData
+      });
+      return response;
+    } catch (error) {
+      console.error('Failed to upload admin photo:', error);
+      throw error;
+    }
   },
 
   isAuthenticated: () => {

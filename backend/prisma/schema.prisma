@@ -12,12 +12,30 @@ model Housekeeper {
   shift             String    @default("MORNING")
   contact           String?  @unique
   profilePictureUrl String?
+  accessCode        String?   // Hashed access code for authentication
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @default(now())
 
   tasks HkTask[]
 
   @@map("housekeeper")
+}
+
+// =====================
+// Front Office Staff
+// =====================
+
+model FrontOfficeStaff {
+  id        Int      @id @default(autoincrement())
+  name      String
+  pin       String   // Hashed PIN for authentication
+  role      String   @default("front_office") // front_office
+  shift     String   @default("MORNING")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@map("front_office_staff")
 }
 
 // =====================
@@ -268,7 +286,7 @@ model Guest {
   firstName         String
   lastName          String
   email             String    @unique
-  phone             String
+  phone             String?
   password          String?   // Hashed password for auth
   isVerified        Boolean   @default(false) // Email verification
   verificationToken String?   // Token for email verification

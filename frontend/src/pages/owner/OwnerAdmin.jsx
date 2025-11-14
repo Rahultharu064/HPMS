@@ -84,7 +84,7 @@ const OwnerAdmin = () => {
   }, [location.pathname])
 
   const sidebarItems = useMemo(() => ([
-    { icon: 'LayoutDashboard', label: 'Dashboard', key: 'dashboard' },
+    { icon: 'LayoutDashboard', label: 'Dashboard', key: 'dashboard', route: '/owner-admin' },
     { icon: 'Hotel', label: 'Rooms', key: 'rooms', route: '/owner-admin/owneroom' },
     { icon: 'Sparkles', label: 'Facilities', key: 'facilities', route: '/owner-admin/facilities' },
     { icon: 'Package', label: 'Extra Services', key: 'extra-services', route: '/owner-admin/extra-services' },

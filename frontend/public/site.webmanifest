@@ -1,0 +1,16 @@
+{
+  "name": "Hotel Property Management",
+  "short_name": "HPMS",
+  "description": "Comprehensive hotel management system for property owners, front office, and housekeeping staff",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
