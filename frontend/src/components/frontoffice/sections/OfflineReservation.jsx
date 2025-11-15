@@ -2,10 +2,8 @@ import React, { useState, useCallback, useEffect } from 'react'
 import { Calendar, Clock, Users, MapPin, CreditCard, CheckCircle, Upload, Phone, Mail, User as UserIcon, Car, Plane, Home as HomeIcon } from 'lucide-react'
 import { bookingService } from '../../../services/bookingService'
 import { roomService } from '../../../services/roomService'
-import { roomTypeService } from '../../../services/roomTypeService'
-import { packageService } from '../../../services/packageService'
-import { couponService } from '../../../services/couponService'
 import { useSearchParams } from 'react-router-dom'
+import toast from 'react-hot-toast'
 
 const OfflineReservation = () => {
   const [searchParams] = useSearchParams()
@@ -17,40 +15,22 @@ const OfflineReservation = () => {
   const [success, setSuccess] = useState('')
 
   const [formData, setFormData] = useState({
-    fullName: '',
-    gender: '',
-    dateOfBirth: '',
-    nationality: '',
-    phoneNumber: '',
+    firstName: '',
+    lastName: '',
     email: '',
+    phone: '',
+    nationality: '',
     idType: '',
     idNumber: '',
-    address: '',
-    modeOfArrival: '',
-    source: 'offline',
-    checkInDate: '',
-    checkOutDate: '',
-    arrivalTime: '',
-    departureTime: '',
+    roomId: '',
+    checkIn: '',
+    checkOut: '',
     adults: 1,
     children: 0,
-    roomType: '',
-    numberOfRooms: 1,
-    roomRate: 0,
-    purposeOfStay: '',
-    selectedRooms: [],
-    specialRequests: '',
-    paymentMethod: '',
-    advancePayment: 0,
-    discountCode: '',
-    bookingStatus: 'pending',
-    sendConfirmation: { email: false, sms: false, print: false }
+    specialRequests: ''
   })
 
   const [availableRooms, setAvailableRooms] = useState([])
-  const [roomTypes, setRoomTypes] = useState([])
-  const [packages, setPackages] = useState([])
-  const [coupons, setCoupons] = useState([])
   const [adultsFocused, setAdultsFocused] = useState(false)
   const [childrenFocused, setChildrenFocused] = useState(false)
 
@@ -77,33 +57,7 @@ const OfflineReservation = () => {
           })))
         }
 
-        // Load room types
-        const roomTypesRes = await roomTypeService.getRoomTypes(1, 100)
-        if (roomTypesRes?.success) {
-          setRoomTypes(roomTypesRes.data || [])
-        }
 
-        // Load packages
-        try {
-          const packagesRes = await packageService.getAllPackages()
-          if (packagesRes?.success) {
-            setPackages(packagesRes.packages || [])
-          }
-        } catch (e) {
-          console.error('Failed to load packages', e)
-          setPackages([])
-        }
-
-        // Load coupons
-        try {
-          const couponsRes = await couponService.getAllCoupons()
-          if (couponsRes?.success) {
-            setCoupons(couponsRes.coupons || [])
-          }
-        } catch (e) {
-          console.error('Failed to load coupons', e)
-          setCoupons([])
-        }
 
       } catch (e) {
         console.error('Failed to load initial data', e)
@@ -126,36 +80,21 @@ const OfflineReservation = () => {
         const res = await bookingService.getBookingById(bookingIdParam)
         if (res?.success && res.booking) {
           const b = res.booking
-          const fullName = [b.guest?.firstName, b.guest?.lastName].filter(Boolean).join(' ')
           setFormData(prev => ({
             ...prev,
-            fullName,
-            gender: b.guest?.gender || '',
-            dateOfBirth: b.guest?.dateOfBirth || '',
+            firstName: b.guest?.firstName || '',
+            lastName: b.guest?.lastName || '',
             email: b.guest?.email || '',
-            phoneNumber: b.guest?.phone || '',
+            phone: b.guest?.phone || '',
             nationality: b.guest?.nationality || '',
             idType: b.guest?.idType || '',
             idNumber: b.guest?.idNumber || '',
-            address: b.guest?.address || '',
-            modeOfArrival: b.modeOfArrival || '',
-            checkInDate: b.checkInDate ? new Date(b.checkInDate).toISOString().split('T')[0] : '',
-            checkOutDate: b.checkOutDate ? new Date(b.checkOutDate).toISOString().split('T')[0] : '',
-            arrivalTime: b.arrivalTime || '',
-            departureTime: b.departureTime || '',
+            roomId: b.roomId || '',
+            checkIn: b.checkIn ? new Date(b.checkIn).toISOString().split('T')[0] : '',
+            checkOut: b.checkOut ? new Date(b.checkOut).toISOString().split('T')[0] : '',
             adults: b.adults || 1,
             children: b.children || 0,
-            roomType: b.roomType || '',
-            numberOfRooms: b.numberOfRooms || 1,
-            roomRate: b.roomRate || 0,
-            purposeOfStay: b.purposeOfStay || '',
-            selectedRooms: b.selectedRooms || [],
-            specialRequests: b.specialRequests || '',
-            paymentMethod: b.paymentMethod || '',
-            advancePayment: b.advancePayment || 0,
-            discountCode: b.discountCode || '',
-            bookingStatus: b.status || 'pending',
-            sendConfirmation: b.sendConfirmation || { email: false, sms: false, print: false }
+            specialRequests: b.specialRequests || ''
           }))
         } else {
           setError(res?.error || 'Failed to load booking')
@@ -179,7 +118,7 @@ const OfflineReservation = () => {
   }, [])
 
   const nextStep = useCallback(() => {
-    if (currentStep < 5) {
+    if (currentStep < 4) {
       setCurrentStep(prev => prev + 1)
     }
   }, [currentStep])
@@ -190,16 +129,7 @@ const OfflineReservation = () => {
     }
   }, [currentStep])
 
-  const calculateAge = (birthDate) => {
-    const today = new Date()
-    const birth = new Date(birthDate)
-    let age = today.getFullYear() - birth.getFullYear()
-    const monthDiff = today.getMonth() - birth.getMonth()
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--
-    }
-    return age
-  }
+
 
   const handleSubmit = async () => {
     try {
@@ -207,31 +137,8 @@ const OfflineReservation = () => {
       setError('')
       setSuccess('')
 
-      // Age validation: only guests aged 16 or younger can reserve
-      if (formData.dateOfBirth) {
-        const age = calculateAge(formData.dateOfBirth)
-        if (age > 16) {
-          setError('Only guests aged 16 or younger can make reservations.')
-          setLoading(false)
-          return
-        }
-      }
-
-      const bookingData = {
-        ...formData,
-        guest: {
-          firstName: formData.fullName.split(' ')[0] || '',
-          lastName: formData.fullName.split(' ').slice(1).join(' ') || '',
-          email: formData.email,
-          phone: formData.phoneNumber,
-          gender: formData.gender,
-          dateOfBirth: formData.dateOfBirth,
-          nationality: formData.nationality,
-          idType: formData.idType,
-          idNumber: formData.idNumber,
-          address: formData.address
-        }
-      }
+      // Send flat data without nested guest object
+      const bookingData = { ...formData }
 
       let res
       if (isEditing) {
@@ -241,42 +148,29 @@ const OfflineReservation = () => {
       }
 
       if (res?.success) {
+        toast.success(isEditing ? 'Booking updated successfully!' : 'Booking created successfully!')
         setSuccess(isEditing ? 'Booking updated successfully!' : 'Booking created successfully!')
         if (!isEditing) {
           // Reset form for new booking
           setFormData({
-            fullName: '',
-            gender: '',
-            dateOfBirth: '',
-            nationality: '',
-            phoneNumber: '',
+            firstName: '',
+            lastName: '',
             email: '',
+            phone: '',
+            nationality: '',
             idType: '',
             idNumber: '',
-            address: '',
-            modeOfArrival: '',
-            source: 'offline',
-            checkInDate: '',
-            checkOutDate: '',
-            arrivalTime: '',
-            departureTime: '',
+            roomId: '',
+            checkIn: '',
+            checkOut: '',
             adults: 1,
             children: 0,
-            roomType: '',
-            numberOfRooms: 1,
-            roomRate: 0,
-            purposeOfStay: '',
-            selectedRooms: [],
-            specialRequests: '',
-            paymentMethod: '',
-            advancePayment: 0,
-            discountCode: '',
-            bookingStatus: 'pending',
-            sendConfirmation: { email: false, sms: false, print: false }
+            specialRequests: ''
           })
           setCurrentStep(1)
         }
       } else {
+        toast.error(res?.error || 'Failed to save booking')
         setError(res?.error || 'Failed to save booking')
       }
     } catch (e) {
@@ -297,9 +191,11 @@ const OfflineReservation = () => {
       setLoading(true)
       const res = await bookingService.cancelBooking(bookingIdParam, 'Front office update')
       if (res?.success) {
+        toast.success('Booking cancelled successfully')
         setSuccess('Booking cancelled successfully')
         setFormData(prev => ({ ...prev, bookingStatus: 'cancelled' }))
       } else {
+        toast.error(res?.error || 'Failed to cancel booking')
         setError(res?.error || 'Failed to cancel booking')
       }
     } catch (e) {
@@ -320,9 +216,11 @@ const OfflineReservation = () => {
       setLoading(true)
       const res = await bookingService.deleteBooking(bookingIdParam)
       if (res?.success) {
+        toast.success('Booking deleted successfully')
         setSuccess('Booking deleted successfully')
         // Redirect or reset form
       } else {
+        toast.error(res?.error || 'Failed to delete booking')
         setError(res?.error || 'Failed to delete booking')
       }
     } catch (e) {
@@ -342,8 +240,6 @@ const OfflineReservation = () => {
       case 3:
         return renderRoomSelection()
       case 4:
-        return renderPaymentDetails()
-      case 5:
         return renderConfirmation()
       default:
         return renderGuestDetails()
@@ -354,56 +250,24 @@ const OfflineReservation = () => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
           <input
             type="text"
-            value={formData.fullName}
-            onChange={(e) => handleInputChange('fullName', e.target.value)}
+            value={formData.firstName}
+            onChange={(e) => handleInputChange('firstName', e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
-            placeholder="Enter full name"
+            placeholder="Enter first name"
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
-          <select
-            value={formData.gender}
-            onChange={(e) => handleInputChange('gender', e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
-          >
-            <option value="">Select gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
-          <input
-            type="date"
-            value={formData.dateOfBirth}
-            onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Nationality</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
           <input
             type="text"
-            value={formData.nationality}
-            onChange={(e) => handleInputChange('nationality', e.target.value)}
+            value={formData.lastName}
+            onChange={(e) => handleInputChange('lastName', e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
-            placeholder="Enter nationality"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-          <input
-            type="tel"
-            value={formData.phoneNumber}
-            onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
-            placeholder="Enter phone number"
+            placeholder="Enter last name"
             required
           />
         </div>
@@ -419,39 +283,54 @@ const OfflineReservation = () => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">ID Type</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Phone *</label>
+          <input
+            type="tel"
+            value={formData.phone}
+            onChange={(e) => handleInputChange('phone', e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
+            placeholder="Enter phone number"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Nationality</label>
+          <input
+            type="text"
+            value={formData.nationality}
+            onChange={(e) => handleInputChange('nationality', e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
+            placeholder="Enter nationality"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">ID Type *</label>
           <select
             value={formData.idType}
             onChange={(e) => handleInputChange('idType', e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
+            required
           >
             <option value="">Select ID type</option>
-            <option value="passport">Passport</option>
-            <option value="national_id">National ID</option>
-            <option value="drivers_license">Driver's License</option>
-            <option value="citizenship">Citizenship</option>
+            <option value="Passport">Passport</option>
+            <option value="National ID">National ID</option>
+            <option value="Driver License">Driver License</option>
+            <option value="Voter ID">Voter ID</option>
+            <option value="Citizenship">Citizenship</option>
+            <option value="Other">Other</option>
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">ID Number</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">ID Number *</label>
           <input
             type="text"
             value={formData.idNumber}
             onChange={(e) => handleInputChange('idNumber', e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
             placeholder="Enter ID number"
+            required
           />
         </div>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-        <textarea
-          value={formData.address}
-          onChange={(e) => handleInputChange('address', e.target.value)}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
-          rows="3"
-          placeholder="Enter address"
-        />
       </div>
     </div>
   )
@@ -463,8 +342,8 @@ const OfflineReservation = () => {
           <label className="block text-sm font-medium text-gray-700 mb-2">Check-in Date *</label>
           <input
             type="date"
-            value={formData.checkInDate}
-            onChange={(e) => handleInputChange('checkInDate', e.target.value)}
+            value={formData.checkIn}
+            onChange={(e) => handleInputChange('checkIn', e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
             required
           />
@@ -473,28 +352,10 @@ const OfflineReservation = () => {
           <label className="block text-sm font-medium text-gray-700 mb-2">Check-out Date *</label>
           <input
             type="date"
-            value={formData.checkOutDate}
-            onChange={(e) => handleInputChange('checkOutDate', e.target.value)}
+            value={formData.checkOut}
+            onChange={(e) => handleInputChange('checkOut', e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
             required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Arrival Time</label>
-          <input
-            type="time"
-            value={formData.arrivalTime}
-            onChange={(e) => handleInputChange('arrivalTime', e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Departure Time</label>
-          <input
-            type="time"
-            value={formData.departureTime}
-            onChange={(e) => handleInputChange('departureTime', e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
           />
         </div>
         <div>
@@ -557,35 +418,6 @@ const OfflineReservation = () => {
             </button>
           </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Mode of Arrival</label>
-          <select
-            value={formData.modeOfArrival}
-            onChange={(e) => handleInputChange('modeOfArrival', e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
-          >
-            <option value="">Select mode of arrival</option>
-            <option value="car">Car</option>
-            <option value="bus">Bus</option>
-            <option value="train">Train</option>
-            <option value="plane">Plane</option>
-            <option value="walking">Walking</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Purpose of Stay</label>
-          <select
-            value={formData.purposeOfStay}
-            onChange={(e) => handleInputChange('purposeOfStay', e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
-          >
-            <option value="">Select purpose</option>
-            <option value="business">Business</option>
-            <option value="leisure">Leisure</option>
-            <option value="conference">Conference</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Special Requests</label>
@@ -602,67 +434,33 @@ const OfflineReservation = () => {
 
   const renderRoomSelection = () => (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Room Type</label>
-          <select
-            value={formData.roomType}
-            onChange={(e) => handleInputChange('roomType', e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
-          >
-            <option value="">Select room type</option>
-            {roomTypes.map(type => (
-              <option key={type.id} value={type.name}>{type.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Number of Rooms</label>
-          <input
-            type="number"
-            value={formData.numberOfRooms}
-            onChange={(e) => handleInputChange('numberOfRooms', parseInt(e.target.value) || 1)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
-            min="1"
-          />
-        </div>
-      </div>
-
       {availableRooms.length > 0 && (
         <div>
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Available Rooms</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Select Room *</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {availableRooms
-              .filter(room => !formData.roomType || room.type === formData.roomType)
-              .slice(0, 6)
-              .map(room => (
-                <div key={room.id} className="border border-gray-200 rounded-lg p-4 hover:border-[#2F5233] transition-colors">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium">{room.number}</span>
-                    <span className="text-sm text-gray-500">{room.type}</span>
-                  </div>
-                  <div className="text-sm text-gray-600 mb-2">
-                    <div>Rate: ${room.rate}/night</div>
-                    <div>Max Adults: {room.maxAdults}, Children: {room.maxChildren}</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const selected = formData.selectedRooms.includes(room.id)
-                        ? formData.selectedRooms.filter(id => id !== room.id)
-                        : [...formData.selectedRooms, room.id]
-                      handleInputChange('selectedRooms', selected)
-                    }}
-                    className={`w-full py-2 px-4 rounded-lg text-sm font-medium ${
-                      formData.selectedRooms.includes(room.id)
-                        ? 'bg-[#2F5233] text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    {formData.selectedRooms.includes(room.id) ? 'Selected' : 'Select'}
-                  </button>
+            {availableRooms.slice(0, 12).map(room => (
+              <div key={room.id} className="border border-gray-200 rounded-lg p-4 hover:border-[#2F5233] transition-colors">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">{room.number}</span>
+                  <span className="text-sm text-gray-500">{room.type}</span>
                 </div>
-              ))}
+                <div className="text-sm text-gray-600 mb-2">
+                  <div>Rate: ${room.rate}/night</div>
+                  <div>Max Adults: {room.maxAdults}, Children: {room.maxChildren}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleInputChange('roomId', room.id)}
+                  className={`w-full py-2 px-4 rounded-lg text-sm font-medium ${
+                    formData.roomId === room.id
+                      ? 'bg-[#2F5233] text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {formData.roomId === room.id ? 'Selected' : 'Select'}
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -728,62 +526,38 @@ const OfflineReservation = () => {
         <h3 className="text-lg font-medium text-gray-900 mb-4">Booking Summary</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
-            <strong>Guest:</strong> {formData.fullName}
+            <strong>Guest:</strong> {formData.firstName} {formData.lastName}
           </div>
           <div>
             <strong>Email:</strong> {formData.email}
           </div>
           <div>
-            <strong>Phone:</strong> {formData.phoneNumber}
+            <strong>Phone:</strong> {formData.phone}
           </div>
           <div>
-            <strong>Check-in:</strong> {formData.checkInDate}
+            <strong>Nationality:</strong> {formData.nationality || 'Not specified'}
           </div>
           <div>
-            <strong>Check-out:</strong> {formData.checkOutDate}
+            <strong>ID Type:</strong> {formData.idType}
+          </div>
+          <div>
+            <strong>ID Number:</strong> {formData.idNumber}
+          </div>
+          <div>
+            <strong>Check-in:</strong> {formData.checkIn}
+          </div>
+          <div>
+            <strong>Check-out:</strong> {formData.checkOut}
           </div>
           <div>
             <strong>Guests:</strong> {formData.adults} adults, {formData.children} children
           </div>
           <div>
-            <strong>Room Type:</strong> {formData.roomType}
+            <strong>Room:</strong> {availableRooms.find(r => r.id === formData.roomId)?.number || 'Not selected'}
           </div>
           <div>
-            <strong>Rooms:</strong> {formData.numberOfRooms}
+            <strong>Special Requests:</strong> {formData.specialRequests || 'None'}
           </div>
-        </div>
-      </div>
-
-      <div>
-        <h4 className="text-md font-medium text-gray-900 mb-3">Send Confirmation</h4>
-        <div className="space-y-2">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={formData.sendConfirmation.email}
-              onChange={(e) => handleInputChange('sendConfirmation', { ...formData.sendConfirmation, email: e.target.checked })}
-              className="mr-2"
-            />
-            Email confirmation
-          </label>
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={formData.sendConfirmation.sms}
-              onChange={(e) => handleInputChange('sendConfirmation', { ...formData.sendConfirmation, sms: e.target.checked })}
-              className="mr-2"
-            />
-            SMS confirmation
-          </label>
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={formData.sendConfirmation.print}
-              onChange={(e) => handleInputChange('sendConfirmation', { ...formData.sendConfirmation, print: e.target.checked })}
-              className="mr-2"
-            />
-            Print confirmation
-          </label>
         </div>
       </div>
     </div>
@@ -791,14 +565,14 @@ const OfflineReservation = () => {
 
   const StepIndicator = () => (
     <div className="flex justify-center mb-8">
-      {[1, 2, 3, 4, 5].map(step => (
+      {[1, 2, 3, 4].map(step => (
         <div key={step} className="flex items-center">
           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
             step <= currentStep ? 'bg-[#2F5233] text-white' : 'bg-gray-200 text-gray-600'
           }`}>
             {step}
           </div>
-          {step < 5 && (
+          {step < 4 && (
             <div className={`w-12 h-1 mx-2 ${
               step < currentStep ? 'bg-[#2F5233]' : 'bg-gray-200'
             }`} />
@@ -860,7 +634,7 @@ const OfflineReservation = () => {
           >
             Previous
           </button>
-          {currentStep < 5 ? (
+          {currentStep < 4 ? (
             <div className="flex gap-2">
               {isEditing && (
                 <button

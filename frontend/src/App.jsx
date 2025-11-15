@@ -132,7 +132,7 @@ const App = () => {
       element: <HousekeepingLogin />
     },
     {
-      path: "/profile",
+      path: "/profile/:id",
       element: <GuestProfile />
     },
     {

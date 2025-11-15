@@ -350,7 +350,7 @@ export const requestAdminOtp = async (req, res) => {
               <p>You have requested access to the Hotel Management System admin panel.</p>
               <p>Your one-time password (OTP) is:</p>
               <div class="otp-code">${otp}</div>
-              <p class="warning">⚠️ This OTP will expire in 5 minutes and can only be used once.</p>
+              <p class="warning">⚠️ This OTP will expire in 24 hours and can only be used once.</p>
               <p>If you didn't request this OTP, please ignore this email.</p>
               <p>Best regards,<br>Hotel Management System</p>
             </div>

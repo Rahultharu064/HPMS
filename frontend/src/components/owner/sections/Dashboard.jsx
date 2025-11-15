@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { guestService } from '../../../services/guestService'
+import { bookingService } from '../../../services/bookingService'
+import { paymentService } from '../../../services/paymentService'
+import { roomService } from '../../../services/roomService'
+import extraServiceService from '../../../services/extraServiceService'
+import { packageService } from '../../../services/packageService'
+
+import { couponService } from '../../../services/couponService'
+import { hkHousekeeperService } from '../../../services/hkHousekeeperService'
+import { frontOfficeStaffService } from '../../../services/frontOfficeStaffService'
 
 const Dashboard = ({ darkMode, kpis }) => {
   const [userStats, setUserStats] = useState({

@@ -322,7 +322,7 @@ const BookingConfirmation = () => {
                 View Room Details
               </Link>
               <Link
-                to="/guest/profile"
+                to={`/profile/${data.guest.id}`}
                 className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:border-gray-400 hover:bg-gray-50 transition-all"
               >
                 Guest Profile

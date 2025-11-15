@@ -3,10 +3,14 @@ import { Bell, ChevronDown, Menu, Moon, Sun, LogOut, User } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { getSocket } from '../../../utils/socket'
 import authService from '../../../services/authService'
+import { hkHousekeeperService } from '../../../services/hkHousekeeperService'
+import { hkTaskService } from '../../../services/hkTaskService'
+import { hkCleaningService } from '../../../services/hkCleaningService'
 import { Navigate } from 'react-router-dom'
 
 const Header = ({ darkMode, setDarkMode, showNotifications, setShowNotifications, showProfile, setShowProfile, sidebarOpen, setSidebarOpen }) => {
   const [items, setItems] = useState([])
+  const [userData, setUserData] = useState(null)
   const unread = useMemo(() => items.filter(i => !i.read).length, [items])
 
   useEffect(() => {
@@ -77,6 +81,24 @@ const Header = ({ darkMode, setDarkMode, showNotifications, setShowNotifications
       setItems(prev => prev.map(i => ({ ...i, read: true })))
     }
   }, [showNotifications])
+
+  // Fetch user data on component mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        // Get current user data from localStorage or API
+        const user = JSON.parse(localStorage.getItem('user') || '{}')
+        if (user && user.id) {
+          // Fetch additional user data if needed
+          setUserData(user)
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error)
+      }
+    }
+
+    fetchUserData()
+  }, [])
   return (
     <header className={`${darkMode ? 'bg-gray-800/80 backdrop-blur-lg' : 'bg-white/80 backdrop-blur-lg'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} sticky top-0 z-40`}>
       <div className="flex items-center justify-between px-6 py-4">
@@ -135,10 +157,16 @@ const Header = ({ darkMode, setDarkMode, showNotifications, setShowNotifications
 
           <div className="relative">
             <button onClick={() => setShowProfile(!showProfile)} className={`flex items-center gap-3 px-4 py-2 rounded-2xl ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`}>
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-semibold">HK</div>
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-semibold">
+                {userData?.name ? userData.name.charAt(0).toUpperCase() : 'HK'}
+              </div>
               <div className="hidden lg:block text-left">
-                <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Housekeeping</p>
-                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Staff</p>
+                <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  {userData?.name || 'Housekeeping'}
+                </p>
+                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {userData?.email || 'Staff'}
+                </p>
               </div>
               <ChevronDown size={16} className={darkMode ? 'text-gray-400' : 'text-gray-500'} />
             </button>
@@ -146,8 +174,12 @@ const Header = ({ darkMode, setDarkMode, showNotifications, setShowNotifications
             {showProfile && (
               <div className={`absolute right-0 mt-2 w-64 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} rounded-2xl shadow-2xl border overflow-hidden`}>
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                  <p className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Housekeeping</p>
-                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>staff@hamrostay.com</p>
+                  <p className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {userData?.name || 'Housekeeping'}
+                  </p>
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {userData?.email || 'staff@hamrostay.com'}
+                  </p>
                 </div>
                 <div className="p-2">
                   <button className={`w-full px-4 py-3 text-left flex items-center gap-3 ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition-colors`}>

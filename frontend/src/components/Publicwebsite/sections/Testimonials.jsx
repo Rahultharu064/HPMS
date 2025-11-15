@@ -1,43 +1,73 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Star, Quote, ChevronLeft, ChevronRight } from 'lucide-react'
+import testimonialService from '../../../services/testimonialService'
 
 const Testimonials = () => {
   const [currentSlide, setCurrentSlide] = useState(0)
+  const [testimonials, setTestimonials] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const testimonials = [
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      location: 'New York, USA',
-      rating: 5,
-      text: 'Absolutely amazing experience! The staff was incredibly friendly and the room was spotless. The view from our suite was breathtaking. Will definitely be back!',
-      image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
-    },
-    {
-      id: 2,
-      name: 'Michael Chen',
-      location: 'Tokyo, Japan',
-      rating: 5,
-      text: 'The attention to detail is remarkable. From the welcome drink to the turn-down service, everything was perfect. The spa facilities are world-class.',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
-    },
-    {
-      id: 3,
-      name: 'Emma Williams',
-      location: 'London, UK',
-      rating: 5,
-      text: 'Perfect location in the heart of Kathmandu. The hotel combines modern luxury with traditional Nepali hospitality. Highly recommended for anyone visiting Nepal.',
-      image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
-    },
-    {
-      id: 4,
-      name: 'David Rodriguez',
-      location: 'Madrid, Spain',
-      rating: 5,
-      text: 'The executive suite exceeded all expectations. The room service was prompt, the food was delicious, and the concierge helped us plan amazing day trips.',
-      image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        setLoading(true)
+        // Try to get testimonials from reviews first, fallback to regular testimonials
+        const response = await testimonialService.getFromReviews()
+        if (response.success && response.data.length > 0) {
+          setTestimonials(response.data)
+        } else {
+          // Fallback to regular testimonials
+          const fallbackResponse = await testimonialService.getAll()
+          if (fallbackResponse.success) {
+            setTestimonials(fallbackResponse.data)
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching testimonials:', err)
+        setError('Failed to load testimonials')
+        // Set default testimonials if API fails
+        setTestimonials([
+          {
+            id: 1,
+            name: 'Sarah Johnson',
+            location: 'New York, USA',
+            rating: 5,
+            text: 'Absolutely amazing experience! The staff was incredibly friendly and the room was spotless. The view from our suite was breathtaking. Will definitely be back!',
+            image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
+          },
+          {
+            id: 2,
+            name: 'Michael Chen',
+            location: 'Tokyo, Japan',
+            rating: 5,
+            text: 'The attention to detail is remarkable. From the welcome drink to the turn-down service, everything was perfect. The spa facilities are world-class.',
+            image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
+          },
+          {
+            id: 3,
+            name: 'Emma Williams',
+            location: 'London, UK',
+            rating: 5,
+            text: 'Perfect location in the heart of Kathmandu. The hotel combines modern luxury with traditional Nepali hospitality. Highly recommended for anyone visiting Nepal.',
+            image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
+          },
+          {
+            id: 4,
+            name: 'David Rodriguez',
+            location: 'Madrid, Spain',
+            rating: 5,
+            text: 'The executive suite exceeded all expectations. The room service was prompt, the food was delicious, and the concierge helped us plan amazing day trips.',
+            image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
+          }
+        ])
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
+
+    fetchTestimonials()
+  }, [])
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % testimonials.length)

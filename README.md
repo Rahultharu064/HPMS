@@ -68,22 +68,28 @@ HPMS/
   - Reservation management: add/modify/cancel, assign room, view media.
   - Offline new reservation with auto guest profile linking.
   - Check‑in / Check‑out workflows and billing/folio.
+  - Staff authentication with forced password change on first login.
 
 - **Housekeeping**
   - Room status map (VC/VD/OC/OD/OOO), KPIs.
   - Cleaning tasks, inventory management, special requests, lost & found.
   - Maintenance & safety, inspections, notifications.
+  - Staff authentication with forced password change on first login.
+  - Real-time dashboard with room status updates and notifications.
 
 - **Admin**
   - KPIs: revenue, occupancy, productivity.
   - Room & facility CRUD with multi‑image/video management.
+  - Unified Staff Management: Add both Front Office and Housekeeping staff from single interface.
   - User management, OTA integration (push/pull bookings & content), finance & reports.
+  - Staff creation with temporary passwords and role assignment.
 
 - **Shared**
   - Unified media system (images/videos) and player/lightbox.
   - Payments module (eSewa, Khalti, Card).
   - OTA sync (import bookings, push content), notifications (WebSockets/SSE).
   - Analytics hooks: `view_room`, `play_video`, `start_booking`, `complete_booking`.
+  - Staff Authentication System: Secure login with role-based access and mandatory password changes.
 
 
 ## End‑to‑End System Flow
@@ -91,6 +97,9 @@ HPMS/
 - Booking is stored → Front Office and Admin dashboards sync → Housekeeping notified to prepare room.
 - Returning guests recognized by email/phone; booking forms auto‑fill; history available.
 - OTA bookings are imported and reconciled; media in Admin controls what appears on all modules.
+- Admin creates staff accounts (Front Office or Housekeeping) with temporary passwords.
+- Staff login with temporary credentials → forced to change password on first login → redirected to respective dashboards.
+- Housekeeping staff logout automatically refreshes page and redirects to login screen.
 
 
 ## API Surface (high‑level)
@@ -109,10 +118,17 @@ Guest‑facing:
 - `POST /api/guests` and `GET /api/guests/:id/bookings`
 - `POST /api/contact`
 
+Staff Authentication:
+- `POST /api/auth/staff/login` - Front Office staff login
+- `POST /api/auth/housekeeping/login` - Housekeeping staff login
+- `PUT /api/auth/staff/change-password` - Front Office password change
+- `PUT /api/auth/housekeeping/change-password` - Housekeeping password change
+
 Front Office/Admin/Shared:
 - `GET/POST/PUT/DELETE /api/reservations`
 - `GET /api/guests`, `GET /api/guests/:id`
 - `POST /api/ota/sync`, `GET /api/ota/bookings`
+- `GET/POST/PUT/DELETE /api/staff` - Unified staff management (Front Office & Housekeeping)
 - Housekeeping endpoints for tasks, logs, inventory, requests, maintenance, inspections (see models).
 
 Note: Actual implemented routes live under `backend/src/routes/` and handlers in `backend/src/controllers/`.
@@ -187,6 +203,9 @@ npm run build --prefix frontend
 - Shared design tokens and consistent components across public and internal UIs.
 - Accessibility: alt text, ordered media, captions; keyboard navigation for filters, pagination, galleries.
 - Server‑side filtering for rooms; debounced UI requests on filter changes.
+- Staff Authentication: All staff (Front Office & Housekeeping) must change temporary passwords on first login.
+- Unified Staff Management: Admin can create both staff types from single interface with role selection.
+- Logout Behavior: Housekeeping staff logout triggers automatic page refresh and redirect to login.
 
 
 ## Scripts Reference

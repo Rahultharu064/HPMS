@@ -23,8 +23,9 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await authService.login(formData);
-      navigate('/profile'); // Redirect to profile or dashboard
+      const response = await authService.login(formData);
+      const userId = response.guest?.id || authService.getUser()?.id;
+      navigate(`/profile/${userId}`); // Redirect to profile with user ID
     } catch (err) {
       const errorMessage = err.message || 'Login failed';
       setError(errorMessage);

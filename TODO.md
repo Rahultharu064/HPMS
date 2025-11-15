@@ -1,18 +1,27 @@
-- [x] Modify frontend/src/components/owner/sections/Staff.jsx to support both Front Office and Housekeeping staff
-  - [x] Import housekeeperService
-  - [x] Update state to hold combined staff list with role field
-  - [x] Load both front office and housekeeping staff
-  - [x] Add role selection in create form (Front Office or Housekeeping)
-  - [x] Use appropriate service based on selected role for create/update/delete
-  - [x] Display role in staff cards
-  - [x] Update titles to "Staff Management"
-  - [x] Add contact field for both roles (optional)
-  - [x] Handle tempPassword display for both
-- [x] Add passwordChanged field to Housekeeper model in schema.prisma
-- [x] Add changeHousekeepingPassword controller and route
-- [x] Add changeHousekeepingPassword service method
-- [x] Update StaffChangePassword page to handle both staff types
-- [x] Run database migration for passwordChanged field
-- [x] Update HousekeepingLogin to redirect to password change on first login
-- [x] Add toast notifications to housekeeping components
-- [ ] Test the functionality by running the app and adding staff for both roles
+# Testimonials Implementation TODO
+
+## Current Status
+- Testimonials component has hardcoded data
+- No backend API for testimonials
+
+## Plan
+- [x] Add Testimonial model to schema.prisma with fields: id, name, location, rating, text, image, isActive, createdAt, updatedAt
+- [x] Create testimonialController.js with CRUD operations (getAll, create, update, delete)
+- [x] Create testimonialRoutes.js with GET /api/testimonials and admin routes
+- [x] Update app.js to include testimonial routes
+- [x] Create testimonialService.js in frontend
+- [x] Update Testimonials.jsx to fetch testimonials from API instead of hardcoded data
+- [x] Add loading and error states
+
+## Dependent Files to be edited:
+- backend/prisma/schema.prisma
+- backend/src/controllers/testimonialController.js (new)
+- backend/src/routes/testimonialRoutes.js (new)
+- backend/src/app.js
+- frontend/src/services/testimonialService.js (new)
+- frontend/src/components/Publicwebsite/sections/Testimonials.jsx
+
+## Followup steps:
+- [x] Run prisma migration
+- [ ] Test API endpoints
+- [ ] Verify frontend integration

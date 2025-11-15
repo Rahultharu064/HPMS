@@ -275,8 +275,10 @@ model Review {
   id        Int      @id @default(autoincrement())
   roomId    Int
   name      String
+  location  String?
   rating    Float
   comment   String   @db.Text
+  image     String?
   createdAt DateTime @default(now())
 
   room Room @relation(fields: [roomId], references: [id])
@@ -662,4 +664,22 @@ model BookingExtraService {
 
   @@index([bookingId])
   @@map("booking_extra_service")
+}
+
+// =====================
+// Testimonial Models
+// =====================
+
+model Testimonial {
+  id        Int      @id @default(autoincrement())
+  name      String
+  location  String
+  rating    Int
+  text      String   @db.Text
+  image     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@map("testimonial")
 }

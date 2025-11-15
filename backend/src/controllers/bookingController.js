@@ -603,14 +603,12 @@ export const updateBooking = async (req, res) => {
         }
       }
 
-      // Check-out: confirmed -> completed, not before check-out date
+      // Check-out: confirmed -> completed, allow early check-out
       if (nextStatus === 'completed') {
         if (currentStatus !== 'confirmed') {
           return res.status(400).json({ success: false, error: 'Only confirmed bookings can be checked out' });
         }
-        if (today < co) {
-          return res.status(400).json({ success: false, error: 'Cannot check out before check-out date' });
-        }
+        // Allow early check-out - no date restriction
       }
 
       // Cancelling is allowed from pending/confirmed; handled below by update
