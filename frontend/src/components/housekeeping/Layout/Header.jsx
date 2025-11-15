@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Bell, ChevronDown, Menu, Moon, Sun, LogOut, User } from 'lucide-react'
+import { toast } from 'react-hot-toast'
 import { getSocket } from '../../../utils/socket'
+import authService from '../../../services/authService'
+import { Navigate } from 'react-router-dom'
 
 const Header = ({ darkMode, setDarkMode, showNotifications, setShowNotifications, showProfile, setShowProfile, sidebarOpen, setSidebarOpen }) => {
   const [items, setItems] = useState([])
@@ -151,7 +154,14 @@ const Header = ({ darkMode, setDarkMode, showNotifications, setShowNotifications
                     <User className="w-4 h-4" />
                     <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>Settings</span>
                   </button>
-                  <button className={`w-full px-4 py-3 text-left flex items-center gap-3 ${darkMode ? 'hover:bg-gray-700 text-red-400' : 'hover:bg-gray-50 text-red-600'} transition-colors`}>
+                  <button
+                    onClick={() => {
+                      authService.logout()
+                      toast.success('Logged out successfully')
+                      window.location.href = '/housekeeping/login'
+                    }}
+                    className={`w-full px-4 py-3 text-left flex items-center gap-3 ${darkMode ? 'hover:bg-gray-700 text-red-400' : 'hover:bg-gray-50 text-red-600'} transition-colors`}
+                  >
                     <LogOut className="w-4 h-4" />
                     <span>Logout</span>
                   </button>

@@ -41,10 +41,14 @@ import Login from './components/auth/Login'
 import AdminLogin from './components/auth/AdminLogin'
 import StaffLogin from './components/auth/StaffLogin'
 import HousekeepingLogin from './components/auth/HousekeepingLogin'
+import StaffChangePassword from './pages/StaffChangePassword'
 import GuestProfile from './pages/Publicwebsite/GuestProfile'
 import Users from './components/owner/sections/Users'
 import OwnerDashboard from './components/owner/sections/Dashboard'
 import ProtectedAdminRoute from './components/auth/ProtectedAdminRoute'
+import ProtectedStaffRoute from './components/auth/ProtectedStaffRoute'
+import ProtectedHousekeepingRoute from './components/auth/ProtectedHousekeepingRoute'
+import Staff from './components/owner/sections/Staff'
 
 
 
@@ -63,7 +67,7 @@ const App = () => {
     // Housekeeping Dashboard
     {
       path: "/housekeeping",
-      element: <HousekeepingDashboard />,
+      element: <ProtectedHousekeepingRoute><HousekeepingDashboard /></ProtectedHousekeepingRoute>,
       children: [
         { index: true, element: <Navigate to="/housekeeping/dashboard" replace /> },
         { path: "dashboard", element: <HKDashboard /> },
@@ -120,6 +124,10 @@ const App = () => {
       element: <StaffLogin />
     },
     {
+      path: "/staff/change-password",
+      element: <StaffChangePassword />
+    },
+    {
       path: "/housekeeping/login",
       element: <HousekeepingLogin />
     },
@@ -153,13 +161,14 @@ const App = () => {
         { path: "room-types", element: <RoomTypes /> },
         { path: "facilities", element: <Facilities /> },
         { path: "extra-services", element: <ExtraServicesAdmin /> },
-        {path: "users", element: <Users />}
+        {path: "users", element: <Users />},
+        {path: "staff", element :<Staff />}
       ]
     },
     //frontoffice routes
     {
       path: "/front-office",
-      element: <FrontOffice />,
+      element: <ProtectedStaffRoute><FrontOffice /></ProtectedStaffRoute>,
       children: [
         { index: true, element: <Navigate to="/front-office/dashboard" replace /> },
         { path: "dashboard", element: <Dashboard /> },

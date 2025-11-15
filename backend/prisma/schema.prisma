@@ -7,12 +7,15 @@ generator client {
 // =====================
 
 model Housekeeper {
-  id                Int       @id @default(autoincrement())
+  id                Int      @id @default(autoincrement())
   name              String
+  email             String?   @unique
+  password          String?   // Hashed password for authentication
   shift             String    @default("MORNING")
   contact           String?  @unique
   profilePictureUrl String?
-  accessCode        String?   // Hashed access code for authentication
+  isActive          Boolean   @default(true)
+  passwordChanged   Boolean  @default(false)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @default(now())
 
@@ -26,14 +29,16 @@ model Housekeeper {
 // =====================
 
 model FrontOfficeStaff {
-  id        Int      @id @default(autoincrement())
-  name      String
-  pin       String   // Hashed PIN for authentication
-  role      String   @default("front_office") // front_office
-  shift     String   @default("MORNING")
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  id                Int      @id @default(autoincrement())
+  name              String
+  email             String?  @unique
+  password          String?  // Hashed password for authentication
+  role              String   @default("front_office") // front_office
+  shift             String   @default("MORNING")
+  isActive          Boolean  @default(true)
+  passwordChanged   Boolean  @default(false) // Track if staff has changed their password
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now())
 
   @@map("front_office_staff")
 }

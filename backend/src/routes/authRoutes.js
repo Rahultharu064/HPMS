@@ -17,6 +17,8 @@ import {
   loginHousekeeping,
   logoutAdmin,
   getAdminProfile,
+  changeStaffPassword,
+  changeHousekeepingPassword,
 } from '../controllers/authController.js';
 import { authenticate } from '../middleware/auth.js';
 import multer from 'multer';
@@ -72,8 +74,10 @@ router.post('/admin/upload-photo', authenticate, upload.single('photo'), uploadP
 
 // Staff routes
 router.post('/staff/login', loginStaff);
+router.put('/staff/change-password', authenticate, changeStaffPassword);
 
 // Housekeeping routes
 router.post('/housekeeping/login', loginHousekeeping);
+router.put('/housekeeping/change-password', authenticate, changeHousekeepingPassword);
 
 export default router;

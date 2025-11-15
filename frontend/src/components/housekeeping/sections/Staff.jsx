@@ -13,6 +13,8 @@ const Staff = ({ darkMode }) => {
   const [creating, setCreating] = useState(false)
   const [createForm, setCreateForm] = useState({
     name: '',
+    email: '',
+    password: '',
     shift: 'MORNING',
     contact: ''
   })
@@ -35,13 +37,15 @@ const Staff = ({ darkMode }) => {
   useEffect(() => { load() }, [])
 
   const openCreate = () => {
-    setCreateForm({ name: '', shift: 'MORNING', contact: '' })
+    setCreateForm({ name: '', email: '', password: '', shift: 'MORNING', contact: '' })
     setShowCreate(true)
   }
 
   const openEdit = (housekeeper) => {
     setCreateForm({
       name: housekeeper.name,
+      email: housekeeper.email || '',
+      password: '', // Don't populate password for editing
       shift: housekeeper.shift || 'MORNING',
       contact: housekeeper.contact || ''
     })
@@ -68,7 +72,7 @@ const Staff = ({ darkMode }) => {
       
       setShowCreate(false)
       setEditingId(null)
-      setCreateForm({ name: '', shift: 'MORNING', contact: '' })
+      setCreateForm({ name: '', email: '', password: '', shift: 'MORNING', contact: '' })
       await load()
     } catch (e) { console.error(e); toast.error(e?.message || 'Failed to save housekeeper') }
     finally { setCreating(false) }
@@ -314,12 +318,34 @@ const Staff = ({ darkMode }) => {
             <form onSubmit={submitCreate} className="space-y-4">
               <div>
                 <label className="block text-sm mb-1">Name <span className="text-red-500">*</span></label>
-                <input 
-                  required 
-                  value={createForm.name} 
-                  onChange={e=>setCreateForm(f=>({ ...f, name: e.target.value }))} 
-                  className={`${darkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white border-gray-300'} w-full px-3 py-2 rounded-lg border`} 
-                  placeholder="Enter housekeeper name" 
+                <input
+                  required
+                  value={createForm.name}
+                  onChange={e=>setCreateForm(f=>({ ...f, name: e.target.value }))}
+                  className={`${darkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white border-gray-300'} w-full px-3 py-2 rounded-lg border`}
+                  placeholder="Enter housekeeper name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">Email <span className="text-red-500">*</span></label>
+                <input
+                  required
+                  type="email"
+                  value={createForm.email}
+                  onChange={e=>setCreateForm(f=>({ ...f, email: e.target.value }))}
+                  className={`${darkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white border-gray-300'} w-full px-3 py-2 rounded-lg border`}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">Password <span className="text-red-500">*</span></label>
+                <input
+                  required={!editingId} // Required only for new housekeepers
+                  type="password"
+                  value={createForm.password}
+                  onChange={e=>setCreateForm(f=>({ ...f, password: e.target.value }))}
+                  className={`${darkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white border-gray-300'} w-full px-3 py-2 rounded-lg border`}
+                  placeholder={editingId ? "Leave blank to keep current password" : "Enter password"}
                 />
               </div>
               <div>
@@ -336,11 +362,11 @@ const Staff = ({ darkMode }) => {
               </div>
               <div>
                 <label className="block text-sm mb-1">Contact</label>
-                <input 
-                  value={createForm.contact} 
-                  onChange={e=>setCreateForm(f=>({ ...f, contact: e.target.value }))} 
-                  className={`${darkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white border-gray-300'} w-full px-3 py-2 rounded-lg border`} 
-                  placeholder="Phone number or email" 
+                <input
+                  value={createForm.contact}
+                  onChange={e=>setCreateForm(f=>({ ...f, contact: e.target.value }))}
+                  className={`${darkMode ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white border-gray-300'} w-full px-3 py-2 rounded-lg border`}
+                  placeholder="Phone number or email"
                 />
               </div>
               <div className="flex items-center justify-end gap-2 pt-2">
@@ -349,7 +375,7 @@ const Staff = ({ darkMode }) => {
                   onClick={()=>{
                     setShowCreate(false)
                     setEditingId(null)
-                    setCreateForm({ name: '', shift: 'MORNING', contact: '' })
+                    setCreateForm({ name: '', email: '', password: '', shift: 'MORNING', contact: '' })
                   }}
                   className={`${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-800'} px-4 py-2 rounded-lg`}
                 >

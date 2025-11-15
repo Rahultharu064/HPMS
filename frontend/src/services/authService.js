@@ -128,8 +128,8 @@ const authService = {
     return response;
   },
 
-  loginStaff: async (pin) => {
-    const response = await api.post('/api/auth/staff/login', { pin });
+  loginStaff: async (email, password) => {
+    const response = await api.post('/api/auth/staff/login', { email, password });
     if (response.token) {
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
@@ -137,13 +137,34 @@ const authService = {
     return response;
   },
 
-  loginHousekeeping: async (accessCode) => {
-    const response = await api.post('/api/auth/housekeeping/login', { accessCode });
+  changeStaffPassword: async (newPassword) => {
+    const response = await api.put('/api/auth/staff/change-password', { newPassword });
+    return response;
+  },
+
+  changeHousekeepingPassword: async (newPassword) => {
+    const response = await api.put('/api/auth/housekeeping/change-password', { newPassword });
+    return response;
+  },
+
+  showToast: (message, type = 'success') => {
+    // This will be used to show toast notifications
+    // The actual implementation will be in components that use this service
+    console.log(`${type}: ${message}`);
+  },
+
+  loginHousekeeping: async (email, password) => {
+    const response = await api.post('/api/auth/housekeeping/login', { email, password });
     if (response.token) {
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
     }
     return response;
+  },
+
+  logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   },
 
   getAdminProfile: async () => {

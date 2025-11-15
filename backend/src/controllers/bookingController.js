@@ -4,7 +4,7 @@ import fs from 'fs'
 import sharp from 'sharp'
 import { createWorker } from 'tesseract.js'
 import { getIO } from "../socket.js";
-import { sendBookingSuccessEmail } from "../services/emailService.js";
+import { sendBookingSuccessEmail } from "./services/emailService.js";
 
 // Helper function to create notification
 const createNotification = async (type, message, sender = null, meta = null) => {

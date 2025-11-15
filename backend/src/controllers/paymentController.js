@@ -1,7 +1,7 @@
 import prisma from "../config/client.js";
 import request from 'request';
 import crypto from 'crypto';
-import { sendBookingSuccessEmail } from "../services/emailService.js";
+import { sendBookingSuccessEmail } from "./services/emailService.js";
 
 // Get available payment gateways
 export const getPaymentGateways = async (req, res) => {

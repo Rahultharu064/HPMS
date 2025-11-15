@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
-import { createTransporter } from '../services/emailService.js';
+import { createTransporter } from './services/emailService.js';
 import prisma from '../config/client.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -304,11 +304,11 @@ export const requestAdminOtp = async (req, res) => {
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Store OTP with expiration (5 minutes)
+    // Store OTP with expiration (24 hours - persists until logout)
     const otpData = {
       otp,
       email,
-      expiresAt: Date.now() + (5 * 60 * 1000), // 5 minutes
+      expiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
       attempts: 0
     };
     adminOtps.set(email, otpData);
@@ -549,37 +549,40 @@ export const loginAdminWithPassword = async (req, res) => {
   }
 };
 
-// Login front office staff with PIN
+// Login front office staff with email and password
 export const loginStaff = async (req, res) => {
-  const { pin } = req.body;
+  const { email, password } = req.body;
 
-  if (!pin) {
-    return res.status(400).json({ error: 'PIN is required' });
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required' });
   }
 
   try {
     const staff = await prisma.frontOfficeStaff.findFirst({
       where: {
-        pin: await bcrypt.hash(pin, 10), // Compare hashed PIN
+        email: email,
         isActive: true
       }
     });
 
     if (!staff) {
-      return res.status(401).json({ error: 'Invalid PIN or inactive account' });
+      return res.status(401).json({ error: 'Invalid email or inactive account' });
     }
 
-    // Verify PIN
-    const isValidPin = await bcrypt.compare(pin, staff.pin);
-    if (!isValidPin) {
-      return res.status(401).json({ error: 'Invalid PIN' });
+    if (!staff.password) {
+      return res.status(401).json({ error: 'Password not set. Please contact admin.' });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, staff.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid password' });
     }
 
     // Create JWT for staff session (2 hours expiration)
     const jwtToken = jwt.sign(
       {
         id: staff.id,
-        role: 'front_office',
+        role: 'front_office_staff',
         type: 'staff',
         shift: staff.shift
       },
@@ -595,9 +598,11 @@ export const loginStaff = async (req, res) => {
       user: {
         id: staff.id,
         name: staff.name,
-        role: 'front_office',
+        email: staff.email,
+        role: 'front_office_staff',
         type: 'staff',
-        shift: staff.shift
+        shift: staff.shift,
+        passwordChanged: staff.passwordChanged
       },
       message: 'Staff login successful'
     });
@@ -607,24 +612,33 @@ export const loginStaff = async (req, res) => {
   }
 };
 
-// Login housekeeping staff with access code
+// Login housekeeping staff with email and password
 export const loginHousekeeping = async (req, res) => {
-  const { accessCode } = req.body;
+  const { email, password } = req.body;
 
-  if (!accessCode) {
-    return res.status(400).json({ error: 'Access code is required' });
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required' });
   }
 
   try {
     const housekeeper = await prisma.housekeeper.findFirst({
       where: {
-        accessCode: accessCode,
+        email: email,
         isActive: true
       }
     });
 
     if (!housekeeper) {
-      return res.status(401).json({ error: 'Invalid access code or inactive account' });
+      return res.status(401).json({ error: 'Invalid email or inactive account' });
+    }
+
+    if (!housekeeper.password) {
+      return res.status(401).json({ error: 'Password not set. Please contact admin.' });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, housekeeper.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid password' });
     }
 
     // Create JWT for housekeeping session (4 hours expiration)
@@ -647,12 +661,15 @@ export const loginHousekeeping = async (req, res) => {
       user: {
         id: housekeeper.id,
         name: housekeeper.name,
+        email: housekeeper.email,
         role: 'housekeeping',
         type: 'housekeeper',
         shift: housekeeper.shift,
-        photoUrl: housekeeper.photoUrl
+        photoUrl: housekeeper.photoUrl,
+        passwordChanged: housekeeper.passwordChanged
       },
-      message: 'Housekeeping login successful'
+      message: 'Housekeeping login successful',
+      requiresPasswordChange: !housekeeper.passwordChanged
     });
   } catch (error) {
     console.error('Housekeeping login error:', error);
@@ -674,6 +691,66 @@ export const logoutAdmin = async (req, res) => {
   } catch (error) {
     console.error('Admin logout error:', error);
     res.status(500).json({ error: 'Logout failed' });
+  }
+};
+
+// Change staff password
+export const changeStaffPassword = async (req, res) => {
+  const { newPassword } = req.body;
+
+  if (!newPassword) {
+    return res.status(400).json({ error: 'New password is required' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    const staff = await prisma.frontOfficeStaff.update({
+      where: { id: req.user.id },
+      data: {
+        password: hashedPassword,
+        passwordChanged: true
+      },
+    });
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Password change error:', error);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+};
+
+// Change housekeeping password
+export const changeHousekeepingPassword = async (req, res) => {
+  const { newPassword } = req.body;
+
+  if (!newPassword) {
+    return res.status(400).json({ error: 'New password is required' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    const housekeeper = await prisma.housekeeper.update({
+      where: { id: req.user.id },
+      data: {
+        password: hashedPassword,
+        passwordChanged: true
+      },
+    });
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Password change error:', error);
+    res.status(500).json({ error: 'Failed to change password' });
   }
 };
 

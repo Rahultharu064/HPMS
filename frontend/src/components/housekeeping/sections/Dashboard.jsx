@@ -5,6 +5,7 @@ import { getSocket } from '../../../utils/socket'
 import { roomService } from '../../../services/roomService'
 import { housekeeperService } from '../../../services/housekeeperService'
 import { API_BASE_URL } from '../../../utils/api'
+import authService from '../../../services/authService'
 
 const Dashboard = ({ darkMode, setActiveTab }) => {
   const [loading, setLoading] = useState(true)
@@ -93,6 +94,12 @@ const Dashboard = ({ darkMode, setActiveTab }) => {
       console.error(e)
       toast.error('Failed to assign housekeeper')
     }
+  }
+
+  const handleLogout = () => {
+    authService.logout()
+    toast.success('Logged out successfully')
+    window.location.href = '/housekeeping/login'
   }
 
   return (

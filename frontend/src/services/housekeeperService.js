@@ -44,5 +44,13 @@ export const housekeeperService = {
 
   async remove(id) {
     return await apiRequest(`/api/housekeepers/${id}`, { method: 'DELETE' })
+  },
+
+  async resetPassword(id, newPassword) {
+    return await apiRequest(`/api/housekeepers/${id}/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newPassword })
+    })
   }
 }

@@ -23,7 +23,7 @@ const ProtectedAdminRoute = ({ children }) => {
           setIsAuthenticated(true);
           setIsAdmin(true);
         } else {
-          setIsAuthenticated(true);
+          setIsAuthenticated(false); // Treat non-admin users as not authenticated for admin routes
           setIsAdmin(false);
         }
       } catch (error) {

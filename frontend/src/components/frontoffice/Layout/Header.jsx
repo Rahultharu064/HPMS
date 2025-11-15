@@ -1,11 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Search, X, Sun, Moon, Bell, ChevronDown, Settings, Shield, LogOut, User, Menu } from 'lucide-react'
 import { getSocket } from '../../../utils/socket'
+import authService from '../../../services/authService'
+import { useNavigate } from 'react-router-dom'
 
 const Header = ({ darkMode = false, setDarkMode = () => {}, sidebarOpen = true, setSidebarOpen = () => {}, notifications = 0, searchQuery = '', setSearchQuery = () => {} }) => {
   const [showNotifications, setShowNotifications] = useState(false)
   const [items, setItems] = useState([])
   const unread = useMemo(() => items.filter(i => !i.read).length, [items])
+  const navigate = useNavigate()
+  const user = authService.getUser()
 
   useEffect(() => {
     const socket = getSocket()
@@ -145,7 +149,7 @@ const Header = ({ darkMode = false, setDarkMode = () => {}, sidebarOpen = true, 
               FO
             </div>
             <div className="hidden lg:block">
-              <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Front Office</p>
+              <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{user?.name || 'Front Office'}</p>
               <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Staff</p>
             </div>
             <ChevronDown size={16} className={darkMode ? 'text-gray-400' : 'text-gray-500'} />
@@ -153,8 +157,8 @@ const Header = ({ darkMode = false, setDarkMode = () => {}, sidebarOpen = true, 
             {/* Dropdown Menu */}
             <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <p className="font-semibold text-gray-900 dark:text-white">Front Office</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">staff@hamrostay.com</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{user?.name || 'Front Office'}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email || 'staff@hamrostay.com'}</p>
               </div>
               <div className="p-2">
                 {[
@@ -167,7 +171,13 @@ const Header = ({ darkMode = false, setDarkMode = () => {}, sidebarOpen = true, 
                     <span className="text-gray-700 dark:text-gray-300">{item.label}</span>
                   </button>
                 ))}
-                <button className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors mt-2">
+                <button
+                  onClick={() => {
+                    authService.logout()
+                    navigate('/staff/login')
+                  }}
+                  className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors mt-2"
+                >
                   <LogOut size={18} />
                   <span>Sign Out</span>
                 </button>

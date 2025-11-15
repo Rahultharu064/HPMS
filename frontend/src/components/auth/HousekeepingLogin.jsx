@@ -5,18 +5,15 @@ import authService from '../../services/authService';
 
 const HousekeepingLogin = () => {
   const [formData, setFormData] = useState({
-    accessCode: '',
+    email: '',
+    password: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    const value = e.target.value;
-    // Only allow alphanumeric characters and limit to 8 characters
-    if (/^[a-zA-Z0-9]*$/.test(value) && value.length <= 8) {
-      setFormData({ ...formData, [e.target.name]: value });
-    }
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -25,7 +22,14 @@ const HousekeepingLogin = () => {
     setLoading(true);
 
     try {
-      await authService.loginHousekeeping(formData.accessCode);
+      const response = await authService.loginHousekeeping(formData.email, formData.password);
+
+      // Check if password change is required (first login)
+      if (response.requiresPasswordChange) {
+        navigate(`/staff/change-password?email=${formData.email}`);
+        return;
+      }
+
       navigate('/housekeeping'); // Redirect to housekeeping dashboard
     } catch (err) {
       const errorMessage = err.message || 'Housekeeping login failed';
@@ -70,51 +74,40 @@ const HousekeepingLogin = () => {
               <Sparkles className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-3xl font-bold text-white mb-2">Housekeeping Login</h2>
-            <p className="text-gray-300">Enter your 8-character access code</p>
+            <p className="text-gray-300">Enter your email and password</p>
           </div>
 
-          {/* Access Code Display */}
-          <div className="mb-8">
-            <div className="flex justify-center space-x-2 mb-4">
-              {[0, 1, 2, 3, 4, 5, 6, 7].map((index) => (
-                <div
-                  key={index}
-                  className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center text-lg font-mono font-bold ${
-                    index < formData.accessCode.length
-                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 border-emerald-400 text-white'
-                      : 'bg-gray-700 border-gray-600 text-gray-400'
-                  } transition-all duration-200`}
-                >
-                  {index < formData.accessCode.length ? formData.accessCode[index] : ''}
-                </div>
-              ))}
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Email Address
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent backdrop-blur-sm"
+                placeholder="Enter your email"
+              />
             </div>
-            <div className="text-center text-sm text-gray-400">
-              {formData.accessCode.length}/8 characters
-            </div>
-          </div>
 
-          {/* Keypad */}
-          <div className="grid grid-cols-6 gap-2 mb-6">
-            {keypadChars.map((char) => (
-              <button
-                key={char}
-                type="button"
-                onClick={() => handleKeypadClick(char)}
-                className="aspect-square bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-white text-sm font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 backdrop-blur-sm"
-              >
-                {char}
-              </button>
-            ))}
-            <div className="col-span-4"></div>
-            <button
-              type="button"
-              onClick={handleBackspace}
-              className="col-span-2 aspect-square bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-red-300 hover:text-red-200 transition-all duration-200 transform hover:scale-105 active:scale-95 backdrop-blur-sm"
-            >
-              ⌫
-            </button>
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Password
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent backdrop-blur-sm"
+                placeholder="Enter your password"
+              />
+            </div>
 
           {/* Error Message */}
           {error && (
@@ -126,8 +119,7 @@ const HousekeepingLogin = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            onClick={handleSubmit}
-            disabled={loading || formData.accessCode.length !== 8}
+            disabled={loading}
             className="w-full flex justify-center py-4 px-6 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] mb-4"
           >
             {loading ? (
@@ -139,6 +131,7 @@ const HousekeepingLogin = () => {
               'Login'
             )}
           </button>
+        </form>
 
           {/* Back to Login */}
           <div className="text-center">
