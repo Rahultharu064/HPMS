@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
+import passport from "../config/passport.js";
 import { createTransporter } from './services/emailService.js';
 import prisma from '../config/client.js';
 
@@ -103,6 +104,9 @@ export const loginGuest = async (req, res) => {
     if (!guest) {
       return res.status(401).json({ error: 'Guest not found' });
     }
+    if (!guest.isActive) {
+      return res.status(401).json({ error: 'Account is deactivated' });
+    }
     if (!guest.password || !(await bcrypt.compare(password, guest.password))) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -113,7 +117,16 @@ export const loginGuest = async (req, res) => {
     // }
 
     const token = jwt.sign({ id: guest.id, role: 'guest' }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, guest: { id: guest.id, firstName: guest.firstName, lastName: guest.lastName, email: guest.email } });
+    res.json({
+      token,
+      guest: {
+        id: guest.id,
+        firstName: guest.firstName,
+        lastName: guest.lastName,
+        email: guest.email,
+        role: 'guest'
+      }
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Login failed' });
@@ -165,6 +178,7 @@ export const getProfile = async (req, res) => {
   try {
     const guest = await prisma.guest.findUnique({ where: { id: req.user.id } });
     if (!guest) return res.status(404).json({ error: 'Guest not found' });
+    if (!guest.isActive) return res.status(403).json({ error: 'Account is deactivated' });
 
     res.json({ guest });
   } catch (error) {
@@ -176,6 +190,11 @@ export const getProfile = async (req, res) => {
 // Get current guest bookings
 export const getUserBookings = async (req, res) => {
   try {
+    // First check if guest exists and is active
+    const guest = await prisma.guest.findUnique({ where: { id: req.user.id } });
+    if (!guest) return res.status(404).json({ error: 'Guest not found' });
+    if (!guest.isActive) return res.status(403).json({ error: 'Account is deactivated' });
+
     const bookings = await prisma.booking.findMany({
       where: { guestId: req.user.id },
       include: {
@@ -248,6 +267,11 @@ export const updateProfile = async (req, res) => {
   const { firstName, lastName, phone } = req.body;
 
   try {
+    // First check if guest exists and is active
+    const existingGuest = await prisma.guest.findUnique({ where: { id: req.user.id } });
+    if (!existingGuest) return res.status(404).json({ error: 'Guest not found' });
+    if (!existingGuest.isActive) return res.status(403).json({ error: 'Account is deactivated' });
+
     const guest = await prisma.guest.update({
       where: { id: req.user.id },
       data: { firstName, lastName, phone },
@@ -266,6 +290,11 @@ export const uploadPhoto = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
+
+    // First check if guest exists and is active
+    const existingGuest = await prisma.guest.findUnique({ where: { id: req.user.id } });
+    if (!existingGuest) return res.status(404).json({ error: 'Guest not found' });
+    if (!existingGuest.isActive) return res.status(403).json({ error: 'Account is deactivated' });
 
     const photoUrl = `/uploads/profiles/${req.file.filename}`;
 
@@ -752,6 +781,40 @@ export const changeHousekeepingPassword = async (req, res) => {
     console.error('Password change error:', error);
     res.status(500).json({ error: 'Failed to change password' });
   }
+};
+
+// Google OAuth login
+export const googleLogin = (req, res, next) => {
+  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+};
+
+// Google OAuth callback
+export const googleCallback = async (req, res, next) => {
+  passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL}/login` }, async (err, guest) => {
+    if (err || !guest) {
+      console.error('Google OAuth error:', err);
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=google_auth_failed`);
+    }
+
+    try {
+      // Create JWT token for the guest
+      const token = jwt.sign({ id: guest.id, role: 'guest' }, JWT_SECRET, { expiresIn: '7d' });
+      console.log(`Google login successful for ${guest.email} at ${new Date().toISOString()}`);
+
+      // Redirect with token (you might want to store it in a cookie or send it differently)
+      res.redirect(`${process.env.FRONTEND_URL}/login?token=${token}&user=${encodeURIComponent(JSON.stringify({
+        id: guest.id,
+        firstName: guest.firstName,
+        lastName: guest.lastName,
+        email: guest.email,
+        googleId: guest.googleId,
+        role: 'guest'
+      }))}`);
+    } catch (tokenError) {
+      console.error('Token generation error:', tokenError);
+      res.redirect(`${process.env.FRONTEND_URL}/login?error=token_generation_failed`);
+    }
+  })(req, res, next);
 };
 
 // Get admin profile

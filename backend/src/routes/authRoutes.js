@@ -19,6 +19,8 @@ import {
   getAdminProfile,
   changeStaffPassword,
   changeHousekeepingPassword,
+  googleLogin,
+  googleCallback,
 } from '../controllers/authController.js';
 import { authenticate } from '../middleware/auth.js';
 import multer from 'multer';
@@ -79,5 +81,9 @@ router.put('/staff/change-password', authenticate, changeStaffPassword);
 // Housekeeping routes
 router.post('/housekeeping/login', loginHousekeeping);
 router.put('/housekeeping/change-password', authenticate, changeHousekeepingPassword);
+
+// Google OAuth routes
+router.get('/google', googleLogin);
+router.get('/google/callback', googleCallback);
 
 export default router;

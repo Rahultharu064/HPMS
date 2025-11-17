@@ -1,3 +1,4 @@
+
 import React from 'react'
 import CreateRoom from './components/owner/forum/createRoom'
 import OwnerAdmin from './pages/owner/OwnerAdmin'
@@ -48,6 +49,7 @@ import OwnerDashboard from './components/owner/sections/Dashboard'
 import ProtectedAdminRoute from './components/auth/ProtectedAdminRoute'
 import ProtectedStaffRoute from './components/auth/ProtectedStaffRoute'
 import ProtectedHousekeepingRoute from './components/auth/ProtectedHousekeepingRoute'
+import ProtectedGuestRoute from './components/auth/ProtectedGuestRoute'
 import Staff from './components/owner/sections/Staff'
 
 
@@ -132,8 +134,8 @@ const App = () => {
       element: <HousekeepingLogin />
     },
     {
-      path: "/profile/:id",
-      element: <GuestProfile />
+      path: "/profile",
+      element: <ProtectedGuestRoute><GuestProfile /></ProtectedGuestRoute>
     },
     {
       path: "/guest/profile",

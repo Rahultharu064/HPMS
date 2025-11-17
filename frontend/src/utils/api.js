@@ -1,5 +1,6 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 
+
 export { API_BASE_URL };
 
 // Create an axios-like API object
@@ -43,7 +44,11 @@ export const apiDebug = {
 
 // Enhanced fetch wrapper with better error handling
 export const apiRequest = async (url, options = {}) => {
-  const fullUrl = url.startsWith("http") ? url : `${API_BASE_URL}${url}`;
+  const fullUrl = url.startsWith("http") ? url : (() => {
+    const base = API_BASE_URL.replace(/\/$/, '');
+    const path = url.replace(/^\/*/, '/');
+    return `${base}${path}`;
+  })();
 
   apiDebug.log(`Making ${options.method || "GET"} request to:`, fullUrl);
 

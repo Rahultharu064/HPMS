@@ -20,6 +20,9 @@ import testimonialRoutes from "./routes/testimonialRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import dotenv from "dotenv";
 import prisma from "./config/client.js";
+import passport from "../src/config/passport.js";
+
+import session from "express-session";
 dotenv.config();
 
 const app = express();
@@ -43,6 +46,16 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // for form submissions that send text fields
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+app.use(session({
+  secret: process.env.SESSION_SECRET || "default_secret",
+  resave: false,
+  saveUninitialized: false,
+
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+
+
 
 
 

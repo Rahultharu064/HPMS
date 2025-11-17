@@ -114,7 +114,7 @@ const Header = () => {
               {/* User Account */}
               {authService.isAuthenticated() ? (
                 <Link
-                  to={`/profile/${authService.getUser()?.id}`}
+                  to={`/profile`}
                   className={`p-2 rounded-full transition-colors border-2 ${
                     isScrolled
                       ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700'

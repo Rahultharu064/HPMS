@@ -35,8 +35,8 @@ const GuestProfile = () => {
       const data = await authService.getProfile();
       setProfile(data.guest);
       setFormData({
-        firstName: data.guest.firstName,
-        lastName: data.guest.lastName,
+        firstName: data.guest.firstName || '',
+        lastName: data.guest.lastName || '',
         phone: data.guest.phone || '',
       });
     } catch (err) {
@@ -45,7 +45,8 @@ const GuestProfile = () => {
         authService.logout();
         navigate('/login');
       } else {
-        toast.error('Failed to load profile');
+        const errorMessage = err.response?.data?.error || err.message || 'Failed to load profile';
+        toast.error(errorMessage);
       }
     }
   };
@@ -60,7 +61,8 @@ const GuestProfile = () => {
         authService.logout();
         navigate('/login');
       } else {
-        toast.error('Failed to load bookings');
+        const errorMessage = err.response?.data?.error || err.message || 'Failed to load bookings';
+        toast.error(errorMessage);
       }
     }
   };
@@ -204,7 +206,7 @@ const GuestProfile = () => {
                   </div>
                   <div>
                     <h1 className="text-2xl font-bold text-white">
-                      {profile.firstName} {profile.lastName}
+                      {`${profile.firstName || ''} ${profile.lastName || ''}`.trim() || 'Guest'}
                     </h1>
                     <p className="text-indigo-100 flex items-center">
                       <Shield className="w-4 h-4 mr-1" />
@@ -264,11 +266,11 @@ const GuestProfile = () => {
                           <div className="space-y-3">
                             <div>
                               <label className="text-sm font-medium text-gray-500">First Name</label>
-                              <p className="text-gray-900 font-medium">{profile.firstName}</p>
+                              <p className="text-gray-900 font-medium">{profile.firstName || 'N/A'}</p>
                             </div>
                             <div>
                               <label className="text-sm font-medium text-gray-500">Last Name</label>
-                              <p className="text-gray-900 font-medium">{profile.lastName}</p>
+                              <p className="text-gray-900 font-medium">{profile.lastName || 'N/A'}</p>
                             </div>
                           </div>
                         </div>
@@ -281,7 +283,7 @@ const GuestProfile = () => {
                           <div className="space-y-3">
                             <div>
                               <label className="text-sm font-medium text-gray-500">Email Address</label>
-                              <p className="text-gray-900 font-medium">{profile.email}</p>
+                              <p className="text-gray-900 font-medium">{profile.email || 'N/A'}</p>
                             </div>
                             <div>
                               <label className="text-sm font-medium text-gray-500">Phone Number</label>
