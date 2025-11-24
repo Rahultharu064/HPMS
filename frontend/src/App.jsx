@@ -9,6 +9,7 @@ import OwnerRooms from './components/owner/sections/Rooms'
 import RoomTypes from './components/owner/sections/RoomTypes'
 import Facilities from './components/owner/sections/Facilities'
 import ExtraServicesAdmin from './components/owner/sections/ExtraServicesAdmin'
+import ServiceCategories from './components/owner/sections/ServiceCategories'
 import RoomDetail from './pages/Publicwebsite/RoomDetail'
 import BookingForm from './pages/Publicwebsite/BookingForm'
 import BookingConfirmation from './pages/Publicwebsite/BookingConfirmation'
@@ -23,10 +24,12 @@ import GuestProfilePage from './components/frontoffice/sections/GuestProfilePage
 import Dashboard from './components/frontoffice/sections/Dashboard'
 import Reservations from './components/frontoffice/sections/Reservations'
 import OfflineReservation from './components/frontoffice/sections/OfflineReservation'
+import NonResidentialService from './components/frontoffice/sections/NonResidentialService'
 import RoomStatus from './components/frontoffice/sections/RoomStatus'
 import RoomAvailability from './components/frontoffice/sections/RoomAvailability'
 import CheckInOut from './components/frontoffice/sections/CheckInOut'
 import Billing from './components/frontoffice/sections/Billing'
+import GuestFolio from './components/frontoffice/sections/GuestFolio'
 import Reports from './components/frontoffice/sections/Reports'
 import ReservationDetail from './components/frontoffice/sections/ReservationDetail'
 import OTA from './components/owner/sections/OTA'
@@ -156,15 +159,16 @@ const App = () => {
 
       children: [
         { index: true, element: <Navigate to="/owner-admin/dashboard" replace /> },
-        {path:"dashboard", element: <OwnerDashboard /> },
+        { path: "dashboard", element: <OwnerDashboard /> },
         { path: "create-room", element: <CreateRoom /> },
         { path: "ota", element: <OTA /> },
         { path: "owneroom", element: <OwnerRooms /> },
         { path: "room-types", element: <RoomTypes /> },
         { path: "facilities", element: <Facilities /> },
         { path: "extra-services", element: <ExtraServicesAdmin /> },
-        {path: "users", element: <Users />},
-        {path: "staff", element :<Staff />}
+        { path: "service-categories", element: <ServiceCategories /> },
+        { path: "users", element: <Users /> },
+        { path: "staff", element: <Staff /> }
       ]
     },
     //frontoffice routes
@@ -177,9 +181,11 @@ const App = () => {
         { path: "reservations", element: <Reservations /> },
         { path: "reservations/:id", element: <ReservationDetail /> },
         { path: "new-reservation", element: <OfflineReservation /> },
+        { path: "services", element: <NonResidentialService /> },
         { path: "rooms", element: <RoomStatus /> },
         { path: "room-availability", element: <RoomAvailability /> },
         { path: "checkin", element: <CheckInOut /> },
+        { path: "folio", element: <GuestFolio /> },
         { path: "billing", element: <Billing /> },
         { path: "guests", element: <Guests /> },
         { path: "reports", element: <Reports /> }
@@ -194,12 +200,11 @@ const App = () => {
     }
   ])
   return (
-   <>
-     <RouterProvider router={router} />
+    <>
+      <RouterProvider router={router} />
       <Toaster position="top-center" reverseOrder={false} />
-   </>
+    </>
   )
 }
 
 export default App
-

@@ -7,6 +7,7 @@ import Dashboard from '../../components/owner/sections/Dashboard'
 import Rooms from '../../components/owner/sections/Rooms'
 import Facilities from '../../components/owner/sections/Facilities'
 import ExtraServicesAdmin from '../../components/owner/sections/ExtraServicesAdmin'
+import ServiceCategories from '../../components/owner/sections/ServiceCategories'
 import Users from '../../components/owner/sections/Users'
 import Staff from '../../components/owner/sections/Staff'
 
@@ -70,6 +71,8 @@ const OwnerAdmin = () => {
       navigate('/owner-admin/facilities')
     } else if (activeTab === 'extra-services') {
       navigate('/owner-admin/extra-services')
+    } else if (activeTab === 'service-categories') {
+      navigate('/owner-admin/service-categories')
     }
     else if (activeTab === 'staff') {
       navigate("/owner-admin/staff")
@@ -87,6 +90,7 @@ const OwnerAdmin = () => {
     else if (path.startsWith('/owner-admin/owneroom')) setActiveTab('rooms')
     else if (path.startsWith('/owner-admin/facilities')) setActiveTab('facilities')
     else if (path.startsWith('/owner-admin/extra-services')) setActiveTab('extra-services')
+    else if (path.startsWith('/owner-admin/service-categories')) setActiveTab('service-categories')
     else if (path.startsWith('/owner-admin/users')) setActiveTab('users')
       else if (path.startsWith('/owner-admin/staff')) setActiveTab('staff')
     else if (path.startsWith('/owner-admin')) setActiveTab('dashboard')
@@ -97,6 +101,7 @@ const OwnerAdmin = () => {
     { icon: 'Hotel', label: 'Rooms', key: 'rooms', route: '/owner-admin/owneroom' },
     { icon: 'Sparkles', label: 'Facilities', key: 'facilities', route: '/owner-admin/facilities' },
     { icon: 'Package', label: 'Extra Services', key: 'extra-services', route: '/owner-admin/extra-services' },
+    { icon: 'Tags', label: 'Service Categories', key: 'service-categories', route: '/owner-admin/service-categories' },
     { icon: 'Users', label: 'Users', key: 'users', route: '/owner-admin/users' },
     { icon: 'Users', label: 'Staff', key: 'staff', route: '/owner-admin/staff' },
     { icon: 'Globe', label: 'OTA Sync', key: 'ota', route: '/owner-admin/ota' },

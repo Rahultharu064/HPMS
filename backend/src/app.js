@@ -16,6 +16,8 @@ import packageRoutes from "./routes/packageRoutes.js";
 import promotionRoutes from "./routes/promotionRoutes.js";
 import couponRoutes from "./routes/couponRoutes.js";
 import extraServiceRoutes from "./routes/extraServiceRoutes.js";
+import serviceCategoryRoutes from "./routes/serviceCategoryRoutes.js";
+import serviceOrderRoutes from "./routes/serviceOrderRoutes.js";
 import testimonialRoutes from "./routes/testimonialRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import dotenv from "dotenv";
@@ -76,6 +78,8 @@ app.use("/api/packages", packageRoutes);
 app.use("/api/promotions", promotionRoutes);
 app.use("/api/coupons", couponRoutes);
 app.use("/api/extra-services", extraServiceRoutes);
+app.use("/api/service-categories", serviceCategoryRoutes);
+app.use("/api/service-orders", serviceOrderRoutes);
 app.use("/api/testimonials", testimonialRoutes);
 
 app.get("/", (req, res) => res.send("HPMS API running"));

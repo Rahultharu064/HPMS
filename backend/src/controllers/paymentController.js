@@ -97,7 +97,12 @@ export const cleanupDuplicatePayments = async (req, res) => {
       deleted = await processGroups([Number(bookingId)])
     } else {
       // Global cleanup: find bookings that have more than 1 payment
-      const many = await prisma.payment.groupBy({ by: ['bookingId'], _count: { _all: true } })
+      // Note: This logic only cleans up booking payments for now
+      const many = await prisma.payment.groupBy({
+        by: ['bookingId'],
+        where: { bookingId: { not: null } },
+        _count: { _all: true }
+      })
       const targets = many.filter(g => (g._count?._all || 0) > 1).map(g => g.bookingId)
       if (targets.length > 0) {
         deleted = await processGroups(targets)
@@ -123,7 +128,7 @@ export const markPaymentCompleted = async (req, res) => {
 
     await prisma.payment.update({ where: { id }, data: { status: 'completed' } })
     if (payment.bookingId) {
-      await prisma.booking.update({ where: { id: payment.bookingId }, data: { status: 'confirmed', updatedAt: new Date() } }).catch(()=>{})
+      await prisma.booking.update({ where: { id: payment.bookingId }, data: { status: 'confirmed', updatedAt: new Date() } }).catch(() => { })
     }
 
     return res.json({ success: true })
@@ -136,39 +141,53 @@ export const markPaymentCompleted = async (req, res) => {
 // Create payment record
 export const createPayment = async (req, res) => {
   try {
-    const { bookingId, method, amount } = req.body;
+    const { bookingId, serviceOrderId, method, amount } = req.body;
 
-    if (!bookingId || !method) {
-      return res.status(400).json({ success: false, error: "bookingId and method are required" });
+    if ((!bookingId && !serviceOrderId) || !method) {
+      return res.status(400).json({ success: false, error: "bookingId or serviceOrderId, and method are required" });
     }
     const allowed = ['khalti', 'esewa', 'cash', 'card']
     if (!allowed.includes(String(method))) {
       return res.status(400).json({ success: false, error: "Unsupported payment method" });
     }
 
+    let targetType = '';
+    let targetId = null;
+    let totalAmount = 0;
+    let guest = null;
+    let description = '';
 
-    // Validate booking exists
-    const booking = await prisma.booking.findUnique({
-      where: { id: bookingId },
-      include: {
-        guest: true,
-        room: true,
-        extraServices: {
-          include: {
-            extraService: true
-          }
+    if (bookingId) {
+      targetType = 'booking';
+      targetId = bookingId;
+      const booking = await prisma.booking.findUnique({
+        where: { id: bookingId },
+        include: {
+          guest: true,
+          room: true,
+          extraServices: { include: { extraService: true } }
         }
-      }
-    });
+      });
+      if (!booking) return res.status(404).json({ success: false, error: "Booking not found" });
 
-    if (!booking) {
-      return res.status(404).json({ success: false, error: "Booking not found" });
+      totalAmount = Number(booking.totalAmount || 0);
+      const extraServicesTotal = booking.extraServices.reduce((sum, es) => sum + Number(es.totalPrice), 0);
+      totalAmount += extraServicesTotal;
+      guest = booking.guest;
+      description = `Hotel Booking - ${booking.room.name}`;
+    } else if (serviceOrderId) {
+      targetType = 'serviceOrder';
+      targetId = serviceOrderId;
+      const order = await prisma.serviceOrder.findUnique({
+        where: { id: serviceOrderId },
+        include: { guest: true }
+      });
+      if (!order) return res.status(404).json({ success: false, error: "Service Order not found" });
+
+      totalAmount = Number(order.totalAmount || 0);
+      guest = order.guest;
+      description = `Service Order #${order.id}`;
     }
-
-    // Calculate total amount including extra services
-    let totalAmount = Number(booking.totalAmount || 0);
-    const extraServicesTotal = booking.extraServices.reduce((sum, es) => sum + Number(es.totalPrice), 0);
-    totalAmount += extraServicesTotal;
 
     // Determine amount (fallback to calculated total)
     const amt = amount ? parseFloat(amount) : totalAmount;
@@ -179,7 +198,8 @@ export const createPayment = async (req, res) => {
     // Create payment record
     const payment = await prisma.payment.create({
       data: {
-        bookingId: bookingId,
+        bookingId: bookingId || null,
+        serviceOrderId: serviceOrderId || null,
         method: method,
         amount: amt,
         status: method === 'cash' ? 'completed' : 'pending',
@@ -187,31 +207,23 @@ export const createPayment = async (req, res) => {
       }
     });
 
-    // Handle different payment methods
-    if (method === 'khalti') {
-      try {
-        const khaltiResponse = await initiateKhaltiPayment({ req, booking, amount: amt });
-        return res.json({
-          success: true,
-          payment: payment,
-          gatewayResponse: khaltiResponse
-        });
-      } catch (e) {
-        return res.status(400).json({ success: false, error: "Failed to initiate Khalti payment", details: e?.message || e });
-      }
-    } else if (method === 'esewa') {
-      const esewaResponse = await initiateEsewaPayment({ req, booking, amount: amt, payment });
-      return res.json({
-        success: true,
-        payment: payment,
-        gatewayResponse: esewaResponse
-      });
-    } else {
-      // For cash and card payments, mark as completed
+    // If cash/card, update status immediately
+    if (method === 'cash' || method === 'card') {
       await prisma.payment.update({
         where: { id: payment.id },
         data: { status: 'completed' }
       });
+
+      // Update target status if fully paid (simplified logic)
+      if (targetType === 'booking') {
+        // existing logic handles this elsewhere or here?
+        // For now, let's leave booking status logic as is or minimal
+      } else if (targetType === 'serviceOrder') {
+        await prisma.serviceOrder.update({
+          where: { id: serviceOrderId },
+          data: { status: 'completed' }
+        });
+      }
 
       return res.json({
         success: true,
@@ -219,6 +231,20 @@ export const createPayment = async (req, res) => {
         message: "Payment recorded successfully"
       });
     }
+
+    // Handle gateways
+    if (method === 'khalti') {
+      try {
+        const khaltiResponse = await initiateKhaltiPayment({ req, id: targetId, type: targetType, guest, description, amount: amt });
+        return res.json({ success: true, payment, gatewayResponse: khaltiResponse });
+      } catch (e) {
+        return res.status(400).json({ success: false, error: "Failed to initiate Khalti payment", details: e?.message || e });
+      }
+    } else if (method === 'esewa') {
+      const esewaResponse = await initiateEsewaPayment({ req, id: targetId, type: targetType, amount: amt, payment });
+      return res.json({ success: true, payment, gatewayResponse: esewaResponse });
+    }
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: "Failed to create payment" });
@@ -226,7 +252,7 @@ export const createPayment = async (req, res) => {
 };
 
 // Initiate Khalti payment
-const initiateKhaltiPayment = async ({ req, booking, amount }) => {
+const initiateKhaltiPayment = async ({ req, id, type, guest, description, amount }) => {
   try {
     const secret = process.env.KHALTI_SECRET_KEY
     if (!secret) {
@@ -234,16 +260,18 @@ const initiateKhaltiPayment = async ({ req, booking, amount }) => {
     }
 
     const backendBase = process.env.BACKEND_URL || (req && req.get ? `${req.protocol}://${req.get('host')}` : 'http://localhost:5000')
+    const prefix = type === 'booking' ? 'BOOKING' : 'SERVICE';
+
     const khaltiData = {
-      return_url: `${backendBase}/api/payments/khalti/return?purchase_order_id=BOOKING_${booking.id}`,
+      return_url: `${backendBase}/api/payments/khalti/return?purchase_order_id=${prefix}_${id}`,
       website_url: process.env.FRONTEND_URL || 'http://localhost:5173',
       amount: (Math.round(parseFloat(amount) * 100)).toString(), // integer paisa as string
-      purchase_order_id: `BOOKING_${booking.id}`,
-      purchase_order_name: `Hotel Booking - ${booking.room.name}`,
+      purchase_order_id: `${prefix}_${id}`,
+      purchase_order_name: description,
       customer_info: {
-        name: `${booking.guest.firstName} ${booking.guest.lastName}`,
-        email: booking.guest.email,
-        phone: booking.guest.phone
+        name: `${guest.firstName} ${guest.lastName}`,
+        email: guest.email,
+        phone: guest.phone
       }
     };
 
@@ -266,7 +294,7 @@ const initiateKhaltiPayment = async ({ req, booking, amount }) => {
           reject(error);
           return;
         }
-        
+
         try {
           const responseData = JSON.parse(response.body);
           if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -289,7 +317,7 @@ const initiateKhaltiPayment = async ({ req, booking, amount }) => {
 };
 
 // Initiate eSewa payment (v2 form)
-const initiateEsewaPayment = async ({ req, booking, amount, payment }) => {
+const initiateEsewaPayment = async ({ req, id, type, amount, payment }) => {
   try {
     const rawMerchant = process.env.ESEWA_MERCHANT_ID
     const rawSecret = process.env.ESEWA_SECRET_KEY
@@ -303,7 +331,9 @@ const initiateEsewaPayment = async ({ req, booking, amount, payment }) => {
     const frontendBase = process.env.FRONTEND_URL || 'http://localhost:5173'
 
     const total_amount = parseFloat(amount).toString()
-    const transaction_uuid = `PM_${payment.id}_${booking.id}_${Date.now()}`
+    const prefix = type === 'booking' ? 'BOOKING' : 'SERVICE';
+    // Use a unique transaction ID that includes type
+    const transaction_uuid = `PM_${payment.id}_${prefix}_${id}_${Date.now()}`
 
     // eSewa v2 signed fields must be in this exact order
     const signed_field_names = 'total_amount,transaction_uuid,product_code'
@@ -327,11 +357,15 @@ const initiateEsewaPayment = async ({ req, booking, amount, payment }) => {
       signature
     }
 
+    const redirect_hint = type === 'booking'
+      ? `${frontendBase}/booking/confirm/${id}`
+      : `${frontendBase}/front-office/services/${id}`;
+
     return {
       success: true,
       payment_url: isTest ? `https://rc-epay.esewa.com.np/api/epay/main/v2/form` : `https://epay.esewa.com.np/api/epay/main/v2/form`,
       form_data,
-      redirect_hint: `${frontendBase}/booking/confirm/${booking.id}`
+      redirect_hint
     }
   } catch (err) {
     console.error('eSewa payment initiation error:', err);
@@ -356,7 +390,7 @@ export const verifyPayment = async (req, res) => {
 
     if (gateway === 'khalti') {
       const verificationResult = await verifyKhaltiPayment({ token, amount });
-      
+
       if (verificationResult.success) {
         await prisma.payment.update({
           where: { id: payment.id },
@@ -377,7 +411,7 @@ export const verifyPayment = async (req, res) => {
     } else if (gateway === 'esewa') {
       // eSewa verification logic
       const verificationResult = await verifyEsewaPayment(req.body);
-      
+
       if (verificationResult.success) {
         await prisma.payment.update({
           where: { id: payment.id },
@@ -421,17 +455,17 @@ export const handleKhaltiReturn = async (req, res) => {
     // Verify with Khalti using pidx (be resilient to lookup errors)
     let result = null
     const norm = (v) => String(v || '').toLowerCase()
-    let completed = ['completed','complete','success','successful','ok','200','201','0','00','000'].includes(norm(status))
+    let completed = ['completed', 'complete', 'success', 'successful', 'ok', '200', '201', '0', '00', '000'].includes(norm(status))
     try {
       const lookup = await verifyKhaltiPayment({ pidx })
       result = lookup
-      const lookedUp = ['completed','complete','success','successful','ok','200','201','0','00','000'].some(sig => (
+      const lookedUp = ['completed', 'complete', 'success', 'successful', 'ok', '200', '201', '0', '00', '000'].some(sig => (
         [lookup?.status, lookup?.state, lookup?.code, lookup?.message].map(norm).includes(sig)
       ))
       if (!completed && lookedUp) completed = true
     } catch (e) {
       // Do not fail the whole flow if lookup fails; rely on status query param
-      try { console.error('Khalti lookup failed:', e?.message || e) } catch {}
+      try { console.error('Khalti lookup failed:', e?.message || e) } catch { }
     }
 
     // If bookingId wasn't present in query, try to derive it from Khalti verification response
@@ -443,7 +477,7 @@ export const handleKhaltiReturn = async (req, res) => {
           const maybeId = Number(parts?.[1])
           if (Number.isFinite(maybeId)) bookingId = maybeId
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     if (completed) {
@@ -457,9 +491,9 @@ export const handleKhaltiReturn = async (req, res) => {
         await prisma.payment.updateMany({
           where: { bookingId, status: 'pending' },
           data: { status: 'completed' }
-        }).catch(()=>{})
+        }).catch(() => { })
         // Mark booking confirmed
-        await prisma.booking.update({ where: { id: bookingId }, data: { status: 'confirmed', updatedAt: new Date() } }).catch(()=>{})
+        await prisma.booking.update({ where: { id: bookingId }, data: { status: 'confirmed', updatedAt: new Date() } }).catch(() => { })
         return res.redirect(`${frontend}/booking/success/${bookingId}`)
       }
       // Fallback: try to infer bookingId from the most recent pending khalti payment
@@ -471,12 +505,12 @@ export const handleKhaltiReturn = async (req, res) => {
         })
         if (recent && recent.bookingId) {
           bookingId = recent.bookingId
-          await prisma.payment.update({ where: { id: recent.id }, data: { status: 'completed' } }).catch(()=>{})
-          await prisma.payment.updateMany({ where: { bookingId, status: 'pending' }, data: { status: 'completed' } }).catch(()=>{})
-          await prisma.booking.update({ where: { id: bookingId }, data: { status: 'confirmed', updatedAt: new Date() } }).catch(()=>{})
+          await prisma.payment.update({ where: { id: recent.id }, data: { status: 'completed' } }).catch(() => { })
+          await prisma.payment.updateMany({ where: { bookingId, status: 'pending' }, data: { status: 'completed' } }).catch(() => { })
+          await prisma.booking.update({ where: { id: bookingId }, data: { status: 'confirmed', updatedAt: new Date() } }).catch(() => { })
           return res.redirect(`${frontend}/booking/success/${bookingId}`)
         }
-      } catch (_) {}
+      } catch (_) { }
       // If still unknown, redirect home
       return res.redirect(`${frontend}`)
     } else {
@@ -504,7 +538,7 @@ export const handleEsewaReturn = async (req, res) => {
         const json = Buffer.from(base64, 'base64').toString('utf8')
         payload = JSON.parse(json)
       }
-    } catch (_) {}
+    } catch (_) { }
     // Extract fields from decoded payload, otherwise fall back to query/body
     let transaction_uuid = payload?.transaction_uuid || data?.transaction_uuid || data?.ctx
     let total_amount = payload?.total_amount || data?.total_amount || data?.amount
@@ -532,7 +566,7 @@ export const handleEsewaReturn = async (req, res) => {
         if (p && p.amount != null) {
           total_amount = parseFloat(p.amount).toString()
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // Sanitize values before verification
@@ -540,7 +574,7 @@ export const handleEsewaReturn = async (req, res) => {
     const clean_amount = total_amount != null ? String(total_amount) : undefined
 
     // Diagnostic log (safe): what we received from eSewa return (no secrets)
-    try { console.log('[eSewa:return] payload', { q: req.query, b: req.body, transaction_uuid: clean_uuid, total_amount: clean_amount }) } catch {}
+    try { console.log('[eSewa:return] payload', { q: req.query, b: req.body, transaction_uuid: clean_uuid, total_amount: clean_amount }) } catch { }
 
     // Try local signature verification when possible
     let ok = false
@@ -552,7 +586,7 @@ export const handleEsewaReturn = async (req, res) => {
 
     // In sandbox, accept if payload reports a success status
     const statusStr = String(payload?.status || '').toLowerCase()
-    if (isTest && ['complete','completed','success','successful','ok'].includes(statusStr)) {
+    if (isTest && ['complete', 'completed', 'success', 'successful', 'ok'].includes(statusStr)) {
       ok = true
     }
 
@@ -578,12 +612,12 @@ export const handleEsewaReturn = async (req, res) => {
 
     if (ok) {
       if (paymentId) {
-        await prisma.payment.update({ where: { id: paymentId }, data: { status: 'completed' } }).catch(()=>{})
+        await prisma.payment.update({ where: { id: paymentId }, data: { status: 'completed' } }).catch(() => { })
       }
       if (bookingId) {
         // Also mark any other pending payments (e.g., default cash placeholder) as completed
-        await prisma.payment.updateMany({ where: { bookingId, status: 'pending' }, data: { status: 'completed' } }).catch(()=>{})
-        await prisma.booking.update({ where: { id: bookingId }, data: { status: 'confirmed', updatedAt: new Date() } }).catch(()=>{})
+        await prisma.payment.updateMany({ where: { bookingId, status: 'pending' }, data: { status: 'completed' } }).catch(() => { })
+        await prisma.booking.update({ where: { id: bookingId }, data: { status: 'confirmed', updatedAt: new Date() } }).catch(() => { })
         // Send booking success email for eSewa payments
         try {
           const completeBooking = await prisma.booking.findUnique({
@@ -659,7 +693,7 @@ const verifyEsewaPayment = async (paymentData) => {
           signature
         })
       }
-      try { console.log('[eSewa:status] req', { url, product_code, isTest }) } catch {}
+      try { console.log('[eSewa:status] req', { url, product_code, isTest }) } catch { }
       request(options, function (error, response) {
         if (error) {
           console.error('eSewa status error:', error)
@@ -667,10 +701,10 @@ const verifyEsewaPayment = async (paymentData) => {
         }
         try {
           const data = JSON.parse(response.body)
-          try { console.log('[eSewa:status] resp', { code: response.statusCode, data }) } catch {}
+          try { console.log('[eSewa:status] resp', { code: response.statusCode, data }) } catch { }
           const statusStr = String(data?.status || data?.state || data?.code || '').toLowerCase()
           const respCode = String(data?.response_code || '').toLowerCase()
-          const completed = ['complete','completed','success','successful','ok'].includes(statusStr) || ['success','successful','ok','0','00','000'].includes(respCode)
+          const completed = ['complete', 'completed', 'success', 'successful', 'ok'].includes(statusStr) || ['success', 'successful', 'ok', '0', '00', '000'].includes(respCode)
           resolve({ success: !!completed, raw: data })
         } catch (_) {
           resolve({ success: false, message: 'parse_error' })

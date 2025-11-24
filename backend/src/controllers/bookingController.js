@@ -40,9 +40,9 @@ async function computeSimplePHash(filePath) {
   const size = 8
   const { data, info } = await sharp(filePath).resize(size, size).greyscale().raw().toBuffer({ resolveWithObject: true })
   const pixels = Array.from(data)
-  const avg = pixels.reduce((a,b)=>a+b,0) / pixels.length
+  const avg = pixels.reduce((a, b) => a + b, 0) / pixels.length
   let hash = 0n
-  for (let i=0;i<pixels.length;i++) {
+  for (let i = 0; i < pixels.length; i++) {
     if (pixels[i] >= avg) hash |= (1n << BigInt(i))
   }
   return hash
@@ -72,24 +72,24 @@ export const uploadIdProof = async (req, res) => {
     // Validate image
     const MAX_BYTES = 5 * 1024 * 1024
     if (req.file.size && req.file.size > MAX_BYTES) {
-      try { fs.unlinkSync(req.file.path) } catch {}
+      try { fs.unlinkSync(req.file.path) } catch { }
       return res.status(400).json({ success: false, error: 'Image too large (max 5MB)' })
     }
     try {
       const meta = await sharp(req.file.path).metadata()
-      const allowedFormats = new Set(['jpeg','jpg','png','webp','gif'])
+      const allowedFormats = new Set(['jpeg', 'jpg', 'png', 'webp', 'gif'])
       const fmt = String(meta.format || '').toLowerCase()
       if (!allowedFormats.has(fmt)) {
-        try { fs.unlinkSync(req.file.path) } catch {}
+        try { fs.unlinkSync(req.file.path) } catch { }
         return res.status(400).json({ success: false, error: 'Unsupported image format' })
       }
       const minW = 400, minH = 300
       if (!meta.width || !meta.height || meta.width < minW || meta.height < minH) {
-        try { fs.unlinkSync(req.file.path) } catch {}
+        try { fs.unlinkSync(req.file.path) } catch { }
         return res.status(400).json({ success: false, error: `Image too small (min ${minW}x${minH})` })
       }
     } catch (e) {
-      try { fs.unlinkSync(req.file.path) } catch {}
+      try { fs.unlinkSync(req.file.path) } catch { }
       return res.status(400).json({ success: false, error: 'Invalid image file' })
     }
 
@@ -104,7 +104,7 @@ export const uploadIdProof = async (req, res) => {
         similarity = 1 - (dist / 64) // 0..1
         // If images are nearly identical, reject: ID proof must be govt ID, not a face selfie
         if (similarity > 0.95) {
-          try { fs.unlinkSync(req.file.path) } catch {}
+          try { fs.unlinkSync(req.file.path) } catch { }
           return res.status(400).json({ success: false, error: 'ID Proof appears identical to profile photo. Upload the government ID image.' })
         }
       } catch (_) { /* ignore similarity failures */ }
@@ -127,7 +127,7 @@ export const uploadIdProof = async (req, res) => {
     // Store path in workflow log as an attachment reference
     const webPath = path.relative(process.cwd(), req.file.path ?? path.join(req.file.destination || 'uploads', req.file.filename || ''))
     const remarks = [
-      similarity != null ? `similarity:${(similarity*100).toFixed(1)}%` : null,
+      similarity != null ? `similarity:${(similarity * 100).toFixed(1)}%` : null,
       ocrConfidence != null ? `ocr_confidence:${ocrConfidence.toFixed(1)}%` : null
     ].filter(Boolean).join('; ') || undefined
 
@@ -177,7 +177,7 @@ export const createBookingWorkflowLog = async (req, res) => {
     try {
       const io = getIO();
       io && io.emit('fo:booking:workflow', { bookingId, log });
-    } catch {}
+    } catch { }
 
     res.status(201).json({ success: true, log });
   } catch (err) {
@@ -257,6 +257,7 @@ export const getBookingById = async (req, res) => {
         guest: true,
         room: {
           include: {
+            roomTypeRef: true,
             image: true,
             video: true,
             amenity: true
@@ -265,7 +266,11 @@ export const getBookingById = async (req, res) => {
         payments: true,
         extraServices: {
           include: {
-            extraService: true
+            extraService: {
+              include: {
+                category: true
+              }
+            }
           }
         }
       }
@@ -489,7 +494,7 @@ export const createBooking = async (req, res) => {
         'system',
         { bookingId: result.booking.id, type: 'new' }
       );
-    } catch {}
+    } catch { }
 
     res.status(201).json({ success: true, ...result });
   } catch (err) {
@@ -517,14 +522,14 @@ export const updateBooking = async (req, res) => {
     // Parse dates if provided
     let checkIn = existingBooking.checkIn;
     let checkOut = existingBooking.checkOut;
-    
+
     if (body.checkIn) {
       checkIn = new Date(body.checkIn);
       if (isNaN(checkIn)) {
         return res.status(400).json({ success: false, error: 'Invalid check-in date' });
       }
     }
-    
+
     if (body.checkOut) {
       checkOut = new Date(body.checkOut);
       if (isNaN(checkOut)) {
@@ -540,7 +545,7 @@ export const updateBooking = async (req, res) => {
     // Check room availability if dates or room changed
     if (body.roomId || body.checkIn || body.checkOut) {
       const roomId = body.roomId ? Number(body.roomId) : existingBooking.roomId;
-      
+
       const overlapping = await prisma.booking.findFirst({
         where: {
           roomId: roomId,
@@ -561,13 +566,13 @@ export const updateBooking = async (req, res) => {
     // Calculate new total amount if dates or room changed
     let totalAmount = existingBooking.totalAmount;
     if (body.roomId || body.checkIn || body.checkOut) {
-      const room = await prisma.room.findUnique({ 
-        where: { id: body.roomId ? Number(body.roomId) : existingBooking.roomId } 
+      const room = await prisma.room.findUnique({
+        where: { id: body.roomId ? Number(body.roomId) : existingBooking.roomId }
       });
       if (!room) {
         return res.status(404).json({ success: false, error: 'Room not found' });
       }
-      
+
       const nights = diffNights(checkIn, checkOut);
       totalAmount = nights * room.price;
     }
@@ -664,7 +669,7 @@ export const updateBooking = async (req, res) => {
           { bookingId: updatedBooking.id, type: 'status_change', oldStatus: existingBooking.status, newStatus: body.status }
         );
       }
-    } catch {}
+    } catch { }
 
     let message = '';
     if (body.status === 'confirmed') {
@@ -702,7 +707,7 @@ export const cancelBooking = async (req, res) => {
     // Update booking status
     const updatedBooking = await prisma.booking.update({
       where: { id },
-      data: { 
+      data: {
         status: 'cancelled',
         updatedAt: new Date()
       },
@@ -724,9 +729,9 @@ export const cancelBooking = async (req, res) => {
     try {
       const io = getIO();
       io && io.emit('fo:booking:cancelled', { booking: updatedBooking, reason: reason || null })
-    } catch {}
-    res.json({ 
-      success: true, 
+    } catch { }
+    res.json({
+      success: true,
       booking: updatedBooking,
       message: 'Booking cancelled successfully'
     });
@@ -759,7 +764,7 @@ export const deleteBooking = async (req, res) => {
     try {
       const io = getIO();
       io && io.emit('fo:booking:deleted', { id })
-    } catch {}
+    } catch { }
 
     res.json({
       success: true,

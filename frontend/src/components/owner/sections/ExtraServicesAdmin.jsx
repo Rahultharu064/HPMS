@@ -1,30 +1,40 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { Plus, Search, RefreshCw, Sparkles, Edit, Trash2 } from 'lucide-react'
+import { Plus, Search, RefreshCw, Sparkles, Edit, Trash2, Upload } from 'lucide-react'
 import extraServiceService from '../../../services/extraServiceService'
+import serviceCategoryService from '../../../services/serviceCategoryService'
+import { API_BASE_URL } from '../../../utils/api'
 import { toast } from 'react-hot-toast'
 
 const ExtraServicesAdmin = ({ darkMode }) => {
   const [services, setServices] = useState([])
+  const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filters, setFilters] = useState({ search: '', category: '' })
   const [showCreate, setShowCreate] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
+  const [showCategoryManager, setShowCategoryManager] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editingService, setEditingService] = useState(null)
+  const [editingCategory, setEditingCategory] = useState(null)
   const [form, setForm] = useState({
+    categoryId: '',
     name: '',
     description: '',
     price: '',
-    category: ''
+    image: null
   })
+  const [categoryForm, setCategoryForm] = useState({
+    name: ''
+  })
+  const [imagePreview, setImagePreview] = useState(null)
 
   const fetchServices = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
       const res = await extraServiceService.getExtraServices()
-      setServices(res.data || [])
+      setServices(Array.isArray(res) ? res : [])
     } catch (e) {
       setError(e.message || 'Failed to load extra services')
       setServices([])
@@ -33,31 +43,63 @@ const ExtraServicesAdmin = ({ darkMode }) => {
     }
   }, [])
 
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await serviceCategoryService.getServiceCategories()
+      setCategories(res || [])
+    } catch (e) {
+      console.error('Failed to load categories', e)
+      setCategories([])
+    }
+  }, [])
+
   useEffect(() => {
     fetchServices()
-  }, [fetchServices])
+    fetchCategories()
+  }, [fetchServices, fetchCategories])
 
   const filteredServices = services.filter(service => {
     const matchesSearch = service.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-                         service.description.toLowerCase().includes(filters.search.toLowerCase())
-    const matchesCategory = !filters.category || service.category === filters.category
+      (service.category?.name && service.category.name.toLowerCase().includes(filters.search.toLowerCase())) ||
+      service.description.toLowerCase().includes(filters.search.toLowerCase())
+
+    // If no category filter is selected, show all.
+    // Otherwise, check if the service has a category and if its ID matches the filter.
+    const matchesCategory = !filters.category || (service.category && service.category.id.toString() === filters.category.toString())
+
     return matchesSearch && matchesCategory
   })
 
-  const handleCreate = async () => {
-    if (!form.name || !form.description || !form.price) {
-      return setError('Name, description, and price are required')
+  const handleImageChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      setForm(f => ({ ...f, image: file }))
+      const reader = new FileReader()
+      reader.onload = () => setImagePreview(reader.result)
+      reader.readAsDataURL(file)
     }
+  }
+
+  const handleCreate = async () => {
+    if (!form.categoryId || !form.name || !form.description || !form.price || !form.image) {
+      return setError('All fields are required')
+    }
+
     try {
       setSaving(true)
-      await extraServiceService.createExtraService({
-        name: form.name,
-        description: form.description,
-        price: parseFloat(form.price),
-        category: form.category
-      })
+      const formData = new FormData()
+      formData.append('categoryId', form.categoryId)
+      formData.append('name', form.name)
+      formData.append('description', form.description)
+      formData.append('price', form.price)
+      if (form.image) {
+        formData.append('image', form.image)
+      }
+
+      await extraServiceService.createExtraService(formData)
       setShowCreate(false)
-      setForm({ name: '', description: '', price: '', category: '' })
+      setForm({ categoryId: '', name: '', description: '', price: '', image: null })
+      setImagePreview(null)
       fetchServices()
       toast.success('Extra service created successfully')
     } catch (e) {
@@ -68,20 +110,25 @@ const ExtraServicesAdmin = ({ darkMode }) => {
   }
 
   const handleEdit = async () => {
-    if (!form.name || !form.description || !form.price) {
-      return setError('Name, description, and price are required')
+    if (!form.categoryId || !form.name || !form.description || !form.price) {
+      return setError('All fields are required')
     }
     try {
       setSaving(true)
-      await extraServiceService.updateExtraService(editingService.id, {
-        name: form.name,
-        description: form.description,
-        price: parseFloat(form.price),
-        category: form.category
-      })
+      const formData = new FormData()
+      formData.append('categoryId', form.categoryId)
+      formData.append('name', form.name)
+      formData.append('description', form.description)
+      formData.append('price', form.price)
+      if (form.image) {
+        formData.append('image', form.image)
+      }
+
+      await extraServiceService.updateExtraService(editingService.id, formData)
       setShowEdit(false)
       setEditingService(null)
-      setForm({ name: '', description: '', price: '', category: '' })
+      setForm({ categoryId: '', name: '', description: '', price: '', image: null })
+      setImagePreview(null)
       fetchServices()
       toast.success('Extra service updated successfully')
     } catch (e) {
@@ -105,12 +152,69 @@ const ExtraServicesAdmin = ({ darkMode }) => {
   const openEditModal = (service) => {
     setEditingService(service)
     setForm({
+      categoryId: service.categoryId?.toString() || '',
       name: service.name,
       description: service.description,
       price: service.price.toString(),
-      category: service.category
+      image: null
     })
+    setImagePreview(service.image)
     setShowEdit(true)
+  }
+
+  const handleCreateCategory = async () => {
+    if (!categoryForm.name.trim()) {
+      return setError('Category name is required')
+    }
+    try {
+      setSaving(true)
+      await serviceCategoryService.createServiceCategory(categoryForm)
+      setCategoryForm({ name: '' })
+      fetchCategories()
+      toast.success('Category created successfully')
+    } catch (e) {
+      setError(e.message || 'Failed to create category')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleUpdateCategory = async () => {
+    if (!categoryForm.name.trim()) {
+      return setError('Category name is required')
+    }
+    try {
+      setSaving(true)
+      await serviceCategoryService.updateServiceCategory(editingCategory.id, categoryForm)
+      setEditingCategory(null)
+      setCategoryForm({ name: '' })
+      fetchCategories()
+      fetchServices() // Refresh services to update category names
+      toast.success('Category updated successfully')
+    } catch (e) {
+      setError(e.message || 'Failed to update category')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteCategory = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this category? This will affect all services in this category.')) return
+    try {
+      await serviceCategoryService.deleteServiceCategory(id)
+      fetchCategories()
+      fetchServices()
+      toast.success('Category deleted successfully')
+    } catch (e) {
+      toast.error(e.message || 'Failed to delete category')
+    }
+  }
+
+  const openEditCategoryModal = (category) => {
+    setEditingCategory(category)
+    setCategoryForm({
+      name: category.name
+    })
   }
 
   return (
@@ -153,11 +257,9 @@ const ExtraServicesAdmin = ({ darkMode }) => {
             onChange={(e) => setFilters(f => ({ ...f, category: e.target.value }))}
           >
             <option value="">All Categories</option>
-            <option value="Food">Food</option>
-            <option value="Beverage">Beverage</option>
-            <option value="Transportation">Transportation</option>
-            <option value="Entertainment">Entertainment</option>
-            <option value="Other">Other</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>{category.name}</option>
+            ))}
           </select>
         </div>
 
@@ -169,39 +271,85 @@ const ExtraServicesAdmin = ({ darkMode }) => {
         )}
 
         {!loading && filteredServices.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filteredServices.map((service) => (
-              <div key={service.id} className={`rounded-xl overflow-hidden border ${darkMode ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'}`}>
-                <div className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className={`font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{service.name}</h4>
-                      <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'} text-sm line-clamp-2`}>{service.description}</p>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className={`text-lg font-bold ${darkMode ? 'text-blue-300' : 'text-blue-600'}`}>Rs. {service.price}</span>
-                        <span className={`px-2 py-1 bg-gray-200 text-xs rounded ${darkMode ? 'bg-gray-700 text-gray-300' : ''}`}>{service.category}</span>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <th className={`text-left py-4 px-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'} font-semibold`}>Image</th>
+                  <th className={`text-left py-4 px-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'} font-semibold`}>Name</th>
+                  <th className={`text-left py-4 px-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'} font-semibold`}>Category</th>
+                  <th className={`text-left py-4 px-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'} font-semibold`}>Description</th>
+                  <th className={`text-left py-4 px-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'} font-semibold`}>Price</th>
+                  <th className={`text-right py-4 px-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'} font-semibold`}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredServices.map((service) => (
+                  <tr
+                    key={service.id}
+                    className={`border-b ${darkMode ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-200 hover:bg-gray-50'} transition-colors`}
+                  >
+                    <td className="py-4 px-4">
+                      {service.image ? (
+                        <img
+                          src={`${API_BASE_URL}${service.image}`}
+                          alt={service.name}
+                          className="w-16 h-16 object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className={`w-16 h-16 rounded-lg flex items-center justify-center ${darkMode ? 'bg-gray-700 text-gray-500' : 'bg-gray-100 text-gray-400'}`}>
+                          <Sparkles size={20} />
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-4 px-4">
+                      <p className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{service.name}</p>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className={`px-2 py-1 text-xs rounded ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+                        {service.category?.name || 'No Category'}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} max-w-xs truncate`}>
+                        {service.description}
+                      </p>
+                    </td>
+                    <td className="py-4 px-4">
+                      <p className={`font-bold ${darkMode ? 'text-blue-300' : 'text-blue-600'}`}>
+                        Rs. {service.price}
+                      </p>
+                    </td>
+                    <td className="py-4 px-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => openEditModal(service)}
+                          className={`p-2 rounded-xl ${darkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'} transition-colors`}
+                          title="Edit Service"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(service.id)}
+                          className={`p-2 rounded-xl ${darkMode ? 'hover:bg-gray-700 text-gray-400 hover:text-red-400' : 'hover:bg-gray-100 text-gray-600 hover:text-red-600'} transition-colors`}
+                          title="Delete Service"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
-                    </div>
-                    <div className="flex gap-2 ml-2">
-                      <button onClick={() => openEditModal(service)} className={`p-2 rounded ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
-                        <Edit size={16} className={darkMode ? 'text-gray-300' : 'text-gray-600'} />
-                      </button>
-                      <button onClick={() => handleDelete(service.id)} className={`p-2 rounded ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-red-700'}`}>
-                        <Trash2 size={16} className="text-red-500" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
 
       {/* Create Modal */}
       {showCreate && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className={`${darkMode ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'} w-full max-w-md rounded-2xl p-6`}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`${darkMode ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'} w-full max-w-lg rounded-2xl p-6 max-h-[90vh] overflow-y-auto`}>
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-lg font-semibold">Create Extra Service</h4>
               <button onClick={() => setShowCreate(false)} className={`${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>✕</button>
@@ -211,50 +359,81 @@ const ExtraServicesAdmin = ({ darkMode }) => {
 
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="block text-sm mb-1">Name</label>
+                <label className="block text-sm mb-1">Category *</label>
+                <div className="flex gap-2">
+                  <select
+                    value={form.categoryId}
+                    onChange={(e) => setForm(f => ({ ...f, categoryId: e.target.value }))}
+                    className={`flex-1 px-3 py-2 rounded-xl border ${darkMode ? 'bg-gray-900 border-gray-700 text-gray-100' : 'bg-white border-gray-300'}`}
+                  >
+                    <option value="">Select Category</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>{category.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => setShowCategoryManager(true)}
+                    className={`px-3 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    title="Manage Categories"
+                  >
+                    +
+                  </button>
+                </div>
+                {categories.length === 0 && (
+                  <p className="text-sm text-gray-500 mt-1">No categories available. Click + to add categories.</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm mb-1">Service Name *</label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
                   className={`w-full px-3 py-2 rounded-xl border ${darkMode ? 'bg-gray-900 border-gray-700 text-gray-100' : 'bg-white border-gray-300'}`}
-                  placeholder="Service name"
+                  placeholder="e.g., Momo, Coffee, Airport Transfer"
                 />
               </div>
               <div>
-                <label className="block text-sm mb-1">Description</label>
+                <label className="block text-sm mb-1">Description *</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
                   rows={3}
                   className={`w-full px-3 py-2 rounded-xl border ${darkMode ? 'bg-gray-900 border-gray-700 text-gray-100' : 'bg-white border-gray-300'}`}
-                  placeholder="Service description"
+                  placeholder="Detailed description of the service"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm mb-1">Price</label>
+              <div>
+                <label className="block text-sm mb-1">Price (Rs.) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.price}
+                  onChange={(e) => setForm(f => ({ ...f, price: e.target.value }))}
+                  className={`w-full px-3 py-2 rounded-xl border ${darkMode ? 'bg-gray-900 border-gray-700 text-gray-100' : 'bg-white border-gray-300'}`}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">Service Image</label>
+                <div className="flex items-center gap-3">
                   <input
-                    type="number"
-                    step="0.01"
-                    value={form.price}
-                    onChange={(e) => setForm(f => ({ ...f, price: e.target.value }))}
-                    className={`w-full px-3 py-2 rounded-xl border ${darkMode ? 'bg-gray-900 border-gray-700 text-gray-100' : 'bg-white border-gray-300'}`}
-                    placeholder="0.00"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                    id="create-image"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm mb-1">Category</label>
-                  <select
-                    value={form.category}
-                    onChange={(e) => setForm(f => ({ ...f, category: e.target.value }))}
-                    className={`w-full px-3 py-2 rounded-xl border ${darkMode ? 'bg-gray-900 border-gray-700 text-gray-100' : 'bg-white border-gray-300'}`}
+                  <label
+                    htmlFor="create-image"
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl cursor-pointer ${darkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                   >
-                    <option value="">Select</option>
-                    <option value="Food">Food</option>
-                    <option value="Beverage">Beverage</option>
-                    <option value="Transportation">Transportation</option>
-                    <option value="Entertainment">Entertainment</option>
-                    <option value="Other">Other</option>
-                  </select>
+                    <Upload size={16} />
+                    Choose Image
+                  </label>
+                  {imagePreview && (
+                    <img src={imagePreview} alt="Preview" className="w-16 h-16 rounded-lg object-cover" />
+                  )}
                 </div>
               </div>
             </div>
@@ -262,9 +441,9 @@ const ExtraServicesAdmin = ({ darkMode }) => {
             <div className="mt-6 flex justify-end gap-3">
               <button onClick={() => setShowCreate(false)} className={`${darkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} px-4 py-2 rounded-xl`}>Cancel</button>
               <button
-                disabled={saving}
+                disabled={saving || !form.categoryId || !form.name || !form.description || !form.price}
                 onClick={handleCreate}
-                className={`px-5 py-2 rounded-xl text-white ${saving ? 'opacity-70' : ''} bg-gradient-to-r from-blue-600 to-purple-600`}
+                className={`px-5 py-2 rounded-xl text-white ${(saving || !form.categoryId || !form.name || !form.description || !form.price) ? 'opacity-70' : ''} bg-gradient-to-r from-blue-600 to-purple-600`}
               >{saving ? 'Creating...' : 'Create Service'}</button>
             </div>
           </div>
@@ -273,8 +452,8 @@ const ExtraServicesAdmin = ({ darkMode }) => {
 
       {/* Edit Modal */}
       {showEdit && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className={`${darkMode ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'} w-full max-w-md rounded-2xl p-6`}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`${darkMode ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'} w-full max-w-lg rounded-2xl p-6 max-h-[90vh] overflow-y-auto`}>
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-lg font-semibold">Edit Extra Service</h4>
               <button onClick={() => setShowEdit(false)} className={`${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>✕</button>
@@ -284,61 +463,183 @@ const ExtraServicesAdmin = ({ darkMode }) => {
 
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="block text-sm mb-1">Name</label>
+                <label className="block text-sm mb-1">Category *</label>
+                <select
+                  value={form.categoryId}
+                  onChange={(e) => setForm(f => ({ ...f, categoryId: e.target.value }))}
+                  className={`w-full px-3 py-2 rounded-xl border ${darkMode ? 'bg-gray-900 border-gray-700 text-gray-100' : 'bg-white border-gray-300'}`}
+                >
+                  <option value="">Select Category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm mb-1">Service Name *</label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
                   className={`w-full px-3 py-2 rounded-xl border ${darkMode ? 'bg-gray-900 border-gray-700 text-gray-100' : 'bg-white border-gray-300'}`}
-                  placeholder="Service name"
+                  placeholder="e.g., Momo, Coffee, Airport Transfer"
                 />
               </div>
               <div>
-                <label className="block text-sm mb-1">Description</label>
+                <label className="block text-sm mb-1">Description *</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
                   rows={3}
                   className={`w-full px-3 py-2 rounded-xl border ${darkMode ? 'bg-gray-900 border-gray-700 text-gray-100' : 'bg-white border-gray-300'}`}
-                  placeholder="Service description"
+                  placeholder="Detailed description of the service"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm mb-1">Price</label>
+              <div>
+                <label className="block text-sm mb-1">Price (Rs.) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.price}
+                  onChange={(e) => setForm(f => ({ ...f, price: e.target.value }))}
+                  className={`w-full px-3 py-2 rounded-xl border ${darkMode ? 'bg-gray-900 border-gray-700 text-gray-100' : 'bg-white border-gray-300'}`}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">Service Image</label>
+                <div className="flex items-center gap-3">
                   <input
-                    type="number"
-                    step="0.01"
-                    value={form.price}
-                    onChange={(e) => setForm(f => ({ ...f, price: e.target.value }))}
-                    className={`w-full px-3 py-2 rounded-xl border ${darkMode ? 'bg-gray-900 border-gray-700 text-gray-100' : 'bg-white border-gray-300'}`}
-                    placeholder="0.00"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                    id="edit-image"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm mb-1">Category</label>
-                  <select
-                    value={form.category}
-                    onChange={(e) => setForm(f => ({ ...f, category: e.target.value }))}
-                    className={`w-full px-3 py-2 rounded-xl border ${darkMode ? 'bg-gray-900 border-gray-700 text-gray-100' : 'bg-white border-gray-300'}`}
+                  <label
+                    htmlFor="edit-image"
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl cursor-pointer ${darkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                   >
-                    <option value="">Select</option>
-                    <option value="Food">Food</option>
-                    <option value="Beverage">Beverage</option>
-                    <option value="Transportation">Transportation</option>
-                    <option value="Entertainment">Entertainment</option>
-                    <option value="Other">Other</option>
-                  </select>
+                    <Upload size={16} />
+                    Choose Image
+                  </label>
+                  {imagePreview && (
+                    <img src={imagePreview.startsWith('data:') ? imagePreview : `/uploads/${imagePreview}`} alt="Preview" className="w-16 h-16 rounded-lg object-cover" />
+                  )}
                 </div>
               </div>
             </div>
 
             <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => setShowEdit(false)} className={`${darkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} px-4 py-2 rounded-xl`}>Cancel</button>
+              <button onClick={() => { setShowEdit(false); setForm({ categoryId: '', name: '', description: '', price: '', image: null }); setImagePreview(null); }} className={`${darkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} px-4 py-2 rounded-xl`}>Cancel</button>
               <button
-                disabled={saving}
+                disabled={saving || !form.categoryId || !form.name || !form.description || !form.price}
                 onClick={handleEdit}
-                className={`px-5 py-2 rounded-xl text-white ${saving ? 'opacity-70' : ''} bg-gradient-to-r from-blue-600 to-purple-600`}
+                className={`px-5 py-2 rounded-xl text-white ${(saving || !form.categoryId || !form.name || !form.description || !form.price) ? 'opacity-70' : ''} bg-gradient-to-r from-blue-600 to-purple-600`}
               >{saving ? 'Updating...' : 'Update Service'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Manager Modal */}
+      {showCategoryManager && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`${darkMode ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'} w-full max-w-4xl rounded-2xl p-6 max-h-[90vh] overflow-y-auto`}>
+            <div className="flex items-center justify-between mb-6">
+              <h4 className="text-xl font-semibold">Manage Service Categories</h4>
+              <button onClick={() => setShowCategoryManager(false)} className={`${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>✕</button>
+            </div>
+
+            {error && <div className="text-red-500 text-sm mb-3">{error}</div>}
+
+            {/* Create/Edit Category Form */}
+            <div className={`rounded-xl p-4 mb-6 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${darkMode ? 'bg-gray-600' : 'bg-blue-100'}`}>
+                  <Plus className={darkMode ? 'text-blue-300' : 'text-blue-600'} size={16} />
+                </div>
+                <h5 className="text-lg font-medium">{editingCategory ? 'Edit Category' : 'Create New Category'}</h5>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm mb-1">Category Name *</label>
+                  <input
+                    value={categoryForm.name}
+                    onChange={(e) => setCategoryForm(f => ({ ...f, name: e.target.value }))}
+                    className={`w-full px-3 py-2 rounded-xl border ${darkMode ? 'bg-gray-900 border-gray-600 text-gray-100' : 'bg-white border-gray-300'}`}
+                    placeholder="e.g., Food, Beverage, Transportation"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  onClick={() => { setEditingCategory(null); setCategoryForm({ name: '' }); }}
+                  className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-600 text-gray-200 hover:bg-gray-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Clear
+                </button>
+                <button
+                  disabled={saving || !categoryForm.name.trim()}
+                  onClick={editingCategory ? handleUpdateCategory : handleCreateCategory}
+                  className={`px-5 py-2 rounded-xl text-white ${(saving || !categoryForm.name.trim()) ? 'opacity-70' : ''} bg-gradient-to-r from-blue-600 to-purple-600`}
+                >
+                  {saving ? (editingCategory ? 'Updating...' : 'Creating...') : (editingCategory ? 'Update Category' : 'Create Category')}
+                </button>
+              </div>
+            </div>
+
+            {/* Categories List */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 mb-4">
+                <h5 className="text-lg font-medium">Existing Categories</h5>
+                <span className={`px-2 py-1 text-xs rounded ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'}`}>
+                  {categories.length} categories
+                </span>
+              </div>
+
+              {categories.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  No categories created yet. Create your first category above.
+                </div>
+              )}
+
+              {categories.map((category) => (
+                <div key={category.id} className={`rounded-xl p-4 border ${darkMode ? 'border-gray-600 bg-gray-900' : 'border-gray-200 bg-white'}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h6 className={`font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{category.name}</h6>
+                      <div className="flex items-center gap-4 mt-2">
+                        <span className={`px-2 py-1 text-xs rounded ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+                          {category._count?.extraServices || 0} services
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openEditCategoryModal(category)}
+                        className={`p-2 rounded ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                      >
+                        <Edit size={16} className={darkMode ? 'text-gray-300' : 'text-gray-600'} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCategory(category.id)}
+                        className={`p-2 rounded ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-red-700'}`}
+                      >
+                        <Trash2 size={16} className="text-red-500" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end mt-6">
+              <button onClick={() => setShowCategoryManager(false)} className={`px-6 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                Close
+              </button>
             </div>
           </div>
         </div>

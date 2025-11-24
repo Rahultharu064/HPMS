@@ -1,5 +1,10 @@
 generator client {
   provider = "prisma-client-js"
+
+}
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 // =====================
@@ -72,10 +77,7 @@ model AppSetting {
   @@map("app_setting")
 }
 
-datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
-}
+
 
 // =====================
 // Package Models
@@ -313,6 +315,7 @@ model Guest {
   isActive          Boolean   @default(true)
 
   bookings Booking[]
+  serviceOrders ServiceOrder[]
 
   @@map("guest")
 }
@@ -375,16 +378,47 @@ model BookingWorkflowLog {
 }
 
 model Payment {
-  id        Int      @id @default(autoincrement())
-  bookingId Int
-  method    String
-  amount    Float
-  status    String   @default("pending")
-  createdAt DateTime @default(now())
+  id             Int           @id @default(autoincrement())
+  bookingId      Int?
+  serviceOrderId Int?
+  method         String
+  amount         Float
+  status         String        @default("pending")
+  createdAt      DateTime      @default(now())
 
-  booking Booking @relation(fields: [bookingId], references: [id])
+  booking        Booking?      @relation(fields: [bookingId], references: [id])
+  serviceOrder   ServiceOrder? @relation(fields: [serviceOrderId], references: [id])
 
   @@map("payment")
+}
+
+model ServiceOrder {
+  id          Int      @id @default(autoincrement())
+  guestId     Int
+  totalAmount Float
+  status      String   @default("pending") // pending, completed, cancelled
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+
+  guest       Guest              @relation(fields: [guestId], references: [id])
+  items       ServiceOrderItem[]
+  payments    Payment[]
+
+  @@map("service_order")
+}
+
+model ServiceOrderItem {
+  id             Int      @id @default(autoincrement())
+  serviceOrderId Int
+  extraServiceId Int
+  quantity       Int      @default(1)
+  unitPrice      Float
+  totalPrice     Float
+
+  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id])
+  extraService   ExtraService @relation(fields: [extraServiceId], references: [id])
+
+  @@map("service_order_item")
 }
 
 // Logs for OTA sync/import operations
@@ -633,6 +667,22 @@ model Inspection {
 }
 
 // =====================
+// Service Categories
+// =====================
+
+model ServiceCategory {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+
+  extraServices ExtraService[]
+
+  @@map("service_category")
+}
+
+// =====================
 // Extra Services Models
 // =====================
 
@@ -641,12 +691,15 @@ model ExtraService {
   name        String
   description String?  @db.Text
   price       Float
-  category    String   // e.g., 'food', 'amenity', 'transport'
+  categoryId  Int?     // Foreign key to ServiceCategory
+  image       String?  // URL to service image
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now())
 
+  category            ServiceCategory?    @relation(fields: [categoryId], references: [id])
   bookingExtraServices BookingExtraService[]
+  serviceOrderItems ServiceOrderItem[]
 
   @@map("extra_service")
 }

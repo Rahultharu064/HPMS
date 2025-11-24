@@ -1,11 +1,12 @@
 import express from 'express';
 const router = express.Router();
 import extraServiceController from '../controllers/extraServiceController.js';
+import upload from '../middleware/upload.js';
 
 // Extra services CRUD routes
 router.get('/', extraServiceController.getExtraServices);
-router.post('/', extraServiceController.createExtraService);
-router.put('/:id', extraServiceController.updateExtraService);
+router.post('/', upload.single('image'), extraServiceController.createExtraService);
+router.put('/:id', upload.single('image'), extraServiceController.updateExtraService);
 router.delete('/:id', extraServiceController.deleteExtraService);
 
 // Booking extra services routes

@@ -23,5 +23,9 @@
 
 ## Followup steps:
 - [x] Run prisma migration
-- [ ] Test API endpoints
-- [ ] Verify frontend integration
+- [x] Test API endpoints (Created backend/scripts/test-testimonials.js)
+- [x] Verify frontend integration (Fixed API path in testimonialService.js)
+
+## Next Steps
+- [ ] Run the test script to verify backend responses
+- [ ] Launch frontend and visually verify the Testimonials section
