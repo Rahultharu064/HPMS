@@ -3,12 +3,18 @@ import prisma from "../config/client.js";
 // Create a new extra service
 const createExtraService = async (req, res) => {
     try {
-        const { name, description, price, categoryId } = req.body;
+        const { name, description, price, categoryId, discountPercentage, discountAllowed } = req.body;
         const image = req.file ? `/uploads/images/${req.file.filename}` : null;
 
         // Validate required fields
         if (!name || !description || !price || !categoryId) {
             return res.status(400).json({ error: 'All fields are required' });
+        }
+
+        // Validate discount percentage
+        const discount = parseFloat(discountPercentage || 0);
+        if (discount < 0 || discount > 100) {
+            return res.status(400).json({ error: 'Discount percentage must be between 0 and 100' });
         }
 
         // Validate category exists and is active
@@ -36,6 +42,8 @@ const createExtraService = async (req, res) => {
                 price: parseFloat(price),
                 categoryId: parseInt(categoryId),
                 image,
+                discountPercentage: discount,
+                discountAllowed: discountAllowed === 'true' || discountAllowed === true,
                 active: true
             }
         });
@@ -68,12 +76,20 @@ const getExtraServices = async (req, res) => {
 const updateExtraService = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description, price, categoryId, active } = req.body;
+        const { name, description, price, categoryId, active, discountPercentage, discountAllowed } = req.body;
         const image = req.file ? `/uploads/images/${req.file.filename}` : undefined;
 
         // Validate required fields if they are being updated
         if (name === '' || description === '' || price === '' || categoryId === '') {
             return res.status(400).json({ error: 'Fields cannot be empty' });
+        }
+
+        // Validate discount percentage if provided
+        if (discountPercentage !== undefined) {
+            const discount = parseFloat(discountPercentage);
+            if (discount < 0 || discount > 100) {
+                return res.status(400).json({ error: 'Discount percentage must be between 0 and 100' });
+            }
         }
 
         // If categoryId is provided, validate it
@@ -92,7 +108,9 @@ const updateExtraService = async (req, res) => {
             ...(price && { price: parseFloat(price) }),
             ...(categoryId && { categoryId: parseInt(categoryId) }),
             ...(image && { image }),
-            ...(active !== undefined && { active: active === 'true' || active === true })
+            ...(active !== undefined && { active: active === 'true' || active === true }),
+            ...(discountPercentage !== undefined && { discountPercentage: parseFloat(discountPercentage) }),
+            ...(discountAllowed !== undefined && { discountAllowed: discountAllowed === 'true' || discountAllowed === true })
         };
 
         const service = await prisma.extraService.update({
@@ -137,19 +155,56 @@ const addExtraServiceToBooking = async (req, res) => {
             return res.status(404).json({ error: 'Extra service not found' });
         }
 
+        // Get service charge percentage from settings (default 10%)
+        const serviceChargeSetting = await prisma.appSetting.findUnique({
+            where: { key: 'service_charge_percentage' }
+        });
+        const serviceChargePercentage = serviceChargeSetting?.value || 10;
+
+        // Calculate pricing
         const unitPrice = service.price;
-        const totalPrice = unitPrice * parseInt(quantity);
+        const qty = parseInt(quantity);
+        const basePrice = unitPrice * qty;
+        
+        // Apply discount only if allowed
+        const discountAmount = service.discountAllowed 
+            ? (basePrice * service.discountPercentage / 100) 
+            : 0;
+        
+        const priceAfterDiscount = basePrice - discountAmount;
+        
+        // Apply service charge on price after discount
+        const serviceChargeAmount = priceAfterDiscount * serviceChargePercentage / 100;
+        
+        const totalPrice = priceAfterDiscount + serviceChargeAmount;
 
         const bookingExtraService = await prisma.bookingExtraService.create({
             data: {
                 bookingId: parseInt(bookingId),
                 extraServiceId: parseInt(extraServiceId),
-                quantity: parseInt(quantity),
+                quantity: qty,
                 unitPrice,
+                basePrice,
+                discountAmount,
+                serviceChargeAmount,
                 totalPrice
             },
             include: {
-                extraService: true
+                extraService: {
+                    include: {
+                        category: true
+                    }
+                }
+            }
+        });
+
+        // Update booking total amount
+        await prisma.booking.update({
+            where: { id: parseInt(bookingId) },
+            data: {
+                totalAmount: {
+                    increment: totalPrice
+                }
             }
         });
 
@@ -165,9 +220,27 @@ const removeExtraServiceFromBooking = async (req, res) => {
     try {
         const { id } = req.params;
 
-        await prisma.bookingExtraService.delete({
+        const bookingExtraService = await prisma.bookingExtraService.findUnique({
             where: { id: parseInt(id) }
         });
+
+        if (!bookingExtraService) {
+            return res.status(404).json({ error: 'Booking extra service not found' });
+        }
+
+        await prisma.$transaction([
+            prisma.bookingExtraService.delete({
+                where: { id: parseInt(id) }
+            }),
+            prisma.booking.update({
+                where: { id: bookingExtraService.bookingId },
+                data: {
+                    totalAmount: {
+                        decrement: bookingExtraService.totalPrice
+                    }
+                }
+            })
+        ]);
 
         res.json({ message: 'Extra service removed from booking' });
     } catch (error) {

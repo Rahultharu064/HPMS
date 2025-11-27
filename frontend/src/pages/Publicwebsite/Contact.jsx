@@ -35,13 +35,13 @@ const Contact = () => {
     {
       icon: Mail,
       title: 'Email',
-      details: ['info@hamrostay.com', 'reservations@hamrostay.com'],
+      details: ['contact@namunacollege.edu.np'],
       description: 'Send us an email'
     },
     {
       icon: MapPin,
       title: 'Address',
-      details: ['Thamel, Kathmandu', 'Nepal 44600'],
+      details: ['Itahari, Nepal'],
       description: 'Visit our location'
     },
     {
@@ -55,14 +55,14 @@ const Contact = () => {
   return (
     <div className="min-h-screen">
       <Header />
-      
+
       {/* Hero Section */}
       <section className="pt-24 pb-16 bg-gradient-to-br from-blue-900 to-purple-900 text-white">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">Contact Us</h1>
             <p className="text-xl text-white/90">
-              We're here to help! Get in touch with us for any questions, 
+              We're here to help! Get in touch with us for any questions,
               reservations, or special requests.
             </p>
           </div>
@@ -227,7 +227,7 @@ const Contact = () => {
               <div className="p-8">
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Find Us</h3>
                 <p className="text-gray-600 mb-6">
-                  We're located in the heart of Thamel, Kathmandu's most vibrant tourist district. 
+                  We're located in the heart of Thamel, Kathmandu's most vibrant tourist district.
                   Easy access to major attractions, shopping, and dining.
                 </p>
               </div>

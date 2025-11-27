@@ -244,6 +244,8 @@ export const getAllBookings = async (req, res) => {
   }
 };
 
+
+
 // Get booking by ID
 export const getBookingById = async (req, res) => {
   try {
@@ -412,7 +414,8 @@ export const createBooking = async (req, res) => {
 
     // Create booking and initial payment record in a transaction
     const method = String(body.paymentMethod ?? 'cash').toLowerCase()
-    const isInstantConfirm = ['cash', 'card'].includes(method)
+    // Only online payments (esewa/khalti) auto-confirm bookings
+    const isOnlinePayment = ['esewa', 'khalti'].includes(method)
 
     const result = await prisma.$transaction(async (tx) => {
       const booking = await tx.booking.create({
@@ -428,7 +431,8 @@ export const createBooking = async (req, res) => {
           packageId,
           promotionId,
           couponCode,
-          status: isInstantConfirm ? 'confirmed' : 'pending',
+          status: isOnlinePayment ? 'confirmed' : 'pending',
+          source: 'public'
         },
       });
 
@@ -442,12 +446,13 @@ export const createBooking = async (req, res) => {
 
       let payment = null
       if (method === 'cash' || method === 'card') {
+        // Cash and card payments are marked as 'pending' - require manual confirmation
         payment = await tx.payment.create({
           data: {
             bookingId: booking.id,
             method,
             amount: finalAmount,
-            status: 'completed',
+            status: 'pending',
           },
         });
       }
@@ -597,15 +602,14 @@ export const updateBooking = async (req, res) => {
         return res.status(400).json({ success: false, error: `Cannot change status from ${currentStatus}` });
       }
 
-      // Check-in: pending -> confirmed, not before check-in date
-      // Allow confirmed -> confirmed for workflow completion
+      // Check-in: pending -> confirmed
+      // Allow status change regardless of date
+      // Date validation only applies during actual check-in operations, not booking confirmation
       if (nextStatus === 'confirmed') {
         if (currentStatus !== 'pending' && currentStatus !== 'confirmed') {
           return res.status(400).json({ success: false, error: 'Invalid status for check-in' });
         }
-        if (today < ci) {
-          return res.status(400).json({ success: false, error: 'Cannot check in before check-in date' });
-        }
+        // Removed date check - allow confirming bookings in advance
       }
 
       // Check-out: confirmed -> completed, allow early check-out
@@ -630,6 +634,9 @@ export const updateBooking = async (req, res) => {
         ...(body.children !== undefined && { children: Number(body.children) }),
         ...(body.status && { status: body.status }),
         ...(body.totalAmount && { totalAmount: Number(body.totalAmount) }),
+        ...(body.discountPercentage !== undefined && { discountPercentage: Number(body.discountPercentage) }),
+        ...(body.taxPercentage !== undefined && { taxPercentage: Number(body.taxPercentage) }),
+        ...(body.serviceChargePercentage !== undefined && { serviceChargePercentage: Number(body.serviceChargePercentage) }),
         updatedAt: new Date()
       },
       include: {

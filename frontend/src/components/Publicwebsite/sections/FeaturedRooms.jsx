@@ -108,7 +108,7 @@ const FeaturedRooms = () => {
       {/* Animated Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50"></div>
       <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-      
+
       {/* Floating Gradient Orbs */}
       <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
       <div className="absolute bottom-20 right-10 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float-delayed"></div>
@@ -124,7 +124,7 @@ const FeaturedRooms = () => {
             Luxury Accommodations
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Experience comfort and elegance in our carefully designed rooms and suites, 
+            Experience comfort and elegance in our carefully designed rooms and suites,
             each offering unique amenities and breathtaking views.
           </p>
         </div>
@@ -158,10 +158,10 @@ const FeaturedRooms = () => {
             {rooms.map((room, index) => {
               const amenities = getRoomAmenities(room)
               const isHovered = hoveredCard === room.id
-              
+
               return (
-                <div 
-                  key={room.id} 
+                <div
+                  key={room.id}
                   className="group relative animate-fade-in-up"
                   style={{ animationDelay: `${index * 100}ms` }}
                   onMouseEnter={() => setHoveredCard(room.id)}
@@ -169,26 +169,26 @@ const FeaturedRooms = () => {
                 >
                   {/* Glow Effect */}
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl opacity-0 group-hover:opacity-20 blur-xl transition-all duration-500"></div>
-                  
+
                   <div className="relative bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500 group-hover:-translate-y-3">
                     {/* Image Container */}
                     <div className="relative overflow-hidden h-72">
-                      <img 
-                        src={getRoomImage(room)} 
+                      <img
+                        src={getRoomImage(room)}
                         alt={room.name}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       />
-                      
+
                       {/* Overlay Gradient */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                      
-                        {/* Floating Badge */}
-                        <div className="absolute top-4 left-4 transform -translate-y-20 group-hover:translate-y-0 transition-transform duration-500">
-                          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg flex items-center gap-2">
-                            <Star className="fill-current" size={14} />
-                            {room.roomType || 'ROOM'}
-                          </div>
+
+                      {/* Floating Badge */}
+                      <div className="absolute top-4 left-4 transform -translate-y-20 group-hover:translate-y-0 transition-transform duration-500">
+                        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg flex items-center gap-2">
+                          <Star className="fill-current" size={14} />
+                          {room.roomType || 'ROOM'}
                         </div>
+                      </div>
 
                       {/* Heart Button */}
                       <div className="absolute top-4 right-4">
@@ -196,7 +196,7 @@ const FeaturedRooms = () => {
                           <Heart size={20} className="text-gray-600 group-hover/heart:text-red-500 group-hover/heart:fill-red-500 transition-all" />
                         </button>
                       </div>
-                      
+
                       {/* Rating Badge */}
                       <div className="absolute bottom-4 left-4 transform translate-y-20 group-hover:translate-y-0 transition-transform duration-500 delay-75">
                         <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md rounded-full px-4 py-2 shadow-lg">
@@ -210,7 +210,7 @@ const FeaturedRooms = () => {
 
                       {/* Quick View on Hover */}
                       <div className="absolute inset-x-4 bottom-4 transform translate-y-20 group-hover:translate-y-0 transition-transform duration-500 delay-100 opacity-0 group-hover:opacity-100">
-                        <Link 
+                        <Link
                           to={`/rooms/${room.id}`}
                           className="block w-full bg-white text-gray-900 text-center py-3 rounded-xl font-semibold hover:bg-gray-50 transition-colors shadow-lg"
                         >
@@ -240,7 +240,7 @@ const FeaturedRooms = () => {
                         </div>
                         <div className="text-right">
                           <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            ₹{(typeof room?.price === 'number' ? room.price.toLocaleString() : room?.price || '—')}
+                            NPR{(typeof room?.price === 'number' ? room.price.toLocaleString() : room?.price || '—')}
                           </p>
                           <p className="text-xs text-gray-500 font-medium">per night</p>
                         </div>
@@ -251,8 +251,8 @@ const FeaturedRooms = () => {
                         {amenities.slice(0, 3).map((amenity, idx) => {
                           const IconComponent = getAmenityIcon(amenity)
                           return (
-                            <div 
-                              key={idx} 
+                            <div
+                              key={idx}
                               className="flex items-center gap-2 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-blue-50 hover:to-purple-50 text-gray-700 hover:text-blue-700 px-3 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105 border border-gray-200 hover:border-blue-300"
                             >
                               <IconComponent size={14} />
@@ -270,15 +270,15 @@ const FeaturedRooms = () => {
 
                       {/* Action Buttons */}
                       <div className="flex gap-3">
-                        <Link 
+                        <Link
                           to={`/rooms/${room.id}`}
                           className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center py-3.5 rounded-xl font-semibold hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center gap-2 group/btn"
                         >
                           View Details
                           <ChevronRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />
                         </Link>
-                        <Link 
-                          to={`/rooms/${room.id}/book`} 
+                        <Link
+                          to={`/rooms/${room.id}/book`}
                           className="px-6 py-3.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-900 hover:text-white transition-all font-semibold hover:scale-105"
                         >
                           Book
@@ -297,7 +297,7 @@ const FeaturedRooms = () => {
 
         {/* View All Button */}
         <div className="text-center animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-          <Link 
+          <Link
             to="/rooms"
             className="inline-flex items-center gap-3 bg-gradient-to-r from-gray-900 to-gray-800 text-white px-10 py-5 rounded-2xl font-bold text-lg hover:shadow-2xl transition-all hover:scale-105 group relative overflow-hidden"
           >

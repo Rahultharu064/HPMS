@@ -112,18 +112,18 @@ const Header = ({ darkMode, setDarkMode, sidebarOpen, setSidebarOpen, notificati
       <div className="flex items-center justify-between px-6 py-4">
         {/* Left Section - Logo and Menu */}
         <div className="flex items-center gap-4">
-          <button 
-            onClick={() => setSidebarOpen(!sidebarOpen)} 
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
             className={`p-2 rounded-2xl ${darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} transition-colors`}
           >
             <Menu size={20} />
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-bold text-lg">
-              H
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center overflow-hidden bg-white">
+              <img src="/INC.png" alt="IncStay Logo" className="w-full h-full object-contain" />
             </div>
             <div className="hidden sm:block">
-              <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>HamroStay</h1>
+              <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>IncStay</h1>
               <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Admin Portal</p>
             </div>
           </div>
@@ -133,15 +133,15 @@ const Header = ({ darkMode, setDarkMode, sidebarOpen, setSidebarOpen, notificati
         <div className="flex-1 max-w-2xl mx-8">
           <div className="relative">
             <Search className={`absolute left-4 top-1/2 -translate-y-1/2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} size={20} />
-            <input 
-              type="text" 
-              placeholder="Search rooms, guests, bookings, reports..." 
+            <input
+              type="text"
+              placeholder="Search rooms, guests, bookings, reports..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full pl-12 pr-4 py-3 rounded-2xl border-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'} focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all`}
             />
             {searchQuery && (
-              <button 
+              <button
                 onClick={() => setSearchQuery('')}
                 className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors"
               >
@@ -154,8 +154,8 @@ const Header = ({ darkMode, setDarkMode, sidebarOpen, setSidebarOpen, notificati
         {/* Right Section - Actions and Profile */}
         <div className="flex items-center gap-3">
           {/* Theme Toggle */}
-          <button 
-            onClick={() => setDarkMode(!darkMode)} 
+          <button
+            onClick={() => setDarkMode(!darkMode)}
             className={`p-3 rounded-2xl ${darkMode ? 'bg-gray-700 text-yellow-400 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} transition-colors`}
           >
             {darkMode ? <Sun size={20} /> : <Moon size={20} />}

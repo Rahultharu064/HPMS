@@ -92,7 +92,7 @@ const OwnerAdmin = () => {
     else if (path.startsWith('/owner-admin/extra-services')) setActiveTab('extra-services')
     else if (path.startsWith('/owner-admin/service-categories')) setActiveTab('service-categories')
     else if (path.startsWith('/owner-admin/users')) setActiveTab('users')
-      else if (path.startsWith('/owner-admin/staff')) setActiveTab('staff')
+    else if (path.startsWith('/owner-admin/staff')) setActiveTab('staff')
     else if (path.startsWith('/owner-admin')) setActiveTab('dashboard')
   }, [location.pathname])
 
@@ -160,7 +160,7 @@ const OwnerAdmin = () => {
   const isBaseAdmin = location.pathname === '/owner-admin'
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-gradient-to-br from-gray-900 to-gray-800' : 'bg-gradient-to-br from-gray-50 to-blue-50'} font-sans transition-colors duration-300`}>
+    <div className={`h-screen flex flex-col overflow-hidden ${darkMode ? 'bg-gradient-to-br from-gray-900 to-gray-800' : 'bg-gradient-to-br from-gray-50 to-blue-50'} font-sans transition-colors duration-300`}>
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} w-full max-w-lg rounded-2xl p-6 border`}>
@@ -183,7 +183,7 @@ const OwnerAdmin = () => {
         setSearchQuery={setSearchQuery}
       />
 
-      <div className="flex">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar
           darkMode={darkMode}
           sidebarOpen={sidebarOpen}

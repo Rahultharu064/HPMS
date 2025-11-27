@@ -43,3 +43,51 @@ export const updateSettings = async (req, res) => {
     res.status(500).json({ success: false, error: 'Failed to update settings' })
   }
 }
+
+// Get service charge percentage
+export const getServiceCharge = async (req, res) => {
+  try {
+    const setting = await prisma.appSetting.findUnique({
+      where: { key: 'service_charge_percentage' }
+    });
+
+    const serviceCharge = setting?.value || 10; // Default 10%
+    res.json({ serviceChargePercentage: serviceCharge });
+  } catch (error) {
+    console.error('Error fetching service charge:', error);
+    res.status(500).json({ error: 'Failed to fetch service charge' });
+  }
+};
+
+// Update service charge percentage
+export const updateServiceCharge = async (req, res) => {
+  try {
+    const { percentage } = req.body;
+
+    // Validate percentage
+    const value = parseFloat(percentage);
+    if (isNaN(value) || value < 0 || value > 100) {
+      return res.status(400).json({ error: 'Service charge percentage must be between 0 and 100' });
+    }
+
+    const setting = await prisma.appSetting.upsert({
+      where: { key: 'service_charge_percentage' },
+      update: {
+        value: value,
+        updatedAt: new Date()
+      },
+      create: {
+        key: 'service_charge_percentage',
+        value: value
+      }
+    });
+
+    res.json({
+      message: 'Service charge updated successfully',
+      serviceChargePercentage: setting.value
+    });
+  } catch (error) {
+    console.error('Error updating service charge:', error);
+    res.status(500).json({ error: 'Failed to update service charge' });
+  }
+};

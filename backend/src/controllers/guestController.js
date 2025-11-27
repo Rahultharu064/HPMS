@@ -93,12 +93,12 @@ export const getGuestById = async (req, res) => {
       include: {
         bookings: {
           include: {
-            room: { 
-              include: { 
-                image: true, 
-                video: true, 
-                amenity: true 
-              } 
+            room: {
+              include: {
+                image: true,
+                video: true,
+                amenity: true
+              }
             },
             payments: true
           },
@@ -122,8 +122,8 @@ export const getGuestById = async (req, res) => {
     }, 0);
     const memberSince = guest.createdAt;
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       guest: {
         ...guest,
         insights: {
@@ -151,9 +151,9 @@ export const createGuest = async (req, res) => {
     const existingByPhone = await prisma.guest.findUnique({ where: { phone: body.phone } });
 
     if (existingByEmail || existingByPhone) {
-      return res.status(409).json({ 
-        success: false, 
-        error: 'Guest with this email or phone already exists' 
+      return res.status(409).json({
+        success: false,
+        error: 'Guest with this email or phone already exists'
       });
     }
 
@@ -210,6 +210,11 @@ export const updateGuest = async (req, res) => {
         ...(body.lastName && { lastName: body.lastName }),
         ...(body.email && { email: body.email }),
         ...(body.phone && { phone: body.phone }),
+        ...(body.nationality !== undefined && { nationality: body.nationality }),
+        ...(body.idType !== undefined && { idType: body.idType }),
+        ...(body.idNumber !== undefined && { idNumber: body.idNumber }),
+        ...(body.address !== undefined && { address: body.address }),
+        ...(body.notes !== undefined && { notes: body.notes }),
         updatedAt: new Date()
       },
       include: {
@@ -287,12 +292,12 @@ export const getGuestBookings = async (req, res) => {
     const bookings = await prisma.booking.findMany({
       where: { guestId },
       include: {
-        room: { 
-          include: { 
-            image: true, 
-            video: true, 
-            amenity: true 
-          } 
+        room: {
+          include: {
+            image: true,
+            video: true,
+            amenity: true
+          }
         },
         payments: true,
       },
@@ -322,9 +327,9 @@ export const deleteGuest = async (req, res) => {
 
     // Check if guest has bookings
     if (guest.bookings.length > 0) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Cannot delete guest with existing bookings' 
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot delete guest with existing bookings'
       });
     }
 
@@ -332,9 +337,9 @@ export const deleteGuest = async (req, res) => {
       where: { id }
     });
 
-    res.json({ 
-      success: true, 
-      message: 'Guest deleted successfully' 
+    res.json({
+      success: true,
+      message: 'Guest deleted successfully'
     });
   } catch (err) {
     console.error(err);
@@ -346,7 +351,7 @@ export const deleteGuest = async (req, res) => {
 export const getGuestStats = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    
+
     const where = {};
     if (startDate && endDate) {
       where.createdAt = {
@@ -363,29 +368,29 @@ export const getGuestStats = async (req, res) => {
       totalRevenue
     ] = await Promise.all([
       prisma.guest.count({ where }),
-      prisma.guest.count({ 
-        where: { 
+      prisma.guest.count({
+        where: {
           ...where,
           bookings: { some: {} }
-        } 
+        }
       }),
-      prisma.guest.count({ 
-        where: { 
+      prisma.guest.count({
+        where: {
           ...where,
-          bookings: { 
+          bookings: {
             some: {},
             _count: { gt: 1 }
           }
-        } 
+        }
       }),
-      prisma.booking.count({ 
-        where: { 
+      prisma.booking.count({
+        where: {
           guest: where,
           status: { in: ['confirmed', 'completed'] }
-        } 
+        }
       }),
       prisma.booking.aggregate({
-        where: { 
+        where: {
           guest: where,
           status: { in: ['confirmed', 'completed'] }
         },
@@ -416,9 +421,9 @@ export const searchGuests = async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 10, 50);
 
     if (!query || query.length < 2) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Search query must be at least 2 characters' 
+      return res.status(400).json({
+        success: false,
+        error: 'Search query must be at least 2 characters'
       });
     }
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Search, CreditCard, DollarSign, Clock, CheckCircle, XCircle, AlertCircle, Download, Filter, Eye } from 'lucide-react'
 import { bookingService } from '../../../services/bookingService'
+import { serviceOrderService } from '../../../services/serviceOrderService'
 import { exportToCsv } from '../../../utils/exportCsv'
 
 const Billing = () => {
@@ -13,31 +14,64 @@ const Billing = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await bookingService.getAllBookings({ page: 1, limit: 100 })
-        if (!res?.success) return
+        const [bookingRes, serviceRes] = await Promise.all([
+          bookingService.getAllBookings({ page: 1, limit: 100 }),
+          serviceOrderService.getAll({ limit: 100 })
+        ])
+
         const rows = []
         const seen = new Set()
-        for (const b of (res.data || [])) {
-          const guestName = [b.guest?.firstName, b.guest?.lastName].filter(Boolean).join(' ')
-          const bookingCode = `BK-${String(b.id).padStart(4,'0')}`
-          const roomLabel = b.room?.roomNumber || b.room?.id || ''
-          for (const p of (b.payments || [])) {
-            if (p?.id == null || seen.has(p.id)) continue
-            seen.add(p.id)
-            rows.push({
-              id: p.id,
-              bookingId: bookingCode,
-              guest: guestName || '—',
-              room: roomLabel,
-              amount: p.amount || 0,
-              method: String(p.method || '').toLowerCase(),
-              status: String(p.status || '').toLowerCase(),
-              txn: p.transactionId || `PMT-${p.id}`,
-              createdAt: new Date(p.createdAt).toLocaleString()
-            })
+
+        // Process Bookings
+        if (bookingRes?.success) {
+          for (const b of (bookingRes.data || [])) {
+            const guestName = [b.guest?.firstName, b.guest?.lastName].filter(Boolean).join(' ')
+            const bookingCode = `BK-${String(b.id).padStart(4, '0')}`
+            const roomLabel = b.room?.roomNumber || b.room?.id || ''
+            for (const p of (b.payments || [])) {
+              if (p?.id == null || seen.has(p.id)) continue
+              seen.add(p.id)
+              rows.push({
+                id: p.id,
+                bookingId: bookingCode,
+                guest: guestName || '—',
+                room: roomLabel,
+                amount: p.amount || 0,
+                method: String(p.method || '').toLowerCase(),
+                status: String(p.status || '').toLowerCase(),
+                txn: p.transactionId || `PMT-${p.id}`,
+                createdAt: new Date(p.createdAt).toLocaleString(),
+                type: 'Booking'
+              })
+            }
           }
         }
-        setPayments(rows)
+
+        // Process Service Orders
+        if (serviceRes?.success) {
+          for (const o of (serviceRes.data || [])) {
+            const guestName = [o.guest?.firstName, o.guest?.lastName].filter(Boolean).join(' ')
+            const orderCode = `SO-${String(o.id).padStart(4, '0')}`
+            for (const p of (o.payments || [])) {
+              if (p?.id == null || seen.has(p.id)) continue
+              seen.add(p.id)
+              rows.push({
+                id: p.id,
+                bookingId: orderCode, // Reusing column for Order ID
+                guest: guestName || '—',
+                room: 'N/A',
+                amount: p.amount || 0,
+                method: String(p.method || '').toLowerCase(),
+                status: String(p.status || '').toLowerCase(),
+                txn: p.transactionId || `PMT-${p.id}`,
+                createdAt: new Date(p.createdAt).toLocaleString(),
+                type: 'Service Order'
+              })
+            }
+          }
+        }
+
+        setPayments(rows.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)))
       } catch (e) {
         console.error('Failed to load payments', e)
       }
@@ -60,7 +94,7 @@ const Billing = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Billing & Payments</h2>
-        <button onClick={() => exportToCsv('payments.csv', filtered)} className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Download size={18}/>Export</button>
+        <button onClick={() => exportToCsv('payments.csv', filtered)} className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Download size={18} />Export</button>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -68,12 +102,12 @@ const Billing = () => {
           <label className="block text-sm font-semibold text-gray-700 mb-2">Search</label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Guest, booking ID, transaction" className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Guest, booking ID, transaction" className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
         </div>
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
-          <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option value="all">All</option>
             <option value="completed">Completed</option>
             <option value="pending">Pending</option>
@@ -83,7 +117,7 @@ const Billing = () => {
         </div>
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">Payment Method</label>
-          <select value={methodFilter} onChange={e=>setMethodFilter(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <select value={methodFilter} onChange={e => setMethodFilter(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option value="all">All</option>
             <option value="khalti">Khalti</option>
             <option value="esewa">eSewa</option>
@@ -92,7 +126,7 @@ const Billing = () => {
           </select>
         </div>
         <div className="flex items-end">
-          <button onClick={()=>{setSearchQuery('');setStatusFilter('all');setMethodFilter('all')}} className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Filter size={18}/>Clear</button>
+          <button onClick={() => { setSearchQuery(''); setStatusFilter('all'); setMethodFilter('all') }} className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Filter size={18} />Clear</button>
         </div>
       </div>
 
@@ -124,7 +158,7 @@ const Billing = () => {
                   <td className="px-6 py-4 whitespace-nowrap"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusBadge(p.status)}`}>{p.status}</span></td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{p.txn}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{p.createdAt}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm"><button onClick={()=>setSelected(p)} className="text-blue-600 hover:text-blue-900 flex items-center gap-1"><Eye size={16}/>View</button></td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm"><button onClick={() => setSelected(p)} className="text-blue-600 hover:text-blue-900 flex items-center gap-1"><Eye size={16} />View</button></td>
                 </tr>
               ))}
             </tbody>
@@ -137,7 +171,7 @@ const Billing = () => {
           <div className="bg-white rounded-xl p-6 w-full max-w-lg mx-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Payment Details</h3>
-              <button onClick={()=>setSelected(null)} className="text-gray-400 hover:text-gray-600">✕</button>
+              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600">✕</button>
             </div>
             <div className="text-sm text-gray-700 space-y-2">
               <div className="flex justify-between"><span>Guest</span><span>{selected.guest}</span></div>
@@ -150,7 +184,7 @@ const Billing = () => {
               <div className="flex justify-between"><span>Time</span><span>{selected.createdAt}</span></div>
             </div>
             <div className="flex justify-end mt-6">
-              <button onClick={()=>setSelected(null)} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Close</button>
+              <button onClick={() => setSelected(null)} className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Close</button>
             </div>
           </div>
         </div>

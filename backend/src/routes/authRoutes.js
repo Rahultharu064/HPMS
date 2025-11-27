@@ -9,6 +9,7 @@ import {
   updateProfile,
   uploadPhoto,
   getUserBookings,
+  checkAdminStatus,
   requestAdminOtp,
   loginAdmin,
   setupAdminPassword,
@@ -66,6 +67,7 @@ router.post('/guest/upload-photo', authenticate, upload.single('photo'), uploadP
 router.get('/guest/bookings', authenticate, getUserBookings);
 
 // Admin routes
+router.post('/admin/check-status', checkAdminStatus);
 router.post('/admin/request-otp', requestAdminOtp);
 router.post('/admin/verify-otp', loginAdmin);
 router.post('/admin/setup-password', setupAdminPassword);

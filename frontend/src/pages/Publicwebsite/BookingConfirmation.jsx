@@ -21,16 +21,16 @@ const BookingConfirmation = () => {
       return
     }
     let mounted = true
-    ;(async () => {
-      try {
-        const res = await bookingService.getBookingById(id)
-        if (mounted) setData(res.booking)
-      } catch (e) {
-        setError(e.message || 'Failed to load booking')
-      } finally {
-        setLoading(false)
-      }
-    })()
+      ; (async () => {
+        try {
+          const res = await bookingService.getBookingById(id)
+          if (mounted) setData(res.booking)
+        } catch (e) {
+          setError(e.message || 'Failed to load booking')
+        } finally {
+          setLoading(false)
+        }
+      })()
     return () => { mounted = false }
   }, [id, location.search, navigate])
 
@@ -41,107 +41,134 @@ const BookingConfirmation = () => {
   }
 
   const downloadPDF = async () => {
-    if (!data) return
+  if (!data) return;
 
-    try {
-      // Show loading state
-      const button = document.querySelector('button[onclick*="downloadPDF"]')
-      if (button) {
-        button.disabled = true
-        button.textContent = 'Generating PDF...'
-      }
+  try {
+    const { default: jsPDF } = await import('jspdf');
 
-      // Create PDF with booking details
-      const pdf = new jsPDF('p', 'mm', 'a4')
-      const pageWidth = pdf.internal.pageSize.getWidth()
-      const pageHeight = pdf.internal.pageSize.getHeight()
-      let yPosition = 20
+    const width = 80; // receipt width in mm
+    const margin = 5;
+    const largeHeight = 2000; // temporary measurement height
 
-      // Add title
-      pdf.setFontSize(20)
-      pdf.setFont('helvetica', 'bold')
-      pdf.text('Booking Confirmation', pageWidth / 2, yPosition, { align: 'center' })
-      yPosition += 15
+    // ---------- SHARED HELPERS ----------
+    const centerText = (doc, text, yRef, size = 10, bold = false) => {
+      doc.setFontSize(size);
+      doc.setFont('helvetica', bold ? 'bold' : 'normal');
+      const wrapped = doc.splitTextToSize(String(text || ''), width - margin * 2);
+      wrapped.forEach((line) => {
+        doc.text(line, width / 2, yRef.value, { align: 'center' });
+        yRef.value += size * 0.7;
+      });
+    };
 
-      // Add booking details
-      pdf.setFontSize(12)
-      pdf.setFont('helvetica', 'normal')
+    const addText = (doc, text, yRef, size = 9) => {
+      doc.setFontSize(size);
+      doc.setFont('helvetica', 'normal');
+      const wrapped = doc.splitTextToSize(String(text || ''), width - margin * 2);
+      wrapped.forEach((line) => {
+        doc.text(line, margin, yRef.value);
+        yRef.value += size * 0.6;
+      });
+    };
 
-      const details = [
-        `Booking ID: ${data.id}`,
-        `Status: ${data.status}`,
-        `Room: ${data.room.name}`,
-        `Check-in: ${new Date(data.checkIn).toLocaleDateString()}`,
-        `Check-out: ${new Date(data.checkOut).toLocaleDateString()}`,
-        `Guests: ${data.adults} adult${data.adults !== 1 ? 's' : ''}${data.children ? `, ${data.children} child${data.children !== 1 ? 'ren' : ''}` : ''}`,
-        `Guest: ${data.guest.firstName} ${data.guest.lastName}`,
-        `Email: ${data.guest.email}`,
-        `Phone: ${data.guest.phone}`,
-        `Total Amount: ₹${data.totalAmount.toLocaleString()}`
-      ]
+    const addLine = (doc, yRef) => {
+      doc.setLineWidth(0.2);
+      doc.line(margin, yRef.value, width - margin, yRef.value);
+      yRef.value += 3;
+    };
 
-      details.forEach(detail => {
-        if (yPosition > pageHeight - 20) {
-          pdf.addPage()
-          yPosition = 20
-        }
-        pdf.text(detail, 20, yPosition)
-        yPosition += 8
-      })
+    // ---------- CONTENT RENDERER ----------
+    const renderContent = (doc, yRef) => {
+      // Header
+      centerText(doc, "INCHOTEL ", yRef, 12, true);
+      centerText(doc, "Booking Confirmation", yRef, 10);
+      centerText(doc, "Itahari, Nepal", yRef, 8);
+      centerText(doc, "TEL: 025-586701/585701", yRef, 8);
 
-      // Add payment details if available
-      if (data.payments && data.payments.length > 0) {
-        yPosition += 5
-        if (yPosition > pageHeight - 20) {
-          pdf.addPage()
-          yPosition = 20
-        }
-        pdf.setFont('helvetica', 'bold')
-        pdf.text('Payment Details:', 20, yPosition)
-        yPosition += 8
-        pdf.setFont('helvetica', 'normal')
+      yRef.value += 2;
+      addLine(doc, yRef);
+
+      // Booking details
+      addText(doc, `Booking ID: BK-${String(data.id).padStart(4, '0')}`, yRef);
+      addText(doc, `Status: ${data.status}`, yRef);
+      addText(doc, `Guest: ${data.guest.firstName} ${data.guest.lastName}`, yRef);
+      addText(doc, `Room: ${data.room.name}`, yRef);
+      addText(doc, `Check-in: ${new Date(data.checkIn).toLocaleDateString()}`, yRef);
+      addText(doc, `Check-out: ${new Date(data.checkOut).toLocaleDateString()}`, yRef);
+      addText(doc, `Nights: ${nights}`, yRef);
+      addText(
+        doc,
+        `Guests: ${data.adults} adult${data.adults !== 1 ? 's' : ''}${
+          data.children
+            ? `, ${data.children} child${data.children !== 1 ? 'ren' : ''}`
+            : ''
+        }`,
+        yRef
+      );
+
+      yRef.value += 2;
+      addLine(doc, yRef);
+
+      // Payments
+      if (data.payments?.length > 0) {
+        addText(doc, "PAYMENT DETAILS", yRef, 10);
+        yRef.value += 1;
 
         data.payments.forEach(payment => {
-          if (yPosition > pageHeight - 20) {
-            pdf.addPage()
-            yPosition = 20
-          }
-          pdf.text(`Payment #${payment.id}: ${payment.method} - ${payment.status} - ₹${payment.amount}`, 30, yPosition)
-          yPosition += 8
-        })
+          doc.setFontSize(9);
+          doc.text(`${payment.method} (${payment.status})`, margin, yRef.value);
+          doc.text(
+            `NPR ${payment.amount.toLocaleString()}`,
+            width - margin,
+            yRef.value,
+            { align: "right" }
+          );
+          yRef.value += 4;
+        });
+
+        addLine(doc, yRef);
       }
 
-      // Add footer
-      yPosition += 10
-      if (yPosition > pageHeight - 20) {
-        pdf.addPage()
-        yPosition = 20
-      }
-      pdf.setFontSize(10)
-      pdf.setFont('helvetica', 'italic')
-      pdf.text('Thank you for choosing our hotel. This is your official booking confirmation.', 20, yPosition)
-      yPosition += 8
-      pdf.text(`Generated on: ${new Date().toLocaleString()}`, 20, yPosition)
+      // TOTAL
+      yRef.value += 1;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text("TOTAL AMOUNT:", margin, yRef.value);
+      doc.text(
+        `NPR ${data.totalAmount.toLocaleString()}`,
+        width - margin,
+        yRef.value,
+        { align: "right" }
+      );
+      yRef.value += 6;
 
-      pdf.save(`booking-${data.id}-confirmation.pdf`)
+      // Footer
+      addLine(doc, yRef);
+      centerText(doc, "Thank you for choosing us!", yRef, 8);
+      centerText(doc, new Date().toLocaleString(), yRef, 7);
 
-      // Reset button
-      if (button) {
-        button.disabled = false
-        button.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> Download Booking Proof (PDF)'
-      }
-    } catch (error) {
-      console.error('Error generating PDF:', error)
-      alert('Failed to generate PDF. Please try again.')
+      yRef.value += 5; // bottom spacing
+    };
 
-      // Reset button on error
-      const button = document.querySelector('button[onclick*="downloadPDF"]')
-      if (button) {
-        button.disabled = false
-        button.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> Download Booking Proof (PDF)'
-      }
-    }
+    // ---------- PHASE 1: MEASURE HEIGHT ----------
+    const tempDoc = new jsPDF({ orientation: "portrait", unit: "mm", format: [width, largeHeight] });
+    const measureY = { value: 10 };
+    renderContent(tempDoc, measureY);
+
+    const finalHeight = Math.max(110, Math.ceil(measureY.value + 10));
+
+    // ---------- PHASE 2: CREATE FINAL PDF ----------
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: [width, finalHeight] });
+    const yRef = { value: 10 };
+    renderContent(pdf, yRef);
+
+    pdf.save(`Booking-${String(data.id).padStart(4, '0')}.pdf`);
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    alert("Failed to generate PDF. Please try again.");
   }
+};
+
 
   if (loading) {
     return (
@@ -173,7 +200,7 @@ const BookingConfirmation = () => {
 
   if (!data) return null
 
-  const nights = Math.max(1, Math.ceil((new Date(data.checkOut) - new Date(data.checkIn)) / (1000*60*60*24)))
+  const nights = Math.max(1, Math.ceil((new Date(data.checkOut) - new Date(data.checkIn)) / (1000 * 60 * 60 * 24)))
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4">
@@ -192,9 +219,9 @@ const BookingConfirmation = () => {
           {/* Room Header with Image */}
           <div className="relative h-64 md:h-80 overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300">
             {getPrimaryImage(data.room) && (
-              <img 
-                src={getPrimaryImage(data.room)} 
-                alt={data.room.name} 
+              <img
+                src={getPrimaryImage(data.room)}
+                alt={data.room.name}
                 className="w-full h-full object-cover"
               />
             )}
@@ -286,13 +313,12 @@ const BookingConfirmation = () => {
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-mono text-gray-600">#{p.id}</span>
                         <span className="text-sm font-semibold text-gray-700 capitalize">{p.method}</span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          p.status === 'completed' ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'
-                        }`}>
+                        <span className={`text-xs px-2 py-1 rounded-full ${p.status === 'completed' ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'
+                          }`}>
                           {p.status}
                         </span>
                       </div>
-                      <span className="font-semibold text-gray-800">₹{p.amount.toLocaleString()}</span>
+                      <span className="font-semibold text-gray-800">NPR {p.amount.toLocaleString()}</span>
                     </div>
                   ))}
                 </div>

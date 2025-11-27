@@ -22,7 +22,9 @@ const ExtraServicesAdmin = ({ darkMode }) => {
     name: '',
     description: '',
     price: '',
-    image: null
+    image: null,
+    discountPercentage: '0',
+    discountAllowed: false
   })
   const [categoryForm, setCategoryForm] = useState({
     name: ''
@@ -92,13 +94,15 @@ const ExtraServicesAdmin = ({ darkMode }) => {
       formData.append('name', form.name)
       formData.append('description', form.description)
       formData.append('price', form.price)
+      formData.append('discountPercentage', form.discountPercentage || '0')
+      formData.append('discountAllowed', form.discountAllowed)
       if (form.image) {
         formData.append('image', form.image)
       }
 
       await extraServiceService.createExtraService(formData)
       setShowCreate(false)
-      setForm({ categoryId: '', name: '', description: '', price: '', image: null })
+      setForm({ categoryId: '', name: '', description: '', price: '', image: null, discountPercentage: '0', discountAllowed: false })
       setImagePreview(null)
       fetchServices()
       toast.success('Extra service created successfully')
@@ -120,6 +124,8 @@ const ExtraServicesAdmin = ({ darkMode }) => {
       formData.append('name', form.name)
       formData.append('description', form.description)
       formData.append('price', form.price)
+      formData.append('discountPercentage', form.discountPercentage || '0')
+      formData.append('discountAllowed', form.discountAllowed)
       if (form.image) {
         formData.append('image', form.image)
       }
@@ -127,7 +133,7 @@ const ExtraServicesAdmin = ({ darkMode }) => {
       await extraServiceService.updateExtraService(editingService.id, formData)
       setShowEdit(false)
       setEditingService(null)
-      setForm({ categoryId: '', name: '', description: '', price: '', image: null })
+      setForm({ categoryId: '', name: '', description: '', price: '', image: null, discountPercentage: '0', discountAllowed: false })
       setImagePreview(null)
       fetchServices()
       toast.success('Extra service updated successfully')
@@ -156,7 +162,9 @@ const ExtraServicesAdmin = ({ darkMode }) => {
       name: service.name,
       description: service.description,
       price: service.price.toString(),
-      image: null
+      image: null,
+      discountPercentage: service.discountPercentage?.toString() || '0',
+      discountAllowed: service.discountAllowed || false
     })
     setImagePreview(service.image)
     setShowEdit(true)
@@ -280,6 +288,7 @@ const ExtraServicesAdmin = ({ darkMode }) => {
                   <th className={`text-left py-4 px-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'} font-semibold`}>Category</th>
                   <th className={`text-left py-4 px-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'} font-semibold`}>Description</th>
                   <th className={`text-left py-4 px-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'} font-semibold`}>Price</th>
+                  <th className={`text-left py-4 px-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'} font-semibold`}>Discount</th>
                   <th className={`text-right py-4 px-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'} font-semibold`}>Actions</th>
                 </tr>
               </thead>
@@ -319,6 +328,17 @@ const ExtraServicesAdmin = ({ darkMode }) => {
                       <p className={`font-bold ${darkMode ? 'text-blue-300' : 'text-blue-600'}`}>
                         Rs. {service.price}
                       </p>
+                    </td>
+                    <td className="py-4 px-4">
+                      {service.discountAllowed ? (
+                        <div className="flex flex-col gap-1">
+                          <span className={`px-2 py-1 text-xs rounded ${darkMode ? 'bg-green-700 text-green-200' : 'bg-green-100 text-green-700'} inline-block w-fit`}>
+                            {service.discountPercentage}% OFF
+                          </span>
+                        </div>
+                      ) : (
+                        <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>No discount</span>
+                      )}
                     </td>
                     <td className="py-4 px-4 text-right">
                       <div className="flex justify-end gap-2">
@@ -415,6 +435,35 @@ const ExtraServicesAdmin = ({ darkMode }) => {
                 />
               </div>
               <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.discountAllowed}
+                    onChange={(e) => setForm(f => ({ ...f, discountAllowed: e.target.checked }))}
+                    className="w-4 h-4 rounded"
+                  />
+                  <span className="text-sm font-medium">Allow Discount</span>
+                </label>
+                <p className="text-xs text-gray-500 mt-1">Enable this to offer a discount on this service</p>
+              </div>
+
+              {form.discountAllowed && (
+                <div>
+                  <label className="block text-sm mb-1">Discount Percentage (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={form.discountPercentage}
+                    onChange={(e) => setForm(f => ({ ...f, discountPercentage: e.target.value }))}
+                    className={`w-full px-3 py-2 rounded-xl border ${darkMode ? 'bg-gray-900 border-gray-700 text-gray-100' : 'bg-white border-gray-300'}`}
+                    placeholder="0.00"
+                  />
+                </div>
+              )}
+
+              <div>
                 <label className="block text-sm mb-1">Service Image</label>
                 <div className="flex items-center gap-3">
                   <input
@@ -506,6 +555,35 @@ const ExtraServicesAdmin = ({ darkMode }) => {
                   placeholder="0.00"
                 />
               </div>
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.discountAllowed}
+                    onChange={(e) => setForm(f => ({ ...f, discountAllowed: e.target.checked }))}
+                    className="w-4 h-4 rounded"
+                  />
+                  <span className="text-sm font-medium">Allow Discount</span>
+                </label>
+                <p className="text-xs text-gray-500 mt-1">Enable this to offer a discount on this service</p>
+              </div>
+
+              {form.discountAllowed && (
+                <div>
+                  <label className="block text-sm mb-1">Discount Percentage (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={form.discountPercentage}
+                    onChange={(e) => setForm(f => ({ ...f, discountPercentage: e.target.value }))}
+                    className={`w-full px-3 py-2 rounded-xl border ${darkMode ? 'bg-gray-900 border-gray-700 text-gray-100' : 'bg-white border-gray-300'}`}
+                    placeholder="0.00"
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm mb-1">Service Image</label>
                 <div className="flex items-center gap-3">

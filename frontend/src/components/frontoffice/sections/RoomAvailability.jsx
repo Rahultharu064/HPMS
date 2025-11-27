@@ -136,7 +136,7 @@ const RoomAvailability = () => {
               <div className="border-t pt-4">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-1">
-                    <DollarSign size={16} className="text-green-600" />
+                    {/* <DollarSign size={16} className="text-green-600" /> */}
                     <span className="font-semibold text-lg">NPR {roomType.price.toLocaleString()}</span>
                     <span className="text-gray-600">/night</span>
                   </div>

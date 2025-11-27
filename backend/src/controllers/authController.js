@@ -315,6 +315,30 @@ const adminOtps = new Map();
 const adminPasswordSetupTokens = new Map();
 const adminResetTokens = new Map();
 
+// Check admin status (if password exists)
+export const checkAdminStatus = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    const admin = await prisma.guest.findFirst({
+      where: { email, role: 'admin' }
+    });
+
+    res.json({
+      exists: !!admin,
+      hasPassword: !!(admin && admin.password),
+      isActive: !!(admin && admin.isActive)
+    });
+  } catch (error) {
+    console.error('Check admin status error:', error);
+    res.status(500).json({ error: 'Failed to check status' });
+  }
+};
+
 // Generate and send admin OTP
 export const requestAdminOtp = async (req, res) => {
   const { email } = req.body;

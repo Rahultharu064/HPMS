@@ -13,6 +13,12 @@ const ExtraServices = ({ bookingId, onServicesChange }) => {
   const [bookingServices, setBookingServices] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Financial States
+  const [allowDiscount, setAllowDiscount] = useState(false);
+  const [discountPercent, setDiscountPercent] = useState(0);
+  const taxPercent = 13; // Fixed GST 13%
+  const serviceChargePercent = 10; // Fixed Service Charge 10%
+
   useEffect(() => {
     fetchCategories();
     fetchAvailableServices();
@@ -120,8 +126,35 @@ const ExtraServices = ({ bookingId, onServicesChange }) => {
     }
   };
 
-  const getTotalExtraServicesCost = () => {
+  const getSubtotal = () => {
     return bookingServices.reduce((total, service) => total + Number(service.totalPrice), 0);
+  };
+
+  const getDiscountAmount = () => {
+    if (!allowDiscount) return 0;
+    return (getSubtotal() * discountPercent) / 100;
+  };
+
+  const getServiceChargeAmount = () => {
+    const subtotal = getSubtotal();
+    const discount = getDiscountAmount();
+    return ((subtotal - discount) * serviceChargePercent) / 100;
+  };
+
+  const getTaxAmount = () => {
+    const subtotal = getSubtotal();
+    const discount = getDiscountAmount();
+    const serviceCharge = getServiceChargeAmount();
+    const taxableAmount = (subtotal - discount) + serviceCharge;
+    return (taxableAmount * taxPercent) / 100;
+  };
+
+  const getGrandTotal = () => {
+    const subtotal = getSubtotal();
+    const discount = getDiscountAmount();
+    const serviceCharge = getServiceChargeAmount();
+    const tax = getTaxAmount();
+    return (subtotal - discount) + serviceCharge + tax;
   };
 
   // Filter services by selected category
@@ -248,9 +281,6 @@ const ExtraServices = ({ bookingId, onServicesChange }) => {
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold">Added Services</h3>
-            <span className="text-lg font-bold">
-              Total: Rs. {getTotalExtraServicesCost().toLocaleString()}
-            </span>
           </div>
           <div className="space-y-4">
             {bookingServices.map((service) => (
@@ -294,6 +324,78 @@ const ExtraServices = ({ bookingId, onServicesChange }) => {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Financial Breakdown */}
+          <div className="mt-6 border-t pt-4">
+            {/* Discount Toggle */}
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-4">
+              <div className="flex items-center gap-4 mb-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={allowDiscount}
+                    onChange={(e) => {
+                      setAllowDiscount(e.target.checked);
+                      if (!e.target.checked) setDiscountPercent(0);
+                    }}
+                    className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Allow Discount</span>
+                </label>
+              </div>
+
+              {allowDiscount && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Discount %</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={discountPercent}
+                    onChange={(e) => setDiscountPercent(Number(e.target.value))}
+                    className="w-full max-w-xs p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              )}
+
+              <div className="text-xs text-gray-500 mt-3">
+                <p>Service Charge: {serviceChargePercent}% (Fixed)</p>
+                <p>GST: {taxPercent}% (Fixed)</p>
+              </div>
+            </div>
+
+            {/* Price Breakdown */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-gray-600">
+                <span>Subtotal</span>
+                <span>Rs. {getSubtotal().toLocaleString()}</span>
+              </div>
+
+              {allowDiscount && discountPercent > 0 && (
+                <div className="flex justify-between items-center text-green-600">
+                  <span>Discount ({discountPercent}%)</span>
+                  <span>- Rs. {getDiscountAmount().toLocaleString()}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center text-gray-600">
+                <span>Service Charge ({serviceChargePercent}%)</span>
+                <span>+ Rs. {getServiceChargeAmount().toLocaleString()}</span>
+              </div>
+
+              <div className="flex justify-between items-center text-gray-600">
+                <span>GST ({taxPercent}%)</span>
+                <span>+ Rs. {getTaxAmount().toLocaleString()}</span>
+              </div>
+
+              <div className="flex justify-between items-center pt-2 border-t">
+                <h3 className="text-xl font-bold text-gray-900">Grand Total:</h3>
+                <p className="text-2xl font-bold text-blue-600">
+                  Rs. {getGrandTotal().toLocaleString()}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}

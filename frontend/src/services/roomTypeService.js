@@ -33,7 +33,7 @@ export const roomTypeService = {
       return await apiRequest('/api/room-types', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: roomTypeData.name })
+        body: JSON.stringify({ name: roomTypeData.name, code: roomTypeData.code })
       })
     } catch (error) {
       apiDebug.error('Error creating room type:', error)
@@ -47,7 +47,7 @@ export const roomTypeService = {
       return await apiRequest(`/api/room-types/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: roomTypeData.name })
+        body: JSON.stringify({ name: roomTypeData.name, code: roomTypeData.code })
       })
     } catch (error) {
       apiDebug.error('Error updating room type:', error)

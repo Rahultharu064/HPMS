@@ -33,22 +33,22 @@ const Header = () => {
             <div className="flex flex-col md:flex-row items-center gap-4 mb-2 md:mb-0">
               <div className="flex items-center gap-2">
                 <Phone size={16} />
-                <span>+977 1-2345678</span>
+                <span>TEL : 025-586701/585701</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail size={16} />
-                <span>info@hamrostay.com</span>
+                <span>contact@namunacollege.edu.np</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin size={16} />
-                <span>Kathmandu, Nepal</span>
+                <span>Itahari, Nepal</span>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
+              {/* <div className="flex items-center gap-1">
                 <Star className="fill-yellow-400 text-yellow-400" size={16} />
                 <span>4.8 Rating</span>
-              </div>
+              </div> */}
               <div className="hidden md:block w-px h-4 bg-white/30"></div>
               <div className="flex items-center gap-2">
                 <span>Follow us:</span>
@@ -64,21 +64,20 @@ const Header = () => {
       </div>
 
       {/* Main Header */}
-      <header className={`fixed w-full z-50 transition-all duration-300 ${
-        isScrolled
-          ? 'bg-white/95 backdrop-blur-md shadow-lg'
-          : 'bg-transparent'
-      } sticky top-0`}>
+      <header className={`fixed w-full z-50 transition-all duration-300 ${isScrolled
+        ? 'bg-white/95 backdrop-blur-md shadow-lg'
+        : 'bg-transparent'
+        } sticky top-0`}>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between py-4">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
-                H
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden bg-white shadow-md">
+                <img src="/INC.png" alt="IncStay Logo" className="w-full h-full object-contain" />
               </div>
               <div className=" px-3 py-1 rounded-lg">
                 <h1 className={`text-2xl font-bold ${isScrolled ? 'text-blue-600' : 'text-blue-600'}`}>
-                  HamroStay
+                 INCHOTEL
                 </h1>
                 <p className={`text-sm ${isScrolled ? 'text-blue-400' : 'text-blue-400'}`}>
                   Luxury Hotel & Resort
@@ -103,11 +102,10 @@ const Header = () => {
             {/* Action Buttons */}
             <div className="flex items-center gap-4">
               {/* Search */}
-              <button className={`p-2 rounded-full transition-colors border-2 ${
-                isScrolled
-                  ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700'
-                  : 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600 hover:border-blue-600'
-              }`}>
+              <button className={`p-2 rounded-full transition-colors border-2 ${isScrolled
+                ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700'
+                : 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600 hover:border-blue-600'
+                }`}>
                 <Search size={20} />
               </button>
 
@@ -115,33 +113,30 @@ const Header = () => {
               {authService.isAuthenticated() ? (
                 <Link
                   to={`/profile`}
-                  className={`p-2 rounded-full transition-colors border-2 ${
-                    isScrolled
-                      ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700'
-                      : 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600 hover:border-blue-600'
-                  }`}
+                  className={`p-2 rounded-full transition-colors border-2 ${isScrolled
+                    ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700'
+                    : 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600 hover:border-blue-600'
+                    }`}
                 >
                   <User size={20} />
                 </Link>
               ) : (
                 <Link
                   to="/login"
-                  className={`p-2 rounded-full transition-colors border-2 ${
-                    isScrolled
-                      ? 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
-                      : 'bg-white/20 text-white border-white/30 hover:bg-white/30'
-                  }`}
+                  className={`p-2 rounded-full transition-colors border-2 ${isScrolled
+                    ? 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
+                    : 'bg-white/20 text-white border-white/30 hover:bg-white/30'
+                    }`}
                 >
                   <User size={20} />
                 </Link>
               )}
 
               {/* Wishlist */}
-              <button className={`p-2 rounded-full transition-colors border-2 ${
-                isScrolled
-                  ? 'bg-red-600 text-white border-red-600 hover:bg-red-700 hover:border-red-700'
-                  : 'bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600'
-              }`}>
+              <button className={`p-2 rounded-full transition-colors border-2 ${isScrolled
+                ? 'bg-red-600 text-white border-red-600 hover:bg-red-700 hover:border-red-700'
+                : 'bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600'
+                }`}>
                 <Heart size={20} />
               </button>
 

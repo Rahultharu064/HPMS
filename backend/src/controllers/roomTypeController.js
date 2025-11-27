@@ -100,15 +100,21 @@ export const createRoomType = async (req, res) => {
 
     const newRoomType = await prisma.roomType.create({
       data: {
-        name: body.name
+        name: body.name,
+        code: body.code || body.name.slice(0, 3).toUpperCase()
       }
     });
 
     res.status(201).json({ success: true, roomType: newRoomType });
   } catch (err) {
     console.error(err);
-    if (err.code === 'P2002' && err.meta?.target?.includes('name')) {
-      return res.status(409).json({ success: false, error: 'Room type name already exists. Please use a different name.' });
+    if (err.code === 'P2002') {
+      if (err.meta?.target?.includes('name')) {
+        return res.status(409).json({ success: false, error: 'Room type name already exists. Please use a different name.' });
+      }
+      if (err.meta?.target?.includes('code')) {
+        return res.status(409).json({ success: false, error: 'Room type code already exists. Please use a different code.' });
+      }
     }
     res.status(500).json({ success: false, error: "Failed to create room type" });
   }
@@ -126,7 +132,8 @@ export const updateRoomType = async (req, res) => {
     const body = req.validatedBody ?? req.body;
 
     const updatedData = {
-      ...(body.name !== undefined && { name: body.name })
+      ...(body.name !== undefined && { name: body.name }),
+      ...(body.code !== undefined && { code: body.code })
     };
 
     const updated = await prisma.roomType.update({

@@ -66,13 +66,13 @@ const RoomDetail = () => {
       try {
         setLoading(true)
         setError(null)
-                
+
         const [roomResponse, similarResponse, reviewsResponse] = await Promise.all([
           roomService.getRoomById(id),
           roomService.getSimilarRooms(id),
           roomService.getRoomReviews(id)
         ])
-                
+
         setRoom(roomResponse.room)
         setSimilarRooms(similarResponse.data || [])
         setReviews(reviewsResponse.data || [])
@@ -80,7 +80,7 @@ const RoomDetail = () => {
           ratingAvg: Number(reviewsResponse.ratingAvg || 0),
           ratingCount: Number(reviewsResponse.ratingCount || 0)
         })
-                
+
         // Calculate initial price breakdown
         if (roomResponse.room) {
           calculatePriceBreakdown(roomResponse.room.price, 1)
@@ -131,12 +131,11 @@ const RoomDetail = () => {
   // Calculate price breakdown
   const calculatePriceBreakdown = (basePrice, nights) => {
     const subtotal = basePrice * nights
-    const taxes = subtotal * 0.13 // 13% tax
-    const total = subtotal + taxes
-    
+    const total = subtotal
+
     setPriceBreakdown({
       basePrice: subtotal,
-      taxes: taxes,
+      taxes: 0,
       total: total
     })
   }
@@ -145,14 +144,14 @@ const RoomDetail = () => {
   const handleBookingChange = (field, value) => {
     const newBookingData = { ...bookingData, [field]: value }
     setBookingData(newBookingData)
-    
+
     // Calculate nights if both dates are selected
     if (field === 'checkOut' && newBookingData.checkIn && newBookingData.checkOut) {
       const checkInDate = new Date(newBookingData.checkIn)
       const checkOutDate = new Date(newBookingData.checkOut)
       const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24))
       newBookingData.nights = nights
-      
+
       if (room) {
         calculatePriceBreakdown(room.price, nights)
       }
@@ -264,7 +263,7 @@ const RoomDetail = () => {
         <div className="pt-24 flex items-center justify-center min-h-screen">
           <div className="text-center">
             <p className="text-red-500 mb-4">{error || 'Room not found'}</p>
-            <button 
+            <button
               onClick={() => navigate('/rooms')}
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
             >
@@ -389,9 +388,9 @@ const RoomDetail = () => {
                         <div className="flex justify-between items-center bg-white/15 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
                           <div className="flex items-center gap-2">
                             <CheckCircle size={16} className="text-green-300" />
-                            <span className="text-sm">Includes all taxes</span>
+                            <span className="text-sm">Best rates</span>
                           </div>
-                          <span className="font-bold">13%</span>
+                          <span className="font-bold">✓</span>
                         </div>
                         <div className="flex justify-between items-center bg-white/15 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
                           <div className="flex items-center gap-2">
@@ -489,9 +488,8 @@ const RoomDetail = () => {
                     {images.slice(0, 4).map((image, index) => (
                       <div
                         key={index}
-                        className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 ${
-                          index === currentImageIndex ? 'ring-4 ring-blue-500 shadow-xl' : 'shadow-lg'
-                        }`}
+                        className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 ${index === currentImageIndex ? 'ring-4 ring-blue-500 shadow-xl' : 'shadow-lg'
+                          }`}
                         onClick={() => setCurrentImageIndex(index)}
                       >
                         <img
@@ -725,13 +723,7 @@ const RoomDetail = () => {
                   <div className="text-sm text-gray-500">Before taxes</div>
                 </div>
 
-                <div className="p-3 bg-orange-50 rounded-lg">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-gray-700">Taxes & Service Fees</span>
-                    <span className="font-semibold text-orange-600">₹{priceBreakdown.taxes.toLocaleString()}</span>
-                  </div>
-                  <div className="text-sm text-orange-600">13% GST included</div>
-                </div>
+
 
                 <div className="border-t border-gray-300 pt-4">
                   <div className="flex justify-between items-center mb-2">

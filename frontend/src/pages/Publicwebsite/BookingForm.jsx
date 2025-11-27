@@ -8,6 +8,7 @@ import { guestService } from '../../services/guestService'
 import { roomService } from '../../services/roomService'
 import { paymentService } from '../../services/paymentService'
 import { couponService } from '../../services/couponService'
+import authService from '../../services/authService'
 import PaymentOptions from '../../components/booking/PaymentOptions'
 import PackageSelection from '../../components/Publicwebsite/PackageSelection'
 import CouponInput from '../../components/Publicwebsite/CouponInput'
@@ -126,7 +127,7 @@ const schema = baseSchema.superRefine((val, ctx) => {
 
   // Prefer country-specific validation if we recognize nationality
   const iso = normalizeCountryToISO2(val.nationality)
-  const exactType = ['passport','national id','driver license','voter id','other'].find(t => t === type) ? val.idType : val.idType
+  const exactType = ['passport', 'national id', 'driver license', 'voter id', 'other'].find(t => t === type) ? val.idType : val.idType
   const countryRule = iso && COUNTRY_ID_RULES?.[iso]?.[exactType]
   if (countryRule) {
     if (!countryRule.test(num)) {
@@ -193,21 +194,30 @@ const BookingForm = () => {
 
   const watchedValues = watch()
 
+  // Check authentication before allowing booking
+  useEffect(() => {
+    if (!authService.isAuthenticated()) {
+      // Redirect to login with return URL
+      const returnUrl = encodeURIComponent(window.location.pathname)
+      navigate(`/login?returnUrl=${returnUrl}`)
+    }
+  }, [navigate])
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
-        
+
         // Fetch room details
         if (roomId) {
           const roomResponse = await roomService.getRoomById(roomId)
           setRoom(roomResponse.room)
         }
-        
+
         // Fetch payment gateways
         const gatewaysResponse = await paymentService.getGateways()
         setGateways(gatewaysResponse.gateways || [])
-        
+
       } catch (error) {
         console.error('Error fetching data:', error)
         setGateways([{ code: 'cash', name: 'Cash', description: 'Pay at property', enabled: true }])
@@ -215,7 +225,7 @@ const BookingForm = () => {
         setLoading(false)
       }
     }
-    
+
     fetchData()
   }, [roomId])
 
@@ -262,15 +272,15 @@ const BookingForm = () => {
   const onSubmit = async (values) => {
     try {
       setSubmitting(true)
-      
+
       // Validate dates
       if (!values.checkIn || !values.checkOut) {
         throw new Error('Please select check-in and check-out dates')
       }
-      
+
       const checkInDate = new Date(values.checkIn)
       const checkOutDate = new Date(values.checkOut)
-      
+
       if (checkOutDate <= checkInDate) {
         throw new Error('Check-out date must be after check-in date')
       }
@@ -330,7 +340,7 @@ const BookingForm = () => {
           throw new Error('Profile photo too small (min 200x200)')
         }
       }
-      
+
       // Create booking (exclude idProof from payload; it's uploaded separately)
       const { idProof: _omit, profilePhoto: _omit2, ...cleanValues } = values
       const payload = {
@@ -341,7 +351,7 @@ const BookingForm = () => {
         packageId: selectedPackage?.id,
         couponCode: couponCode || undefined
       }
-      
+
       const res = await bookingService.createBooking(payload)
       const booking = res.booking
       const amount = booking.totalAmount
@@ -368,7 +378,7 @@ const BookingForm = () => {
       } catch (e) {
         console.warn('ID proof upload failed:', e)
       }
-      
+
       // Payment handling
       const method = String(values.paymentMethod || 'cash').toLowerCase()
       if (method === 'cash' || method === 'card') {
@@ -387,7 +397,7 @@ const BookingForm = () => {
           await paymentService.handleEsewaPayment(paymentResponse)
         }
       }
-      
+
     } catch (e) {
       alert(e.message || 'Failed to complete booking')
     } finally {
@@ -413,7 +423,7 @@ const BookingForm = () => {
   return (
     <div className="min-h-screen">
       <Header />
-      
+
       <main className="pt-24 pb-20">
         <div className="container mx-auto px-4 py-10 max-w-4xl">
           <button
@@ -431,14 +441,14 @@ const BookingForm = () => {
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl shadow-lg p-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-6">Book Your Stay</h1>
-                
+
                 {room && (
                   <div className="mb-6 p-4 bg-gray-50 rounded-xl">
                     <h3 className="font-semibold text-gray-900 mb-2">{room.name}</h3>
                     <p className="text-gray-600 text-sm">{room.description}</p>
                   </div>
                 )}
-                
+
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                   {/* Guest Information */}
                   <div>
@@ -446,27 +456,27 @@ const BookingForm = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">First Name</label>
-                        <input 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                          placeholder="First Name" 
-                          {...register('firstName')} 
+                        <input
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="First Name"
+                          {...register('firstName')}
                         />
                         {errors.firstName && <p className="text-red-500 text-sm mt-1">First name is required</p>}
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">Last Name</label>
-                        <input 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                          placeholder="Last Name" 
-                          {...register('lastName')} 
+                        <input
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Last Name"
+                          {...register('lastName')}
                         />
                         {errors.lastName && <p className="text-red-500 text-sm mt-1">Last name is required</p>}
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">Guest Profile Photo</label>
-                        <input 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                          type="file" 
+                        <input
+                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-gray-300 rounded-xl p-2"
+                          type="file"
                           accept="image/*"
                           {...register('profilePhoto')}
                         />
@@ -474,36 +484,36 @@ const BookingForm = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
-                        <input 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                          placeholder="Email" 
-                          type="email" 
-                          {...register('email')} 
+                        <input
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Email"
+                          type="email"
+                          {...register('email')}
                         />
                         {errors.email && <p className="text-red-500 text-sm mt-1">Valid email is required</p>}
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
-                        <input 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                          placeholder="Phone" 
-                          {...register('phone')} 
+                        <input
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Phone"
+                          {...register('phone')}
                         />
                         {errors.phone && <p className="text-red-500 text-sm mt-1">Phone is required</p>}
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">Nationality</label>
-                        <input 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                          placeholder="e.g., Nepalese" 
-                          {...register('nationality')} 
+                        <input
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="e.g., Nepalese"
+                          {...register('nationality')}
                         />
                         {errors.nationality && <p className="text-red-500 text-sm mt-1">Nationality is required</p>}
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">Government ID Type</label>
-                        <select 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                        <select
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           {...register('idType')}
                         >
                           <option value="">Select ID Type</option>
@@ -518,17 +528,17 @@ const BookingForm = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">ID Number</label>
-                        <input 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                          placeholder="Enter ID Number" 
-                          {...register('idNumber')} 
+                        <input
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter ID Number"
+                          {...register('idNumber')}
                         />
                         {errors.idNumber && <p className="text-red-500 text-sm mt-1">ID Number is required</p>}
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">Government ID Proof</label>
                         <input
-                          className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-gray-300 rounded-xl p-2"
                           type="file"
                           accept="image/jpeg,image/png,image/webp,image/gif"
                           {...register('idProof')}
@@ -592,53 +602,53 @@ const BookingForm = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">Check-in Date</label>
-                        <input 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                          type="date" 
-                          {...register('checkIn')} 
+                        <input
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          type="date"
+                          {...register('checkIn')}
                         />
                         {errors.checkIn && <p className="text-red-500 text-sm mt-1">Check-in is required</p>}
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">Check-out Date</label>
-                        <input 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                          type="date" 
-                          {...register('checkOut')} 
+                        <input
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          type="date"
+                          {...register('checkOut')}
                         />
                         {errors.checkOut && <p className="text-red-500 text-sm mt-1">Check-out is required</p>}
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">Adults</label>
-                        <input 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                          type="number" 
-                          min="1" 
-                          {...register('adults', { valueAsNumber: true })} 
+                        <input
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          type="number"
+                          min="1"
+                          {...register('adults', { valueAsNumber: true })}
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">Children</label>
-                        <input 
-                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                          type="number" 
-                          min="0" 
-                          {...register('children', { valueAsNumber: true })} 
+                        <input
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          type="number"
+                          min="0"
+                          {...register('children', { valueAsNumber: true })}
                         />
                       </div>
                     </div>
                   </div>
 
                   {/* Payment Options */}
-                  <PaymentOptions 
+                  <PaymentOptions
                     gateways={gateways}
                     value={watchedValues.paymentMethod}
                     onChange={(val) => setValue('paymentMethod', val)}
                   />
 
-                  <button 
-                    disabled={submitting} 
-                    type="submit" 
+                  <button
+                    disabled={submitting}
+                    type="submit"
                     className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl px-6 py-4 font-semibold hover:shadow-lg transition-all hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {submitting ? 'Processing...' : 'Confirm Booking'}
@@ -651,12 +661,12 @@ const BookingForm = () => {
             <div className="lg:col-span-1">
               <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-24">
                 <h3 className="text-xl font-bold text-gray-900 mb-6">Booking Summary</h3>
-                
+
                 {room && (
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <img 
-                        src={resolveRoomImageUrl() || 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'} 
+                      <img
+                        src={resolveRoomImageUrl() || 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'}
                         alt={room.name}
                         className="w-16 h-16 object-cover rounded-lg"
                       />
@@ -665,7 +675,7 @@ const BookingForm = () => {
                         <p className="text-sm text-gray-600">{room.roomType}</p>
                       </div>
                     </div>
-                    
+
                     <div className="border-t pt-4">
                       {watchedValues.checkIn && watchedValues.checkOut && (
                         <>
@@ -721,7 +731,7 @@ const BookingForm = () => {
           </div>
         </div>
       </main>
-      
+
       <Footer />
     </div>
   )

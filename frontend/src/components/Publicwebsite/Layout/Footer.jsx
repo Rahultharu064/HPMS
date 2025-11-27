@@ -40,16 +40,16 @@ const Footer = () => {
           {/* Company Info */}
           <div className="space-y-6">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
-                H
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden bg-white">
+                <img src="/INC.png" alt="IncStay Logo" className="w-full h-full object-contain" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold">HamroStay</h3>
+                <h3 className="text-2xl font-bold">IncStay</h3>
                 <p className="text-gray-400 text-sm">Luxury Hotel & Resort</p>
               </div>
             </div>
             <p className="text-gray-400 leading-relaxed">
-              Experience unparalleled luxury and comfort at HamroStay. We provide world-class hospitality 
+              Experience unparalleled luxury and comfort at IncStay. We provide world-class hospitality
               with a touch of local culture and warmth.
             </p>
             <div className="flex gap-4">
@@ -74,8 +74,8 @@ const Footer = () => {
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.name}>
-                  <Link 
-                    to={link.path} 
+                  <Link
+                    to={link.path}
                     className="text-gray-400 hover:text-white transition-colors"
                   >
                     {link.name}
@@ -91,8 +91,8 @@ const Footer = () => {
             <ul className="space-y-3">
               {footerLinks.services.map((link) => (
                 <li key={link.name}>
-                  <Link 
-                    to={link.path} 
+                  <Link
+                    to={link.path}
                     className="text-gray-400 hover:text-white transition-colors"
                   >
                     {link.name}
@@ -109,17 +109,17 @@ const Footer = () => {
               <div className="flex items-start gap-3">
                 <MapPin className="text-blue-400 mt-1" size={20} />
                 <div>
-                  <p className="text-gray-400">Thamel, Kathmandu</p>
-                  <p className="text-gray-400">Nepal 44600</p>
+                  <p className="text-gray-400">Itahari, Nepal</p>
+                  {/* <p className="text-gray-400">Nepal 44600</p> */}
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Phone className="text-blue-400" size={20} />
-                <p className="text-gray-400">+977 1-2345678</p>
+                <Phone size={16} />
+                <span>TEL : 025-586701/585701</span>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="text-blue-400" size={20} />
-                <p className="text-gray-400">info@hamrostay.com</p>
+                <p className="text-gray-400">contact@namunacollege.edu.np</p>
               </div>
             </div>
           </div>
@@ -165,7 +165,7 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-6">
               <p className="text-gray-400 text-sm">
-                © {currentYear} HamroStay. All rights reserved.
+                © {currentYear} IncStay. All rights reserved.
               </p>
               <div className="flex gap-6">
                 <Link to="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors">
@@ -178,7 +178,7 @@ const Footer = () => {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-gray-400 text-sm">Powered by</span>
-              <span className="text-blue-400 font-semibold">HamroStay Technology</span>
+              <span className="text-blue-400 font-semibold">IncStay Technology</span>
             </div>
           </div>
         </div>

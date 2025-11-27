@@ -38,19 +38,19 @@ const About = () => {
     {
       name: 'Rajesh Sharma',
       position: 'General Manager',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+      image: '/chef1.jpg',
       experience: '15+ years'
     },
     {
-      name: 'Priya Singh',
+      name: 'Barsha Magar',
       position: 'Head of Operations',
-      image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+      image: '/chef2121.jpg',
       experience: '12+ years'
     },
     {
       name: 'Aarav Patel',
       position: 'Guest Relations Manager',
-      image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+      image: '/chh12.jpg',
       experience: '8+ years'
     }
   ]
@@ -63,7 +63,7 @@ const About = () => {
       <section className="pt-24 pb-16 bg-gradient-to-br from-blue-900 to-purple-900 text-white">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">About HamroStay</h1>
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">About IncStay</h1>
             <p className="text-xl text-white/90">
               Discover our story of hospitality, excellence, and commitment to creating 
               unforgettable experiences for our guests.
@@ -86,7 +86,7 @@ const About = () => {
                   A Legacy of Hospitality
                 </h2>
                 <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                  Founded in 2008, HamroStay has been at the forefront of luxury hospitality 
+                  Founded in 2008, IncStay has been at the forefront of luxury hospitality 
                   in Nepal. What started as a small family business has grown into one of 
                   the most prestigious hotels in Kathmandu, known for its exceptional service 
                   and warm Nepali hospitality.

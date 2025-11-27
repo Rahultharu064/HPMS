@@ -91,7 +91,7 @@ const Testimonials = () => {
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Don't just take our word for it. Here's what our valued guests have to say 
-            about their experience at HamroStay.
+            about their experience at IncStay.
           </p>
         </div>
 

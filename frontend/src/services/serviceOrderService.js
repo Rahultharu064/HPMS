@@ -29,5 +29,10 @@ export const serviceOrderService = {
     update: async (id, data) => {
         const res = await axios.put(`${API_URL}/service-orders/${id}`, data, { headers: getAuthHeader() });
         return res.data;
+    },
+
+    addItems: async (id, items) => {
+        const res = await axios.post(`${API_URL}/service-orders/${id}/items`, { items }, { headers: getAuthHeader() });
+        return res.data;
     }
 };

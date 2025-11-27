@@ -37,7 +37,7 @@ const Rooms = () => {
     try {
       setLoading(true)
       setError(null)
-        // Clean filters - remove empty values
+      // Clean filters - remove empty values
       const cleanFilters = Object.fromEntries(
         Object.entries(filters).filter(([, value]) => value !== '' && value !== 'all')
       )
@@ -331,21 +331,19 @@ const Rooms = () => {
                 <div className="flex gap-3">
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`p-4 rounded-2xl transition-all duration-300 hover:scale-110 ${
-                      viewMode === 'grid'
+                    className={`p-4 rounded-2xl transition-all duration-300 hover:scale-110 ${viewMode === 'grid'
                         ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-xl'
                         : 'bg-white/80 backdrop-blur-sm text-gray-600 hover:bg-white shadow-lg border border-gray-200'
-                    }`}
+                      }`}
                   >
                     <Grid size={24} />
                   </button>
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`p-4 rounded-2xl transition-all duration-300 hover:scale-110 ${
-                      viewMode === 'list'
+                    className={`p-4 rounded-2xl transition-all duration-300 hover:scale-110 ${viewMode === 'list'
                         ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-xl'
                         : 'bg-white/80 backdrop-blur-sm text-gray-600 hover:bg-white shadow-lg border border-gray-200'
-                    }`}
+                      }`}
                   >
                     <List size={24} />
                   </button>
@@ -414,11 +412,10 @@ const Rooms = () => {
 
           {/* Rooms Grid/List */}
           {!loading && (
-            <div className={`${
-              viewMode === 'grid'
+            <div className={`${viewMode === 'grid'
                 ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'
                 : 'space-y-8'
-            }`}>
+              }`}>
               {rooms.map((room, index) => {
                 const amenities = getRoomAmenities(room)
                 const isHovered = hoveredCard === room.id
@@ -507,7 +504,7 @@ const Rooms = () => {
                           </div>
                           <div className="text-right">
                             <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                              ₹{(typeof room?.price === 'number' ? room.price.toLocaleString() : room?.price || '—')}
+                              NPR{(typeof room?.price === 'number' ? room.price.toLocaleString() : room?.price || '—')}
                             </p>
                             <p className="text-xs text-gray-500 font-medium">per night</p>
                           </div>
@@ -579,11 +576,10 @@ const Rooms = () => {
                   <button
                     key={page}
                     onClick={() => fetchRooms(page)}
-                    className={`px-6 py-4 rounded-2xl transition-all duration-300 hover:scale-110 font-bold shadow-lg ${
-                      page === pagination.currentPage
+                    className={`px-6 py-4 rounded-2xl transition-all duration-300 hover:scale-110 font-bold shadow-lg ${page === pagination.currentPage
                         ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-xl'
                         : 'bg-white/80 backdrop-blur-xl border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50'
-                    }`}
+                      }`}
                   >
                     {page}
                   </button>

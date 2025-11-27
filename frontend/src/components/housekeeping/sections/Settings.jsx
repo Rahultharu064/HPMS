@@ -25,7 +25,7 @@ const Settings = ({ darkMode }) => {
     },
     profile: {
       name: 'Housekeeping Staff',
-      email: 'staff@hamrostay.com',
+      email: 'contact@namunacollege.edu.np',
       role: 'Housekeeper',
       notifications: true
     }
@@ -95,11 +95,10 @@ const Settings = ({ darkMode }) => {
         <button
           onClick={saveSettings}
           disabled={saving}
-          className={`px-6 py-3 rounded-xl flex items-center gap-2 font-medium transition-all ${
-            saving 
-              ? 'bg-gray-400 text-white cursor-not-allowed' 
+          className={`px-6 py-3 rounded-xl flex items-center gap-2 font-medium transition-all ${saving
+              ? 'bg-gray-400 text-white cursor-not-allowed'
               : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:shadow-lg'
-          }`}
+            }`}
         >
           <Save className="w-5 h-5" />
           {saving ? 'Saving...' : 'Save Settings'}
@@ -153,15 +152,13 @@ const Settings = ({ darkMode }) => {
                 </label>
                 <button
                   onClick={() => updateSetting(`notifications.${key}`, !value)}
-                  className={`w-12 h-6 rounded-full transition-colors ${
-                    value 
-                      ? 'bg-blue-500' 
+                  className={`w-12 h-6 rounded-full transition-colors ${value
+                      ? 'bg-blue-500'
                       : darkMode ? 'bg-gray-600' : 'bg-gray-300'
-                  }`}
+                    }`}
                 >
-                  <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
-                    value ? 'translate-x-6' : 'translate-x-0.5'
-                  }`} />
+                  <div className={`w-5 h-5 bg-white rounded-full transition-transform ${value ? 'translate-x-6' : 'translate-x-0.5'
+                    }`} />
                 </button>
               </div>
             ))}
@@ -181,15 +178,13 @@ const Settings = ({ darkMode }) => {
               </label>
               <button
                 onClick={() => updateSetting('housekeeping.autoAssignRooms', !settings.housekeeping.autoAssignRooms)}
-                className={`w-12 h-6 rounded-full transition-colors ${
-                  settings.housekeeping.autoAssignRooms 
-                    ? 'bg-blue-500' 
+                className={`w-12 h-6 rounded-full transition-colors ${settings.housekeeping.autoAssignRooms
+                    ? 'bg-blue-500'
                     : darkMode ? 'bg-gray-600' : 'bg-gray-300'
-                }`}
+                  }`}
               >
-                <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
-                  settings.housekeeping.autoAssignRooms ? 'translate-x-6' : 'translate-x-0.5'
-                }`} />
+                <div className={`w-5 h-5 bg-white rounded-full transition-transform ${settings.housekeeping.autoAssignRooms ? 'translate-x-6' : 'translate-x-0.5'
+                  }`} />
               </button>
             </div>
             <div className="flex items-center justify-between">
@@ -198,15 +193,13 @@ const Settings = ({ darkMode }) => {
               </label>
               <button
                 onClick={() => updateSetting('housekeeping.requirePhotoConfirmation', !settings.housekeeping.requirePhotoConfirmation)}
-                className={`w-12 h-6 rounded-full transition-colors ${
-                  settings.housekeeping.requirePhotoConfirmation 
-                    ? 'bg-blue-500' 
+                className={`w-12 h-6 rounded-full transition-colors ${settings.housekeeping.requirePhotoConfirmation
+                    ? 'bg-blue-500'
                     : darkMode ? 'bg-gray-600' : 'bg-gray-300'
-                }`}
+                  }`}
               >
-                <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
-                  settings.housekeeping.requirePhotoConfirmation ? 'translate-x-6' : 'translate-x-0.5'
-                }`} />
+                <div className={`w-5 h-5 bg-white rounded-full transition-transform ${settings.housekeeping.requirePhotoConfirmation ? 'translate-x-6' : 'translate-x-0.5'
+                  }`} />
               </button>
             </div>
             <div>
@@ -287,15 +280,13 @@ const Settings = ({ darkMode }) => {
               </label>
               <button
                 onClick={() => updateSetting('profile.notifications', !settings.profile.notifications)}
-                className={`w-12 h-6 rounded-full transition-colors ${
-                  settings.profile.notifications 
-                    ? 'bg-blue-500' 
+                className={`w-12 h-6 rounded-full transition-colors ${settings.profile.notifications
+                    ? 'bg-blue-500'
                     : darkMode ? 'bg-gray-600' : 'bg-gray-300'
-                }`}
+                  }`}
               >
-                <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
-                  settings.profile.notifications ? 'translate-x-6' : 'translate-x-0.5'
-                }`} />
+                <div className={`w-5 h-5 bg-white rounded-full transition-transform ${settings.profile.notifications ? 'translate-x-6' : 'translate-x-0.5'
+                  }`} />
               </button>
             </div>
           </div>

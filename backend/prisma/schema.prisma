@@ -141,6 +141,7 @@ model Coupon {
 model RoomType {
   id        Int      @id @default(autoincrement())
   name      String   @unique
+  code      String   @unique // Unique 3-letter code (e.g., "DEL" for Deluxe)
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
 
@@ -341,6 +342,11 @@ model Booking {
   couponCode    String?
   discountAmount Float?  @default(0)
   finalAmount   Float?
+  
+  // Financial breakdown fields
+  discountPercentage      Float    @default(0)
+  taxPercentage          Float    @default(0) // GST
+  serviceChargePercentage Float    @default(0)
 
   guest        Guest          @relation(fields: [guestId], references: [id])
   room         Room           @relation(fields: [roomId], references: [id])
@@ -687,15 +693,17 @@ model ServiceCategory {
 // =====================
 
 model ExtraService {
-  id          Int      @id @default(autoincrement())
-  name        String
-  description String?  @db.Text
-  price       Float
-  categoryId  Int?     // Foreign key to ServiceCategory
-  image       String?  // URL to service image
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now())
+  id                 Int      @id @default(autoincrement())
+  name               String
+  description        String?  @db.Text
+  price              Float
+  categoryId         Int?     // Foreign key to ServiceCategory
+  image              String?  // URL to service image
+  active             Boolean  @default(true)
+  discountPercentage Float    @default(0) // Discount percentage (0-100)
+  discountAllowed    Boolean  @default(false) // Whether discount is allowed for this service
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now())
 
   category            ServiceCategory?    @relation(fields: [categoryId], references: [id])
   bookingExtraServices BookingExtraService[]
@@ -705,13 +713,16 @@ model ExtraService {
 }
 
 model BookingExtraService {
-  id            Int      @id @default(autoincrement())
-  bookingId     Int
-  extraServiceId Int
-  quantity      Int      @default(1)
-  unitPrice     Float
-  totalPrice    Float
-  addedAt       DateTime @default(now())
+  id                  Int      @id @default(autoincrement())
+  bookingId           Int
+  extraServiceId      Int
+  quantity            Int      @default(1)
+  unitPrice           Float
+  basePrice           Float    // quantity * unitPrice
+  discountAmount      Float    @default(0) // Discount applied
+  serviceChargeAmount Float    @default(0) // Service charge applied
+  totalPrice          Float    // Final price after discount and service charge
+  addedAt             DateTime @default(now())
 
   booking      Booking      @relation(fields: [bookingId], references: [id])
   extraService ExtraService @relation(fields: [extraServiceId], references: [id])

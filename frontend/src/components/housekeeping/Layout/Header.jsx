@@ -19,13 +19,13 @@ const Header = ({ darkMode, setDarkMode, showNotifications, setShowNotifications
       const room = payload?.room
       if (!room) return
       const statusText = room.status.replace('-', ' ')
-      const icon = room.status === 'needs-cleaning' ? '🔴' : 
-                   room.status === 'clean' ? '✅' : 
-                   room.status === 'occupied' ? '👤' : '🔧'
-      setItems(prev => [{ 
-        id: `room-${room.id}-${Date.now()}`, 
-        msg: `${icon} Room #${room.roomNumber} is ${statusText}`, 
-        time: new Date().toLocaleTimeString(), 
+      const icon = room.status === 'needs-cleaning' ? '🔴' :
+        room.status === 'clean' ? '✅' :
+          room.status === 'occupied' ? '👤' : '🔧'
+      setItems(prev => [{
+        id: `room-${room.id}-${Date.now()}`,
+        msg: `${icon} Room #${room.roomNumber} is ${statusText}`,
+        time: new Date().toLocaleTimeString(),
         read: false,
         type: 'room_status',
         roomId: room.id
@@ -34,13 +34,13 @@ const Header = ({ darkMode, setDarkMode, showNotifications, setShowNotifications
     const onTask = (payload) => {
       const t = payload?.task
       if (!t && !payload?.id) return
-      const icon = t?.priority === 'URGENT' ? '🚨' : 
-                   t?.priority === 'HIGH' ? '⚠️' : '📋'
+      const icon = t?.priority === 'URGENT' ? '🚨' :
+        t?.priority === 'HIGH' ? '⚠️' : '📋'
       const msg = payload?.id ? `🗑️ Task #${payload.id} deleted` : `${icon} Task: ${t.title} (${t.status})`
-      setItems(prev => [{ 
-        id: `task-${Date.now()}`, 
-        msg, 
-        time: new Date().toLocaleTimeString(), 
+      setItems(prev => [{
+        id: `task-${Date.now()}`,
+        msg,
+        time: new Date().toLocaleTimeString(),
         read: false,
         type: 'task',
         taskId: t?.id || payload?.id
@@ -51,10 +51,10 @@ const Header = ({ darkMode, setDarkMode, showNotifications, setShowNotifications
       if (!log) return
       const icon = log.finishedAt ? '✨' : '🧹'
       const action = log.finishedAt ? 'completed cleaning' : 'started cleaning'
-      setItems(prev => [{ 
-        id: `cleaning-${log.id}-${Date.now()}`, 
-        msg: `${icon} Room #${log.roomId} ${action}`, 
-        time: new Date().toLocaleTimeString(), 
+      setItems(prev => [{
+        id: `cleaning-${log.id}-${Date.now()}`,
+        msg: `${icon} Room #${log.roomId} ${action}`,
+        time: new Date().toLocaleTimeString(),
         read: false,
         type: 'cleaning',
         roomId: log.roomId
@@ -112,9 +112,11 @@ const Header = ({ darkMode, setDarkMode, showNotifications, setShowNotifications
             <Menu size={20} />
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-bold text-lg">HK</div>
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center overflow-hidden bg-white">
+              <img src="/INC.png" alt="IncStay Logo" className="w-full h-full object-contain" />
+            </div>
             <div className="hidden sm:block">
-              <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>HamroStay</h1>
+              <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>IncStay</h1>
               <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Housekeeping</p>
             </div>
           </div>
@@ -178,7 +180,7 @@ const Header = ({ darkMode, setDarkMode, showNotifications, setShowNotifications
                     {userData?.name || 'Housekeeping'}
                   </p>
                   <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {userData?.email || 'staff@hamrostay.com'}
+                    {userData?.email || 'contact@namunacollege.edu.np'}
                   </p>
                 </div>
                 <div className="p-2">

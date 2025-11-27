@@ -100,6 +100,11 @@ const authService = {
     return response;
   },
 
+  checkAdminStatus: async (email) => {
+    const response = await api.post('/api/auth/admin/check-status', { email });
+    return response;
+  },
+
   verifyAdminOtp: async (email, otp) => {
     const response = await api.post('/api/auth/admin/verify-otp', { email, otp });
     return response;

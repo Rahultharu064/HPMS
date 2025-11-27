@@ -10,7 +10,7 @@ const HousekeepingDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900' : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-white'} transition-colors duration-300`}>
+    <div className={`h-screen flex flex-col overflow-hidden ${darkMode ? 'bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900' : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-white'} transition-colors duration-300`}>
       <Header
         darkMode={darkMode}
         setDarkMode={setDarkMode}
@@ -22,7 +22,7 @@ const HousekeepingDashboard = () => {
         setSidebarOpen={setSidebarOpen}
       />
 
-      <div className="flex min-h-[calc(100vh-4rem)]">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar
           darkMode={darkMode}
           sidebarOpen={sidebarOpen}
@@ -33,7 +33,7 @@ const HousekeepingDashboard = () => {
           <div className="fixed inset-0 bg-black/50 z-20 lg:hidden" onClick={() => setSidebarOpen(false)} />
         )}
 
-        <main className="flex-1 p-6 lg:p-8">
+        <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
           <Outlet />
         </main>
       </div>

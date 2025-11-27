@@ -24,9 +24,9 @@ export const paymentService = {
   },
 
   // Create payment
-  async createPayment({ bookingId, method, amount, gatewayData }) {
+  async createPayment({ bookingId, serviceOrderId, method, amount, gatewayData }) {
     try {
-      const payload = { bookingId, method, amount, gatewayData }
+      const payload = { bookingId, serviceOrderId, method, amount, gatewayData }
       apiDebug.log('Creating payment with payload:', payload)
       return await apiRequest('/api/payments', {
         method: 'POST',
@@ -85,12 +85,12 @@ export const paymentService = {
   async handleKhaltiPayment(paymentData) {
     try {
       const { payment_url } = paymentData.gatewayResponse;
-      
+
       // Redirect to Khalti payment page
       if (payment_url) {
         window.location.href = payment_url;
       }
-      
+
       return paymentData;
     } catch (error) {
       apiDebug.error('Error handling Khalti payment:', error)

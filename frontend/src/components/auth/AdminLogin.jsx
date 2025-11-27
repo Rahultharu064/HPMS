@@ -5,7 +5,7 @@ import authService from '../../services/authService';
 import AdminPasswordSetup from './AdminPasswordSetup';
 
 const AdminLogin = () => {
-  const [step, setStep] = useState('email'); // 'email', 'otp', 'password'
+  const [step, setStep] = useState('email'); // 'email', 'otp', 'password', 'password-login'
   const [formData, setFormData] = useState({
     email: '',
     otp: '',
@@ -15,6 +15,7 @@ const AdminLogin = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [requiresPasswordSetup, setRequiresPasswordSetup] = useState(false);
   const navigate = useNavigate();
 
@@ -22,20 +23,29 @@ const AdminLogin = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleRequestOtp = async (e) => {
+  const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      await authService.requestAdminOtp(formData.email);
-      setStep('otp');
-      // Check if OTP is already verified after sending
-      setTimeout(() => {
-        checkOtpVerification();
-      }, 1000); // Small delay to allow backend to process
+      // First check if admin exists and has password
+      const status = await authService.checkAdminStatus(formData.email);
+
+      if (status.hasPassword) {
+        // If password exists, go to password login
+        setStep('password-login');
+      } else {
+        // If no password (new admin or not set up), request OTP
+        await authService.requestAdminOtp(formData.email);
+        setStep('otp');
+        // Check if OTP is already verified after sending
+        setTimeout(() => {
+          checkOtpVerification();
+        }, 1000);
+      }
     } catch (err) {
-      const errorMessage = err.message || 'Failed to send OTP';
+      const errorMessage = err.message || 'Failed to verify email status';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -72,10 +82,28 @@ const AdminLogin = () => {
     }
   };
 
+  const handlePasswordLogin = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await authService.loginAdminWithPassword(formData.email, formData.password);
+      if (response.token) {
+        navigate('/owner-admin/dashboard');
+      }
+    } catch (err) {
+      const errorMessage = err.message || 'Login failed';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleBackToEmail = () => {
     setStep('email');
     setError('');
-    setFormData({ ...formData, otp: '' });
+    setFormData({ ...formData, otp: '', password: '' });
   };
 
   return (
@@ -95,13 +123,16 @@ const AdminLogin = () => {
             </div>
             <h2 className="text-3xl font-bold text-white mb-2">Admin Access</h2>
             <p className="text-gray-300">
-              {step === 'email' ? 'Enter your email to receive OTP' : step === 'otp' ? 'Enter the OTP sent to your email' : 'Set up your password'}
+              {step === 'email' ? 'Enter your email to continue' :
+                step === 'otp' ? 'Enter the OTP sent to your email' :
+                  step === 'password-login' ? 'Enter your password' :
+                    'Set up your password'}
             </p>
           </div>
 
           {/* Form */}
           {step === 'email' ? (
-            <form onSubmit={handleRequestOtp} className="space-y-6">
+            <form onSubmit={handleEmailSubmit} className="space-y-6">
               {/* Email Field */}
               <div>
                 <label className="block text-sm font-semibold text-white mb-2">
@@ -139,11 +170,77 @@ const AdminLogin = () => {
                 {loading ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Sending OTP...
+                    Checking...
                   </div>
                 ) : (
-                  'Send OTP'
+                  'Continue'
                 )}
+              </button>
+            </form>
+          ) : step === 'password-login' ? (
+            <form onSubmit={handlePasswordLogin} className="space-y-6">
+              {/* Password Field */}
+              <div>
+                <label className="block text-sm font-semibold text-white mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    className="block w-full pl-12 pr-12 py-3 border border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-gray-800/50 backdrop-blur-sm text-white placeholder-gray-400"
+                    placeholder="Enter your password"
+                    value={formData.password}
+                    onChange={handleChange}
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-200" />
+                    ) : (
+                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-200" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-xl text-sm">
+                  {error}
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex justify-center py-4 px-6 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-purple-600 hover:from-red-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Logging in...
+                  </div>
+                ) : (
+                  'Login'
+                )}
+              </button>
+
+              {/* Back Button */}
+              <button
+                type="button"
+                onClick={handleBackToEmail}
+                className="w-full flex justify-center py-3 px-6 border border-gray-600 rounded-xl text-sm font-semibold text-gray-300 hover:text-white hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200"
+              >
+                Back to Email
               </button>
             </form>
           ) : step === 'otp' ? (

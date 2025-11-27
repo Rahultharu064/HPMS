@@ -11,7 +11,7 @@ export default function Hero() {
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <img
-          src="https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBob3RlbCUyMGxvYmJ5fGVufDF8fHx8MTc2MTM2NTkzM3ww&ixlib=rb-4.1.0&q=80&w=1920"
+          src="/heroinc.jpeg"
           alt="Luxury Hotel"
           className="w-full h-full object-cover"
           onError={(e) => {
@@ -31,19 +31,19 @@ export default function Hero() {
           </div>
 
           {/* Main Heading */}
-          <h1 className="text-white mb-8 tracking-tight">
-            <span className="block text-6xl sm:text-7xl lg:text-8xl font-black uppercase tracking-tighter leading-none">
-              Welcome to
-            </span>
-            <span className="block text-7xl sm:text-8xl lg:text-9xl mt-3 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 bg-clip-text text-transparent font-black uppercase tracking-tighter leading-none drop-shadow-2xl" style={{textShadow: '0 0 80px rgba(251, 191, 36, 0.5)'}}>
-              Luxury
-            </span>
-            <span className="block text-3xl sm:text-4xl lg:text-5xl mt-6 font-light tracking-wide italic text-gray-100">
-              Your Perfect Stay Awaits
-            </span>
-          </h1>
+                <h1 className="text-white mb-8 tracking-tight">
+                <span className="block text-6xl sm:text-7xl lg:text-8xl font-black uppercase tracking-tighter leading-none">
+                  Welcome to
+                </span>
+                <h3 className="block text-7xl sm:text-8xl lg:text-9xl mt-3 bg-gradient-to-r from-white via-white to-white bg-clip-text text-transparent font-black uppercase tracking-tighter leading-none drop-shadow-2xl" style={{ textShadow: '0 0 80px rgba(255, 255, 255, 0.5)' }}>
+                  INCStay
+                </h3>
+                <span className="block text-3xl sm:text-4xl lg:text-5xl mt-6 font-light tracking-wide italic text-white">
+                  Your Perfect Stay Awaits
+                </span>
+                </h1>
 
-          {/* Subheading */}
+                {/* Subheading */}
           <p className="text-gray-100 text-xl sm:text-2xl max-w-3xl mx-auto leading-relaxed font-light tracking-wide">
             Experience world-class comfort and hospitality<span className="text-amber-300 font-normal"> · </span>Book your dream getaway with exclusive rates<span className="text-amber-300 font-normal"> · </span>Personalized service
           </p>
@@ -123,7 +123,7 @@ export default function Hero() {
             </div>
 
             {/* Search Button */}
-            <button 
+            <button
               className="w-full h-14 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2"
             >
               <Search className="w-5 h-5" />

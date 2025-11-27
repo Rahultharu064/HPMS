@@ -219,10 +219,11 @@ export const createPayment = async (req, res) => {
         // existing logic handles this elsewhere or here?
         // For now, let's leave booking status logic as is or minimal
       } else if (targetType === 'serviceOrder') {
-        await prisma.serviceOrder.update({
-          where: { id: serviceOrderId },
-          data: { status: 'completed' }
-        });
+        // Do not auto-complete service orders so guests can add more items later
+        // await prisma.serviceOrder.update({
+        //   where: { id: serviceOrderId },
+        //   data: { status: 'completed' }
+        // });
       }
 
       return res.json({
@@ -550,13 +551,24 @@ export const handleEsewaReturn = async (req, res) => {
       return res.redirect(`${frontend}/rooms?err=missing_uuid`)
     }
 
-    // attempt to parse payment id from transaction_uuid pattern PM_<paymentId>_<bookingId>_ts
+    // attempt to parse payment id from transaction_uuid pattern PM_<paymentId>_<prefix>_<id>_ts
     let paymentId = null
     let bookingId = null
     if (String(transaction_uuid).startsWith('PM_')) {
       const parts = String(transaction_uuid).split('_')
+      // Format: PM_{paymentId}_{prefix}_{id}_{timestamp}
+      // parts[0] = PM
+      // parts[1] = paymentId
+      // parts[2] = prefix (BOOKING or SERVICE)
+      // parts[3] = id
       paymentId = Number(parts?.[1]) || null
-      bookingId = Number(parts?.[2]) || null
+
+      const prefix = parts?.[2]
+      const id = Number(parts?.[3])
+
+      if (prefix === 'BOOKING' && Number.isFinite(id)) {
+        bookingId = id
+      }
     }
 
     // If eSewa didn't return total_amount, fallback to our stored payment amount

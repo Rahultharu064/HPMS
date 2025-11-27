@@ -16,7 +16,8 @@ const RoomTypes = ({ darkMode }) => {
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedRoomType, setSelectedRoomType] = useState(null)
   const [formData, setFormData] = useState({
-    name: ''
+    name: '',
+    code: ''
   })
 
   // Fetch room types
@@ -61,7 +62,8 @@ const RoomTypes = ({ darkMode }) => {
   // Reset form
   const resetForm = () => {
     setFormData({
-      name: ''
+      name: '',
+      code: ''
     })
   }
 
@@ -82,7 +84,8 @@ const RoomTypes = ({ darkMode }) => {
   const handleEdit = (roomType) => {
     setSelectedRoomType(roomType)
     setFormData({
-      name: roomType.name
+      name: roomType.name,
+      code: roomType.code || ''
     })
     setShowEditModal(true)
   }
@@ -150,11 +153,10 @@ const RoomTypes = ({ darkMode }) => {
             <button
               onClick={() => fetchRoomTypes(pagination.currentPage)}
               disabled={loading}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 ${
-                darkMode
-                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
-                  : 'border-gray-300 text-gray-700 hover:bg-gray-100'
-              } transition-colors disabled:opacity-50`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 ${darkMode
+                ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+                } transition-colors disabled:opacity-50`}
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
               <span>Refresh</span>
@@ -247,13 +249,12 @@ const RoomTypes = ({ darkMode }) => {
                   <button
                     onClick={() => fetchRoomTypes(pagination.currentPage - 1)}
                     disabled={pagination.currentPage === 1}
-                    className={`px-3 py-2 rounded-lg text-sm ${
-                      pagination.currentPage === 1
-                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                        : darkMode
-                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    } transition-colors`}
+                    className={`px-3 py-2 rounded-lg text-sm ${pagination.currentPage === 1
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : darkMode
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      } transition-colors`}
                   >
                     Previous
                   </button>
@@ -263,13 +264,12 @@ const RoomTypes = ({ darkMode }) => {
                   <button
                     onClick={() => fetchRoomTypes(pagination.currentPage + 1)}
                     disabled={pagination.currentPage === pagination.totalPages}
-                    className={`px-3 py-2 rounded-lg text-sm ${
-                      pagination.currentPage === pagination.totalPages
-                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                        : darkMode
-                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    } transition-colors`}
+                    className={`px-3 py-2 rounded-lg text-sm ${pagination.currentPage === pagination.totalPages
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : darkMode
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      } transition-colors`}
                   >
                     Next
                   </button>
@@ -292,19 +292,31 @@ const RoomTypes = ({ darkMode }) => {
                 type="text"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                  darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
-                }`}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
+                  }`}
                 placeholder="e.g., Deluxe Suite"
               />
+            </div>
+
+            <div className="mb-6">
+              <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Code * (3 letters)</label>
+              <input
+                type="text"
+                value={formData.code}
+                onChange={(e) => handleInputChange('code', e.target.value.toUpperCase().slice(0, 3))}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
+                  }`}
+                placeholder="e.g., DEL"
+                maxLength={3}
+              />
+              <p className="text-xs text-gray-500 mt-1">Unique 3-letter code for room numbering (e.g., DEL for Deluxe)</p>
             </div>
 
             <div className="flex justify-end gap-3">
               <button
                 onClick={closeModals}
-                className={`px-6 py-2 rounded-lg border ${
-                  darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-100'
-                } transition-colors`}
+                className={`px-6 py-2 rounded-lg border ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+                  } transition-colors`}
               >
                 Cancel
               </button>
@@ -332,9 +344,8 @@ const RoomTypes = ({ darkMode }) => {
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
-                  }`}
+                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
+                    }`}
                   placeholder="e.g., Deluxe Suite"
                 />
               </div>
@@ -345,9 +356,8 @@ const RoomTypes = ({ darkMode }) => {
                   type="number"
                   value={formData.basePrice}
                   onChange={(e) => handleInputChange('basePrice', e.target.value)}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
-                  }`}
+                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
+                    }`}
                   placeholder="5000"
                   min="0"
                 />
@@ -359,9 +369,8 @@ const RoomTypes = ({ darkMode }) => {
                   type="number"
                   value={formData.maxAdults}
                   onChange={(e) => handleInputChange('maxAdults', e.target.value)}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
-                  }`}
+                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
+                    }`}
                   min="1"
                 />
               </div>
@@ -372,9 +381,8 @@ const RoomTypes = ({ darkMode }) => {
                   type="number"
                   value={formData.maxChildren}
                   onChange={(e) => handleInputChange('maxChildren', e.target.value)}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
-                  }`}
+                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
+                    }`}
                   min="0"
                 />
               </div>
@@ -385,9 +393,8 @@ const RoomTypes = ({ darkMode }) => {
                   type="number"
                   value={formData.numBeds}
                   onChange={(e) => handleInputChange('numBeds', e.target.value)}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
-                  }`}
+                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
+                    }`}
                   min="1"
                 />
               </div>
@@ -398,9 +405,8 @@ const RoomTypes = ({ darkMode }) => {
                   type="number"
                   value={formData.size}
                   onChange={(e) => handleInputChange('size', e.target.value)}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
-                  }`}
+                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
+                    }`}
                   placeholder="350"
                   min="0"
                 />
@@ -413,9 +419,8 @@ const RoomTypes = ({ darkMode }) => {
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 rows={3}
-                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                  darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
-                }`}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
+                  }`}
                 placeholder="Room description..."
               />
             </div>
@@ -452,9 +457,8 @@ const RoomTypes = ({ darkMode }) => {
             <div className="flex justify-end gap-3">
               <button
                 onClick={closeModals}
-                className={`px-6 py-2 rounded-lg border ${
-                  darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-100'
-                } transition-colors`}
+                className={`px-6 py-2 rounded-lg border ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+                  } transition-colors`}
               >
                 Cancel
               </button>

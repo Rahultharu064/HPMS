@@ -222,3 +222,103 @@ export const updateServiceOrder = async (req, res) => {
         res.status(500).json({ success: false, error: 'Failed to update service order' });
     }
 };
+
+// Add items to existing service order
+export const addItemsToServiceOrder = async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const { items } = req.body; // Array of { extraServiceId, quantity }
+
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ success: false, error: 'No items provided' });
+        }
+
+        // Get current order
+        const currentOrder = await prisma.serviceOrder.findUnique({
+            where: { id },
+            include: { items: true }
+        });
+
+        if (!currentOrder) {
+            return res.status(404).json({ success: false, error: 'Service order not found' });
+        }
+
+        if (currentOrder.status !== 'pending') {
+            return res.status(400).json({ success: false, error: 'Can only add items to pending orders' });
+        }
+
+        // Calculate totals for new items
+        let additionalTotal = 0;
+        const newOrderItems = [];
+
+        for (const item of items) {
+            const extraService = await prisma.extraService.findUnique({
+                where: { id: Number(item.extraServiceId) }
+            });
+
+            if (!extraService) {
+                return res.status(400).json({ success: false, error: `Service not found: ${item.extraServiceId}` });
+            }
+
+            const quantity = Number(item.quantity) || 1;
+            const unitPrice = extraService.price;
+            const itemTotal = unitPrice * quantity;
+
+            additionalTotal += itemTotal;
+
+            // Check if service already exists in order
+            const existingItem = currentOrder.items.find(i => i.extraServiceId === extraService.id);
+            if (existingItem) {
+                // Update existing item quantity
+                await prisma.serviceOrderItem.update({
+                    where: { id: existingItem.id },
+                    data: { quantity: existingItem.quantity + quantity }
+                });
+            } else {
+                // Add new item
+                newOrderItems.push({
+                    serviceOrderId: id,
+                    extraServiceId: extraService.id,
+                    quantity,
+                    unitPrice,
+                    totalPrice: itemTotal
+                });
+            }
+        }
+
+        // Create new order items
+        if (newOrderItems.length > 0) {
+            await prisma.serviceOrderItem.createMany({
+                data: newOrderItems
+            });
+        }
+
+        // Update order total
+        const updatedOrder = await prisma.serviceOrder.update({
+            where: { id },
+            data: {
+                totalAmount: currentOrder.totalAmount + additionalTotal,
+                updatedAt: new Date()
+            },
+            include: {
+                guest: true,
+                items: {
+                    include: {
+                        extraService: true
+                    }
+                },
+                payments: true
+            }
+        });
+
+        try {
+            const io = getIO();
+            io && io.emit('fo:service-order:updated', { serviceOrder: updatedOrder });
+        } catch { }
+
+        res.json({ success: true, serviceOrder: updatedOrder });
+    } catch (err) {
+        console.error('addItemsToServiceOrder error:', err);
+        res.status(500).json({ success: false, error: 'Failed to add items to service order' });
+    }
+};

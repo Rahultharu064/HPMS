@@ -4,7 +4,7 @@ import { getSocket } from '../../../utils/socket'
 import authService from '../../../services/authService'
 import { useNavigate } from 'react-router-dom'
 
-const Header = ({ darkMode = false, setDarkMode = () => {}, sidebarOpen = true, setSidebarOpen = () => {}, notifications = 0, searchQuery = '', setSearchQuery = () => {} }) => {
+const Header = ({ darkMode = false, setDarkMode = () => { }, sidebarOpen = true, setSidebarOpen = () => { }, notifications = 0, searchQuery = '', setSearchQuery = () => { } }) => {
   const [showNotifications, setShowNotifications] = useState(false)
   const [items, setItems] = useState([])
   const unread = useMemo(() => items.filter(i => !i.read).length, [items])
@@ -28,16 +28,16 @@ const Header = ({ darkMode = false, setDarkMode = () => {}, sidebarOpen = true, 
       if (type === 'start') pushItem(`Cleaning started for room #${log.roomId}`)
       if (type === 'finish') pushItem(`Cleaning finished for room #${log.roomId}`)
     }
-    const onBookingCreated = (p) => { const b=p?.booking; if (b) pushItem(`Booking created: #${b.id} for room #${b.roomId}`) }
-    const onBookingUpdated = (p) => { const b=p?.booking; if (b) pushItem(`Booking updated: #${b.id} (${b.status})`) }
-    const onBookingCancelled = (p) => { const b=p?.booking; if (b) pushItem(`Booking cancelled: #${b.id}`) }
+    const onBookingCreated = (p) => { const b = p?.booking; if (b) pushItem(`Booking created: #${b.id} for room #${b.roomId}`) }
+    const onBookingUpdated = (p) => { const b = p?.booking; if (b) pushItem(`Booking updated: #${b.id} (${b.status})`) }
+    const onBookingCancelled = (p) => { const b = p?.booking; if (b) pushItem(`Booking cancelled: #${b.id}`) }
     const onBookingDeleted = (p) => { if (p?.id) pushItem(`Booking deleted: #${p.id}`) }
     socket.on('hk:room:status', onRoom)
     socket.on('hk:task:created', onTask)
     socket.on('hk:task:updated', onTask)
     socket.on('hk:task:deleted', onTask)
-    socket.on('hk:cleaning:start', (p)=>onCleaning(p,'start'))
-    socket.on('hk:cleaning:finish', (p)=>onCleaning(p,'finish'))
+    socket.on('hk:cleaning:start', (p) => onCleaning(p, 'start'))
+    socket.on('hk:cleaning:finish', (p) => onCleaning(p, 'finish'))
     socket.on('fo:booking:created', onBookingCreated)
     socket.on('fo:booking:updated', onBookingUpdated)
     socket.on('fo:booking:cancelled', onBookingCancelled)
@@ -72,11 +72,11 @@ const Header = ({ darkMode = false, setDarkMode = () => {}, sidebarOpen = true, 
             <Menu size={20} />
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-bold text-lg">
-              H
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center overflow-hidden bg-white">
+              <img src="/INC.png" alt="IncStay Logo" className="w-full h-full object-contain" />
             </div>
             <div className="hidden sm:block">
-              <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>HamroStay</h1>
+              <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>IncStay</h1>
               <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Front Office</p>
             </div>
           </div>
@@ -118,7 +118,7 @@ const Header = ({ darkMode = false, setDarkMode = () => {}, sidebarOpen = true, 
 
           {/* Notifications */}
           <div className="relative">
-            <button onClick={()=>setShowNotifications(v=>!v)} className={`relative p-3 rounded-2xl ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`} aria-label="Notifications">
+            <button onClick={() => setShowNotifications(v => !v)} className={`relative p-3 rounded-2xl ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} transition-colors`} aria-label="Notifications">
               <Bell size={20} className={darkMode ? 'text-gray-300' : 'text-gray-600'} />
               {(unread || notifications) > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[1.25rem] h-5 px-1 flex items-center justify-center font-semibold">
