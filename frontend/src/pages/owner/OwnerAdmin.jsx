@@ -97,14 +97,14 @@ const OwnerAdmin = () => {
   }, [location.pathname])
 
   const sidebarItems = useMemo(() => ([
-    { icon: 'LayoutDashboard', label: 'Dashboard', key: 'dashboard', route: '/owner-admin' },
+    { icon: 'LayoutDashboard', label: 'Dashboard', key: 'dashboard', route: '/owner-admin/dashboard' },
     { icon: 'Hotel', label: 'Rooms', key: 'rooms', route: '/owner-admin/owneroom' },
     { icon: 'Sparkles', label: 'Facilities', key: 'facilities', route: '/owner-admin/facilities' },
     { icon: 'Package', label: 'Extra Services', key: 'extra-services', route: '/owner-admin/extra-services' },
     { icon: 'Tags', label: 'Service Categories', key: 'service-categories', route: '/owner-admin/service-categories' },
     { icon: 'Users', label: 'Users', key: 'users', route: '/owner-admin/users' },
     { icon: 'Users', label: 'Staff', key: 'staff', route: '/owner-admin/staff' },
-    { icon: 'Globe', label: 'OTA Sync', key: 'ota', route: '/owner-admin/ota' },
+
     { icon: 'DollarSign', label: 'Finance', key: 'finance' },
     { icon: 'BarChart3', label: 'Reports', key: 'reports' },
     { icon: 'Settings', label: 'Settings', key: 'settings' }
@@ -187,20 +187,21 @@ const OwnerAdmin = () => {
         <Sidebar
           darkMode={darkMode}
           sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           items={sidebarItems}
           selectedRoom={selectedRoom}
         />
 
-        <main className="flex-1 p-6 overflow-y-auto">
-          <div className="mb-8">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto">
+          <div className="mb-4 sm:mb-6 md:mb-8">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
+                <h2 className={`text-2xl sm:text-3xl md:text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1 sm:mb-2`}>
                   {sidebarItems.find(item => item.key === activeTab)?.label}
                 </h2>
-                <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <p className={`text-sm sm:text-base md:text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   {activeTab === 'dashboard' && 'Welcome back! Here is your property overview'}
                   {activeTab === 'rooms' && 'Manage all rooms and their availability'}
                   {activeTab === 'facilities' && 'Manage hotel facilities and services'}
@@ -213,11 +214,11 @@ const OwnerAdmin = () => {
                   {activeTab === 'settings' && 'Manage your hotel settings and preferences'}
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <button className={`flex items-center gap-2 px-6 py-3 rounded-2xl border-2 ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-100'} transition-colors`}>
+              <div className="hidden sm:flex items-center gap-2 md:gap-3">
+                <button className={`flex items-center gap-1 md:gap-2 px-3 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl border-2 text-sm md:text-base ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-100'} transition-colors`}>
                   <span>Export</span>
                 </button>
-                <button className={`flex items-center gap-2 px-6 py-3 rounded-2xl border-2 ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-100'} transition-colors`}>
+                <button className={`flex items-center gap-1 md:gap-2 px-3 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl border-2 text-sm md:text-base ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-100'} transition-colors`}>
                   <span>Filter</span>
                 </button>
               </div>

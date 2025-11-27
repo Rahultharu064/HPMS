@@ -48,10 +48,10 @@ const Dashboard = ({ darkMode, kpis }) => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
         {kpis && kpis.map((kpi, idx) => (
-          <div key={idx} className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+          <div key={idx} className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
             <div className="flex justify-between items-start mb-4">
               <div className={`p-3 rounded-2xl bg-${kpi.color}-100`}>
                 <kpi.icon className={`text-${kpi.color}-600`} size={24} />
@@ -59,14 +59,14 @@ const Dashboard = ({ darkMode, kpis }) => {
               <span className={`text-${kpi.color}-600 text-sm font-semibold`}>{kpi.change}</span>
             </div>
             <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>{kpi.label}</p>
-            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{kpi.value}</p>
+            <p className={`text-2xl sm:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{kpi.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-3xl p-6 shadow-lg border ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-          <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Revenue Analytics</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-lg border ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+          <h3 className={`text-lg sm:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Revenue Analytics</h3>
           <div className="h-64 flex items-end justify-between gap-2">
             {[65, 78, 85, 72, 90, 88, 95].map((height, idx) => (
               <div key={idx} className="flex-1 flex flex-col items-center gap-2">
@@ -82,8 +82,8 @@ const Dashboard = ({ darkMode, kpis }) => {
           </div>
         </div>
 
-        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-3xl p-6 shadow-lg border ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-          <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Booking Sources</h3>
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-lg border ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+          <h3 className={`text-lg sm:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Booking Sources</h3>
           <div className="flex items-center justify-center h-64">
             <div className="relative w-48 h-48">
               <svg className="w-full h-full -rotate-90">
@@ -113,8 +113,8 @@ const Dashboard = ({ darkMode, kpis }) => {
           </div>
         </div>
 
-        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-3xl p-6 shadow-lg border ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-          <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>User Statistics</h3>
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-lg border ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+          <h3 className={`text-lg sm:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>User Statistics</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
               <div>

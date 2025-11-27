@@ -130,7 +130,7 @@ const Header = ({ darkMode, setDarkMode, sidebarOpen, setSidebarOpen, notificati
         </div>
 
         {/* Centered Search Bar */}
-        <div className="flex-1 max-w-2xl mx-8">
+        <div className="flex-1 max-w-2xl mx-2 sm:mx-4 md:mx-8">
           <div className="relative">
             <Search className={`absolute left-4 top-1/2 -translate-y-1/2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} size={20} />
             <input
@@ -138,7 +138,7 @@ const Header = ({ darkMode, setDarkMode, sidebarOpen, setSidebarOpen, notificati
               placeholder="Search rooms, guests, bookings, reports..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-12 pr-4 py-3 rounded-2xl border-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'} focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all`}
+              className={`w-full pl-12 pr-4 py-2 sm:py-3 rounded-2xl border-2 text-sm sm:text-base ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'} focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all`}
             />
             {searchQuery && (
               <button
@@ -260,7 +260,7 @@ const Header = ({ darkMode, setDarkMode, sidebarOpen, setSidebarOpen, notificati
               onChange={handlePhotoUpload}
               className="hidden"
             />
-            <div className="hidden lg:block">
+            <div className="hidden md:block">
               <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 {adminProfile ? `${adminProfile.firstName} ${adminProfile.lastName}` : 'Priya Admin'}
               </p>

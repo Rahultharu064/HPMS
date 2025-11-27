@@ -21,14 +21,18 @@ const Sidebar = ({ darkMode, sidebarOpen, setSidebarOpen }) => {
             <NavLink
               key={item.to}
               to={item.to}
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) => `w-full flex items-center ${sidebarOpen ? 'gap-4 justify-start' : 'gap-0 justify-center'} px-4 py-4 rounded-2xl transition-all ${
-                isActive
+              onClick={() => {
+                // Auto-close sidebar on mobile devices only
+                if (window.innerWidth < 1024 && setSidebarOpen) {
+                  setSidebarOpen(false);
+                }
+              }}
+              className={({ isActive }) => `w-full flex items-center ${sidebarOpen ? 'gap-4 justify-start' : 'gap-0 justify-center'} px-4 py-4 rounded-2xl transition-all ${isActive
                   ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/30'
                   : darkMode
                     ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-              }`}
+                }`}
             >
               <item.icon className="w-5 h-5" />
               {sidebarOpen && <span className="font-semibold text-lg">{item.label}</span>}
