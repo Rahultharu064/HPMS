@@ -336,6 +336,9 @@ const NonResidentialService = () => {
 
                 // Header
                 addCenter('INCHOTEL HOTEL', 12, true);
+                addCenter('Itahari, Nepal', 8);
+                addCenter('Phone: 025-585701/588202', 8);
+                addCenter('Email:itaharinamunacollege@gmaio.com', 8);
                 addCenter('Service Order Invoice', 10);
                 addCenter(`Order #${order.id}`, 9);
                 yRef.value += 2;

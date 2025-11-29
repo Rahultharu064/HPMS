@@ -176,6 +176,7 @@ const BookingForm = () => {
   const [couponError, setCouponError] = useState('')
   const [couponSuccess, setCouponSuccess] = useState('')
   const [couponLoading, setCouponLoading] = useState(false)
+  const [appliedCoupon, setAppliedCoupon] = useState(null) // Store validated coupon data
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
     resolver: zodResolver(schema),
@@ -246,11 +247,10 @@ const BookingForm = () => {
       }
     }
 
-    // Apply coupon discount (simplified - in real implementation, validate server-side)
+    // Apply coupon discount using actual API response
     let discountAmount = 0
-    if (couponCode && couponSuccess) {
-      // Mock discount calculation - replace with actual API response
-      discountAmount = baseAmount * 0.1 // 10% discount for demo
+    if (appliedCoupon && appliedCoupon.discountAmount) {
+      discountAmount = appliedCoupon.discountAmount
     }
 
     const discountedAmount = Math.max(0, baseAmount - discountAmount)
@@ -569,11 +569,36 @@ const BookingForm = () => {
                           setCouponLoading(true)
                           setCouponError('')
                           setCouponSuccess('')
+                          setAppliedCoupon(null)
                           try {
-                            const response = await couponService.validateCoupon(code)
-                            setCouponSuccess(`Coupon applied: ${response.discount}% off`)
+                            // Calculate current total for validation
+                            const checkIn = new Date(watchedValues.checkIn)
+                            const checkOut = new Date(watchedValues.checkOut)
+                            const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24))
+                            let baseAmount = nights * room.price
+
+                            // Apply package discount first
+                            if (selectedPackage) {
+                              if (selectedPackage.type === 'percent') {
+                                baseAmount = baseAmount * (1 - selectedPackage.value / 100)
+                              } else if (selectedPackage.type === 'fixed') {
+                                baseAmount = selectedPackage.value
+                              }
+                            }
+
+                            const response = await couponService.validateCoupon(code, room.id, baseAmount)
+                            const couponData = response.coupon
+                            setAppliedCoupon(couponData)
+
+                            // Display success message with discount details
+                            if (couponData.discountType === 'percent') {
+                              setCouponSuccess(`Coupon applied: ${couponData.discountValue}% off (₹${couponData.discountAmount.toFixed(2)})`)
+                            } else {
+                              setCouponSuccess(`Coupon applied: ₹${couponData.discountAmount.toFixed(2)} off`)
+                            }
                           } catch (error) {
                             setCouponError(error.response?.data?.error || 'Invalid coupon code')
+                            setAppliedCoupon(null)
                           } finally {
                             setCouponLoading(false)
                           }
@@ -700,10 +725,10 @@ const BookingForm = () => {
                             </div>
                           )}
 
-                          {couponSuccess && (
+                          {couponSuccess && appliedCoupon && (
                             <div className="flex justify-between text-sm text-green-600 mb-2">
-                              <span>Coupon Applied</span>
-                              <span>-10%</span>
+                              <span>Coupon: {appliedCoupon.code}</span>
+                              <span>-₹{appliedCoupon.discountAmount.toFixed(2)}</span>
                             </div>
                           )}
 

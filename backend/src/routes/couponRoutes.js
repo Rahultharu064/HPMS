@@ -5,10 +5,14 @@ import {
   validateCoupon,
   createCoupon,
   updateCoupon,
-  deleteCoupon
+  deleteCoupon,
+  getCouponAnalytics
 } from '../controllers/couponController.js';
 
 const router = express.Router();
+
+// GET /api/coupons/analytics - Get coupon analytics
+router.get('/analytics', getCouponAnalytics);
 
 // GET /api/coupons - Get all active coupons
 router.get('/', getAllCoupons);

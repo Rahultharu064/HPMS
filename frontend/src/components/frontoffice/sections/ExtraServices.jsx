@@ -241,7 +241,7 @@ const ExtraServices = ({ bookingId, onServicesChange }) => {
                 <p className="text-sm text-gray-600">{getSelectedServiceDetails().description}</p>
               </div>
               <div className="text-right">
-                <span className="font-bold text-lg text-gray-900">Rs. {getSelectedServiceDetails().price}</span>
+                <span className="font-bold text-lg text-gray-900">NPR. {getSelectedServiceDetails().price}</span>
                 <p className="text-xs text-gray-500">per unit</p>
               </div>
             </div>
@@ -260,7 +260,7 @@ const ExtraServices = ({ bookingId, onServicesChange }) => {
 
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-gray-700">Total:</span>
-                <span className="font-bold text-gray-900">Rs. {(getSelectedServiceDetails().price * quantity).toLocaleString()}</span>
+                <span className="font-bold text-gray-900">NPR. {(getSelectedServiceDetails().price * quantity).toLocaleString()}</span>
               </div>
 
               <button
@@ -290,7 +290,7 @@ const ExtraServices = ({ bookingId, onServicesChange }) => {
                   <p className="text-sm text-gray-600">{service.extraService.description}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="px-2 py-1 bg-gray-200 text-xs rounded">{service.extraService.category?.name}</span>
-                    <span className="text-sm">Unit: Rs. {service.unitPrice}</span>
+                    <span className="text-sm">Unit: NPR. {service.unitPrice}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -312,7 +312,7 @@ const ExtraServices = ({ bookingId, onServicesChange }) => {
                     </button>
                   </div>
                   <span className="font-semibold w-20 text-right">
-                    Rs. {service.totalPrice}
+                    NPR. {service.totalPrice}
                   </span>
                   <button
                     onClick={() => removeServiceFromBooking(service.id)}
@@ -369,30 +369,30 @@ const ExtraServices = ({ bookingId, onServicesChange }) => {
             <div className="space-y-2">
               <div className="flex justify-between items-center text-gray-600">
                 <span>Subtotal</span>
-                <span>Rs. {getSubtotal().toLocaleString()}</span>
+                <span>NPR. {getSubtotal().toLocaleString()}</span>
               </div>
 
               {allowDiscount && discountPercent > 0 && (
                 <div className="flex justify-between items-center text-green-600">
                   <span>Discount ({discountPercent}%)</span>
-                  <span>- Rs. {getDiscountAmount().toLocaleString()}</span>
+                  <span>- NPR. {getDiscountAmount().toLocaleString()}</span>
                 </div>
               )}
 
               <div className="flex justify-between items-center text-gray-600">
                 <span>Service Charge ({serviceChargePercent}%)</span>
-                <span>+ Rs. {getServiceChargeAmount().toLocaleString()}</span>
+                <span>+ NPR. {getServiceChargeAmount().toLocaleString()}</span>
               </div>
 
               <div className="flex justify-between items-center text-gray-600">
                 <span>GST ({taxPercent}%)</span>
-                <span>+ Rs. {getTaxAmount().toLocaleString()}</span>
+                <span>+ NPR. {getTaxAmount().toLocaleString()}</span>
               </div>
 
               <div className="flex justify-between items-center pt-2 border-t">
                 <h3 className="text-xl font-bold text-gray-900">Grand Total:</h3>
                 <p className="text-2xl font-bold text-blue-600">
-                  Rs. {getGrandTotal().toLocaleString()}
+                  NPR. {getGrandTotal().toLocaleString()}
                 </p>
               </div>
             </div>

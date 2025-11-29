@@ -49,6 +49,7 @@ import StaffChangePassword from './pages/StaffChangePassword'
 import GuestProfile from './pages/Publicwebsite/GuestProfile'
 import Users from './components/owner/sections/Users'
 import OwnerDashboard from './components/owner/sections/Dashboard'
+import Coupons from './components/owner/sections/Coupons'
 import ProtectedAdminRoute from './components/auth/ProtectedAdminRoute'
 import ProtectedStaffRoute from './components/auth/ProtectedStaffRoute'
 import ProtectedHousekeepingRoute from './components/auth/ProtectedHousekeepingRoute'
@@ -167,6 +168,7 @@ const App = () => {
         { path: "facilities", element: <Facilities /> },
         { path: "extra-services", element: <ExtraServicesAdmin /> },
         { path: "service-categories", element: <ServiceCategories /> },
+        { path: "coupons", element: <Coupons /> },
         { path: "users", element: <Users /> },
         { path: "staff", element: <Staff /> }
       ]

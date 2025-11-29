@@ -37,7 +37,7 @@ const Header = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Mail size={16} />
-                <span>contact@namunacollege.edu.np</span>
+                <span>itaharinamunacollege@gmail.com</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin size={16} />
@@ -53,7 +53,7 @@ const Header = () => {
               <div className="flex items-center gap-2">
                 <span>Follow us:</span>
                 <div className="flex gap-2">
-                  <a href="#" className="hover:text-yellow-400 transition-colors">FB</a>
+                  <a href="fb.com/naumacollegeitahari" className="hover:text-yellow-400 transition-colors">FB</a>
                   <a href="#" className="hover:text-yellow-400 transition-colors">IG</a>
                   <a href="#" className="hover:text-yellow-400 transition-colors">TW</a>
                 </div>
@@ -73,7 +73,7 @@ const Header = () => {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden bg-white shadow-md">
-                <img src="/INC.png" alt="IncStay Logo" className="w-full h-full object-contain" />
+                <img src="/INCHOTEL.png" alt="IncStay Logo" className="w-full h-full object-contain" />
               </div>
               <div className=" px-3 py-1 rounded-lg">
                 <h1 className={`text-2xl font-bold ${isScrolled ? 'text-blue-600' : 'text-blue-600'}`}>

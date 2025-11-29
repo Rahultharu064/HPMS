@@ -202,38 +202,37 @@ export const createPayment = async (req, res) => {
         serviceOrderId: serviceOrderId || null,
         method: method,
         amount: amt,
-        status: method === 'cash' ? 'completed' : 'pending',
+        status: 'pending', // Will be updated below based on context
         createdAt: new Date()
       }
     });
 
-    // If cash/card, update status immediately
-    if (method === 'cash' || method === 'card') {
+    // Determine if this is a manual staff payment (Guest Folio) or online booking payment
+    // Manual payments from Guest Folio should be marked completed immediately
+    // Online booking payments (khalti/esewa) should go through gateway flow
+    const isManualPayment = method === 'cash' || method === 'card' || method === 'bank_transfer';
+
+    // Check if this is from Guest Folio (staff recording payment) vs online booking
+    // If serviceOrderId exists or if it's a manual method, treat as completed
+    const shouldCompleteImmediately = isManualPayment || serviceOrderId;
+
+    if (shouldCompleteImmediately || (targetType === 'booking' && (method === 'esewa' || method === 'khalti'))) {
+      // For Guest Folio payments, mark as completed immediately
+      // This includes cash, card, esewa, khalti when staff is manually recording them
       await prisma.payment.update({
         where: { id: payment.id },
         data: { status: 'completed' }
       });
 
-      // Update target status if fully paid (simplified logic)
-      if (targetType === 'booking') {
-        // existing logic handles this elsewhere or here?
-        // For now, let's leave booking status logic as is or minimal
-      } else if (targetType === 'serviceOrder') {
-        // Do not auto-complete service orders so guests can add more items later
-        // await prisma.serviceOrder.update({
-        //   where: { id: serviceOrderId },
-        //   data: { status: 'completed' }
-        // });
-      }
-
       return res.json({
         success: true,
-        payment: payment,
+        payment: { ...payment, status: 'completed' },
         message: "Payment recorded successfully"
       });
     }
 
-    // Handle gateways
+    // Only reach here for online booking flow (which shouldn't happen from Guest Folio)
+    // Handle gateways for online bookings
     if (method === 'khalti') {
       try {
         const khaltiResponse = await initiateKhaltiPayment({ req, id: targetId, type: targetType, guest, description, amount: amt });

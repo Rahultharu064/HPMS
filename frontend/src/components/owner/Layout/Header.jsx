@@ -120,10 +120,10 @@ const Header = ({ darkMode, setDarkMode, sidebarOpen, setSidebarOpen, notificati
           </button>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl flex items-center justify-center overflow-hidden bg-white">
-              <img src="/INC.png" alt="IncStay Logo" className="w-full h-full object-contain" />
+              <img src="/INCHOTEL.png" alt="IncStay Logo" className="w-full h-full object-contain" />
             </div>
             <div className="hidden sm:block">
-              <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>IncStay</h1>
+              <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>INCHOTEL</h1>
               <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Admin Portal</p>
             </div>
           </div>

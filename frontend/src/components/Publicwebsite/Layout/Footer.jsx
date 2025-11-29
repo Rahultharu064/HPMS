@@ -41,15 +41,15 @@ const Footer = () => {
           <div className="space-y-6">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden bg-white">
-                <img src="/INC.png" alt="IncStay Logo" className="w-full h-full object-contain" />
+                <img src="/INCHOTEL.png" alt="IncStay Logo" className="w-full h-full object-contain" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold">IncStay</h3>
+                <h3 className="text-2xl font-bold">INCHOTEL</h3>
                 <p className="text-gray-400 text-sm">Luxury Hotel & Resort</p>
               </div>
             </div>
             <p className="text-gray-400 leading-relaxed">
-              Experience unparalleled luxury and comfort at IncStay. We provide world-class hospitality
+              Experience unparalleled luxury and comfort at INCHOTEL. We provide world-class hospitality
               with a touch of local culture and warmth.
             </p>
             <div className="flex gap-4">
@@ -119,7 +119,7 @@ const Footer = () => {
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="text-blue-400" size={20} />
-                <p className="text-gray-400">contact@namunacollege.edu.np</p>
+                <p className="text-gray-400">itaharinamunacollege@gamil.com</p>
               </div>
             </div>
           </div>
@@ -165,7 +165,7 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-6">
               <p className="text-gray-400 text-sm">
-                © {currentYear} IncStay. All rights reserved.
+                © {currentYear} INCHOTEL. All rights reserved.
               </p>
               <div className="flex gap-6">
                 <Link to="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors">
@@ -176,10 +176,10 @@ const Footer = () => {
                 </Link>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <span className="text-gray-400 text-sm">Powered by</span>
               <span className="text-blue-400 font-semibold">IncStay Technology</span>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

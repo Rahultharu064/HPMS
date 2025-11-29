@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { API_BASE_URL } from '../utils/api'
 
-const API_URL = `${API_BASE_URL}/coupons`
+const API_URL = `${API_BASE_URL}/api/coupons`
 
 class CouponService {
   async getAllCoupons() {
@@ -54,12 +54,22 @@ class CouponService {
     }
   }
 
-  async validateCoupon(code) {
+  async validateCoupon(code, roomId = null, totalAmount = null) {
     try {
-      const response = await axios.post(`${API_URL}/validate`, { code })
+      const response = await axios.post(`${API_URL}/validate`, { code, roomId, totalAmount })
       return response.data
     } catch (error) {
       console.error('Error validating coupon:', error)
+      throw error
+    }
+  }
+
+  async getAnalytics() {
+    try {
+      const response = await axios.get(`${API_URL}/analytics`)
+      return response.data
+    } catch (error) {
+      console.error('Error fetching coupon analytics:', error)
       throw error
     }
   }

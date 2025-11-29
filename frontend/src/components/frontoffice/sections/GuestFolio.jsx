@@ -251,7 +251,7 @@ const GuestFolio = () => {
         yPos += 4;
         centerText('Tel: 025-586701/585701', yPos);
         yPos += 4;
-        centerText('contact@namunacollege.edu.np', yPos);
+        centerText('itaharinaumacollege@gamil.com', yPos);
         yPos += 6;
 
         doc.setLineWidth(0.2);
@@ -491,7 +491,7 @@ const GuestFolio = () => {
 
                                 <div>
                                     <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                        <DollarSign size={20} className="text-green-600" />
+                                       
                                         Room Charges
                                     </h3>
                                     <div className="bg-gray-50 rounded-lg p-4">
@@ -500,11 +500,11 @@ const GuestFolio = () => {
                                                 {bookingDetails?.room?.roomTypeRef?.name || bookingDetails?.room?.roomType} × {getNights()} night(s)
                                             </span>
                                             <span className="font-semibold text-gray-900">
-                                                Rs. {calculateRoomCharges().toLocaleString()}
+                                                NPR. {calculateRoomCharges().toLocaleString()}
                                             </span>
                                         </div>
                                         <p className="text-sm text-gray-500">
-                                            @ Rs. {bookingDetails?.room?.roomTypeRef?.basePrice || bookingDetails?.room?.price || 0} per night
+                                            @ NPR. {bookingDetails?.room?.roomTypeRef?.basePrice || bookingDetails?.room?.price || 0} per night
                                         </p>
                                     </div>
                                 </div>
@@ -512,7 +512,7 @@ const GuestFolio = () => {
                                 {extraServices.length > 0 && (
                                     <div>
                                         <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                            <DollarSign size={20} className="text-purple-600" />
+                                           
                                             Extra Services
                                         </h3>
                                         <div className="space-y-3">
@@ -543,7 +543,7 @@ const GuestFolio = () => {
                                                     <div className="mt-3 space-y-1 text-sm border-t pt-2">
                                                         <div className="flex justify-between text-gray-600">
                                                             <span>Base ({service.quantity} × Rs. {service.unitPrice})</span>
-                                                            <span>Rs. {Number(service.basePrice || service.totalPrice).toLocaleString()}</span>
+                                                            <span>NPR. {Number(service.basePrice || service.totalPrice).toLocaleString()}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -552,7 +552,7 @@ const GuestFolio = () => {
                                         <div className="mt-3 pt-3 border-t flex justify-between items-center">
                                             <span className="font-medium text-gray-700">Services Subtotal:</span>
                                             <span className="font-bold text-gray-900">
-                                                Rs. {calculateServicesTotal().toLocaleString()}
+                                                NPR. {calculateServicesTotal().toLocaleString()}
                                             </span>
                                         </div>
                                     </div>
@@ -609,34 +609,34 @@ const GuestFolio = () => {
                                 <div className="border-t-2 border-gray-300 pt-4 space-y-2">
                                     <div className="flex justify-between items-center text-gray-600">
                                         <span>Subtotal</span>
-                                        <span>Rs. {calculateSubtotal().toLocaleString()}</span>
+                                        <span>NPR. {calculateSubtotal().toLocaleString()}</span>
                                     </div>
 
                                     {allowDiscount && discountPercent > 0 && (
                                         <div className="flex justify-between items-center text-green-600">
                                             <span>Discount ({discountPercent}%)</span>
-                                            <span>- Rs. {calculateDiscountAmount().toLocaleString()}</span>
+                                            <span>- NPR. {calculateDiscountAmount().toLocaleString()}</span>
                                         </div>
                                     )}
 
                                     {serviceChargePercent > 0 && (
                                         <div className="flex justify-between items-center text-gray-600">
                                             <span>Service Charge ({serviceChargePercent}%)</span>
-                                            <span>+ Rs. {calculateServiceChargeAmount().toLocaleString()}</span>
+                                            <span>+ NPR. {calculateServiceChargeAmount().toLocaleString()}</span>
                                         </div>
                                     )}
 
                                     {taxPercent > 0 && (
                                         <div className="flex justify-between items-center text-gray-600">
                                             <span>GST ({taxPercent}%)</span>
-                                            <span>+ Rs. {calculateTaxAmount().toLocaleString()}</span>
+                                            <span>+ NPR. {calculateTaxAmount().toLocaleString()}</span>
                                         </div>
                                     )}
 
                                     <div className="flex justify-between items-center pt-2 border-t">
                                         <h3 className="text-2xl font-bold text-gray-900">Grand Total:</h3>
                                         <p className="text-3xl font-bold text-blue-600">
-                                            Rs. {calculateGrandTotal().toLocaleString()}
+                                            NPR. {calculateGrandTotal().toLocaleString()}
                                         </p>
                                     </div>
                                 </div>
@@ -650,7 +650,7 @@ const GuestFolio = () => {
                                                 <p className="text-2xl font-bold text-red-600">Rs. {calculateRemainingBalance().toLocaleString()}</p>
                                                 {calculateTotalPaid() > 0 && (
                                                     <p className="text-sm text-gray-600 mt-1">
-                                                        Total Paid: Rs. {calculateTotalPaid().toLocaleString()}
+                                                        Total Paid: NPR. {calculateTotalPaid().toLocaleString()}
                                                     </p>
                                                 )}
                                             </div>
@@ -698,7 +698,7 @@ const GuestFolio = () => {
                                             </div>
                                             <div>
                                                 <h4 className="font-semibold text-green-900">Fully Paid</h4>
-                                                <p className="text-sm text-green-700">Total Paid: Rs. {calculateTotalPaid().toLocaleString()}</p>
+                                                <p className="text-sm text-green-700">Total Paid: NPR. {calculateTotalPaid().toLocaleString()}</p>
                                             </div>
                                         </div>
                                         {payments.length > 0 && (
@@ -773,7 +773,7 @@ const GuestFolio = () => {
                                     placeholder="Enter amount"
                                 />
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Outstanding: Rs. {calculateRemainingBalance().toLocaleString()}
+                                    Outstanding: NPR. {calculateRemainingBalance().toLocaleString()}
                                 </p>
                             </div>
 

@@ -208,3 +208,67 @@ export const deleteCoupon = async (req, res) => {
     res.status(500).json({ success: false, error: 'Failed to delete coupon' });
   }
 };
+
+// Get coupon analytics
+export const getCouponAnalytics = async (req, res) => {
+  try {
+    // Get all coupons with their bookings
+    const coupons = await prisma.coupon.findMany({
+      include: {
+        bookings: {
+          select: {
+            id: true,
+            discountAmount: true,
+            status: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Calculate analytics for each coupon
+    const analytics = coupons.map(coupon => {
+      const totalBookings = coupon.bookings.length;
+      const completedBookings = coupon.bookings.filter(b => b.status === 'confirmed' || b.status === 'checked_in' || b.status === 'checked_out').length;
+      const totalDiscount = coupon.bookings.reduce((sum, b) => sum + (b.discountAmount || 0), 0);
+      const usagePercentage = coupon.usageLimit ? (coupon.usedCount / coupon.usageLimit) * 100 : 0;
+
+      return {
+        id: coupon.id,
+        code: coupon.code,
+        description: coupon.description,
+        discountType: coupon.discountType,
+        discountValue: coupon.discountValue,
+        usageLimit: coupon.usageLimit,
+        usedCount: coupon.usedCount,
+        validFrom: coupon.validFrom,
+        validTo: coupon.validTo,
+        active: coupon.active,
+        totalBookings,
+        completedBookings,
+        totalDiscount: Math.round(totalDiscount * 100) / 100,
+        usagePercentage: Math.round(usagePercentage * 100) / 100
+      };
+    });
+
+    // Calculate overall statistics
+    const totalCoupons = coupons.length;
+    const activeCoupons = coupons.filter(c => c.active).length;
+    const totalUsed = coupons.reduce((sum, c) => sum + c.usedCount, 0);
+    const totalDiscountGiven = analytics.reduce((sum, a) => sum + a.totalDiscount, 0);
+
+    res.json({
+      success: true,
+      analytics,
+      summary: {
+        totalCoupons,
+        activeCoupons,
+        totalUsed,
+        totalDiscountGiven: Math.round(totalDiscountGiven * 100) / 100
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Failed to fetch coupon analytics' });
+  }
+};

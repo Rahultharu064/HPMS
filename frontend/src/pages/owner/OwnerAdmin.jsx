@@ -8,6 +8,7 @@ import Rooms from '../../components/owner/sections/Rooms'
 import Facilities from '../../components/owner/sections/Facilities'
 import ExtraServicesAdmin from '../../components/owner/sections/ExtraServicesAdmin'
 import ServiceCategories from '../../components/owner/sections/ServiceCategories'
+import Coupons from '../../components/owner/sections/Coupons'
 import Users from '../../components/owner/sections/Users'
 import Staff from '../../components/owner/sections/Staff'
 
@@ -73,6 +74,8 @@ const OwnerAdmin = () => {
       navigate('/owner-admin/extra-services')
     } else if (activeTab === 'service-categories') {
       navigate('/owner-admin/service-categories')
+    } else if (activeTab === 'coupons') {
+      navigate('/owner-admin/coupons')
     }
     else if (activeTab === 'staff') {
       navigate("/owner-admin/staff")
@@ -91,6 +94,7 @@ const OwnerAdmin = () => {
     else if (path.startsWith('/owner-admin/facilities')) setActiveTab('facilities')
     else if (path.startsWith('/owner-admin/extra-services')) setActiveTab('extra-services')
     else if (path.startsWith('/owner-admin/service-categories')) setActiveTab('service-categories')
+    else if (path.startsWith('/owner-admin/coupons')) setActiveTab('coupons')
     else if (path.startsWith('/owner-admin/users')) setActiveTab('users')
     else if (path.startsWith('/owner-admin/staff')) setActiveTab('staff')
     else if (path.startsWith('/owner-admin')) setActiveTab('dashboard')
@@ -102,6 +106,7 @@ const OwnerAdmin = () => {
     { icon: 'Sparkles', label: 'Facilities', key: 'facilities', route: '/owner-admin/facilities' },
     { icon: 'Package', label: 'Extra Services', key: 'extra-services', route: '/owner-admin/extra-services' },
     { icon: 'Tags', label: 'Service Categories', key: 'service-categories', route: '/owner-admin/service-categories' },
+    { icon: 'Ticket', label: 'Coupons', key: 'coupons', route: '/owner-admin/coupons' },
     { icon: 'Users', label: 'Users', key: 'users', route: '/owner-admin/users' },
     { icon: 'Users', label: 'Staff', key: 'staff', route: '/owner-admin/staff' },
 
@@ -137,6 +142,12 @@ const OwnerAdmin = () => {
       case 'extra-services':
         return (
           <ExtraServicesAdmin
+            darkMode={darkMode}
+          />
+        )
+      case 'coupons':
+        return (
+          <Coupons
             darkMode={darkMode}
           />
         )
@@ -206,6 +217,7 @@ const OwnerAdmin = () => {
                   {activeTab === 'rooms' && 'Manage all rooms and their availability'}
                   {activeTab === 'facilities' && 'Manage hotel facilities and services'}
                   {activeTab === 'extra-services' && 'Manage additional services offered to guests'}
+                  {activeTab === 'coupons' && 'Create and manage discount coupons for bookings'}
                   {activeTab === 'users' && 'Manage registered users and their account information'}
                   {activeTab === 'staff' && 'Manage front office staff members'}
                   {activeTab === 'ota' && 'Manage connections with Online Travel Agencies'}

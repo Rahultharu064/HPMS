@@ -186,7 +186,7 @@ const FeaturedRooms = () => {
                       <div className="absolute top-4 left-4 transform -translate-y-20 group-hover:translate-y-0 transition-transform duration-500">
                         <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg flex items-center gap-2">
                           <Star className="fill-current" size={14} />
-                          {room.roomType || 'ROOM'}
+                          {room.name || room.roomType || 'ROOM'}
                         </div>
                       </div>
 

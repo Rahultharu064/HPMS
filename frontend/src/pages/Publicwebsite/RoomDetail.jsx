@@ -307,7 +307,7 @@ const RoomDetail = () => {
                   <div className="flex items-center gap-4 mb-6">
                     <div className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-full font-bold text-lg tracking-wide">
                       <Sparkles className="animate-pulse" size={20} />
-                      {room.roomType || 'Luxury Room'}
+                      {room.name || room.roomType || 'Luxury Room'}
                       <Sparkles className="animate-pulse" size={20} />
                     </div>
                     <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-full font-semibold text-sm">

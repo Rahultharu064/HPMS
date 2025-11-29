@@ -1,8 +1,8 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Hotel, Sparkles, Users, Globe, DollarSign, BarChart3, Settings, Package, Tags } from 'lucide-react'
+import { LayoutDashboard, Hotel, Sparkles, Users, Globe, DollarSign, BarChart3, Settings, Package, Tags, Ticket } from 'lucide-react'
 
-const iconMap = { LayoutDashboard, Hotel, Sparkles, Users, Globe, DollarSign, BarChart3, Settings, Package, Tags }
+const iconMap = { LayoutDashboard, Hotel, Sparkles, Users, Globe, DollarSign, BarChart3, Settings, Package, Tags, Ticket }
 
 const Sidebar = ({ darkMode, sidebarOpen, activeTab, setActiveTab, items, selectedRoom, setSidebarOpen }) => {
   const navigate = useNavigate()
@@ -25,10 +25,10 @@ const Sidebar = ({ darkMode, sidebarOpen, activeTab, setActiveTab, items, select
                   }
                 }}
                 className={`w-full flex items-center ${sidebarOpen ? 'gap-4 justify-start' : 'gap-0 justify-center'} px-4 py-4 rounded-2xl transition-all ${activeTab === item.key
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/30'
-                    : darkMode
-                      ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/30'
+                  : darkMode
+                    ? 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
               >
                 <Icon size={22} />

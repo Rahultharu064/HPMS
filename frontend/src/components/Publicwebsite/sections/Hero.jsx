@@ -36,7 +36,7 @@ export default function Hero() {
                   Welcome to
                 </span>
                 <h3 className="block text-7xl sm:text-8xl lg:text-9xl mt-3 bg-gradient-to-r from-white via-white to-white bg-clip-text text-transparent font-black uppercase tracking-tighter leading-none drop-shadow-2xl" style={{ textShadow: '0 0 80px rgba(255, 255, 255, 0.5)' }}>
-                  INCStay
+                  INCHOTEL
                 </h3>
                 <span className="block text-3xl sm:text-4xl lg:text-5xl mt-6 font-light tracking-wide italic text-white">
                   Your Perfect Stay Awaits
