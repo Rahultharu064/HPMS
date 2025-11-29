@@ -20,6 +20,7 @@ import serviceCategoryRoutes from "./routes/serviceCategoryRoutes.js";
 import serviceOrderRoutes from "./routes/serviceOrderRoutes.js";
 import testimonialRoutes from "./routes/testimonialRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import analyticsRoutes from "./routes/analyticsRoutes.js";
 import dotenv from "dotenv";
 import prisma from "./config/client.js";
 import passport from "../src/config/passport.js";
@@ -81,6 +82,7 @@ app.use("/api/extra-services", extraServiceRoutes);
 app.use("/api/service-categories", serviceCategoryRoutes);
 app.use("/api/service-orders", serviceOrderRoutes);
 app.use("/api/testimonials", testimonialRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 app.get("/", (req, res) => res.send("HPMS API running"));
 

@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { DollarSign, Hotel, TrendingUp, Users as UsersIcon } from 'lucide-react'
 import Header from '../../components/owner/Layout/Header'
 import Sidebar from '../../components/owner/Layout/Sidebar'
 import Dashboard from '../../components/owner/sections/Dashboard'
@@ -11,6 +10,7 @@ import ServiceCategories from '../../components/owner/sections/ServiceCategories
 import Coupons from '../../components/owner/sections/Coupons'
 import Users from '../../components/owner/sections/Users'
 import Staff from '../../components/owner/sections/Staff'
+import Payments from '../../components/owner/sections/Payments'
 
 const OwnerAdmin = () => {
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -23,10 +23,6 @@ const OwnerAdmin = () => {
   const [notifications] = useState(3)
   const [searchQuery, setSearchQuery] = useState('')
 
-  const [revenue, setRevenue] = useState(0)
-  const [occupancy, setOccupancy] = useState(0)
-  const [avgRate, setAvgRate] = useState(0)
-  const [productivity, setProductivity] = useState(0)
   const [selectedRoom, setSelectedRoom] = useState(null)
 
   const openModal = useCallback((type) => {
@@ -38,31 +34,6 @@ const OwnerAdmin = () => {
     setShowModal(false)
     setModalType('')
   }, [])
-
-  useEffect(() => {
-    const animateCounter = (setter, target, duration = 2000) => {
-      const start = 0
-      const increment = target / (duration / 16)
-      let current = start
-      const timer = setInterval(() => {
-        current += increment
-        if (current >= target) {
-          setter(target)
-          clearInterval(timer)
-        } else {
-          setter(Math.floor(current))
-        }
-      }, 16)
-      return () => clearInterval(timer)
-    }
-
-    if (activeTab === 'dashboard') {
-      animateCounter(setRevenue, 2450000)
-      animateCounter(setOccupancy, 87)
-      animateCounter(setAvgRate, 8500)
-      animateCounter(setProductivity, 94)
-    }
-  }, [activeTab])
 
   // Route mapping for tabs that have dedicated routes
   useEffect(() => {
@@ -83,6 +54,9 @@ const OwnerAdmin = () => {
     else if (activeTab === 'rooms') {
       navigate('/owner-admin/owneroom')
     }
+    else if (activeTab === 'payments') {
+      navigate('/owner-admin/payments')
+    }
     // Add more route mappings here as new child routes are introduced
   }, [activeTab, navigate])
 
@@ -97,6 +71,7 @@ const OwnerAdmin = () => {
     else if (path.startsWith('/owner-admin/coupons')) setActiveTab('coupons')
     else if (path.startsWith('/owner-admin/users')) setActiveTab('users')
     else if (path.startsWith('/owner-admin/staff')) setActiveTab('staff')
+    else if (path.startsWith('/owner-admin/payments')) setActiveTab('payments')
     else if (path.startsWith('/owner-admin')) setActiveTab('dashboard')
   }, [location.pathname])
 
@@ -109,23 +84,16 @@ const OwnerAdmin = () => {
     { icon: 'Ticket', label: 'Coupons', key: 'coupons', route: '/owner-admin/coupons' },
     { icon: 'Users', label: 'Users', key: 'users', route: '/owner-admin/users' },
     { icon: 'Users', label: 'Staff', key: 'staff', route: '/owner-admin/staff' },
+    { icon: 'CreditCard', label: 'Payments', key: 'payments', route: '/owner-admin/payments' },
 
-    { icon: 'DollarSign', label: 'Finance', key: 'finance' },
-    { icon: 'BarChart3', label: 'Reports', key: 'reports' },
+
     { icon: 'Settings', label: 'Settings', key: 'settings' }
   ]), [])
-
-  const kpis = useMemo(() => ([
-    { label: 'Total Revenue', value: `₹${revenue.toLocaleString()}`, icon: DollarSign, change: '+12.5%', color: 'blue' },
-    { label: 'Occupancy Rate', value: `${occupancy}%`, icon: Hotel, change: '+8.2%', color: 'emerald' },
-    { label: 'Avg Room Rate', value: `₹${avgRate.toLocaleString()}`, icon: TrendingUp, change: '+5.7%', color: 'purple' },
-    { label: 'Staff Productivity', value: `${productivity}%`, icon: UsersIcon, change: '+3.1%', color: 'amber' }
-  ]), [revenue, occupancy, avgRate, productivity])
 
   const renderContent = useCallback(() => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard darkMode={darkMode} kpis={kpis} />
+        return <Dashboard darkMode={darkMode} />
       case 'rooms':
         return (
           <Rooms
@@ -163,10 +131,16 @@ const OwnerAdmin = () => {
             darkMode={darkMode}
           />
         )
+      case 'payments':
+        return (
+          <Payments
+            darkMode={darkMode}
+          />
+        )
       default:
-        return <Dashboard darkMode={darkMode} kpis={kpis} />
+        return <Dashboard darkMode={darkMode} />
     }
-  }, [activeTab, darkMode, kpis])
+  }, [activeTab, darkMode])
 
   const isBaseAdmin = location.pathname === '/owner-admin'
 
@@ -222,7 +196,7 @@ const OwnerAdmin = () => {
                   {activeTab === 'staff' && 'Manage front office staff members'}
                   {activeTab === 'ota' && 'Manage connections with Online Travel Agencies'}
                   {activeTab === 'finance' && 'Track revenue, expenses, and transactions'}
-                  {activeTab === 'reports' && 'Generate and view detailed reports'}
+
                   {activeTab === 'settings' && 'Manage your hotel settings and preferences'}
                 </p>
               </div>

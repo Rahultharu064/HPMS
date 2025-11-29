@@ -10,8 +10,10 @@ import {
   cancelBooking,
   deleteBooking,
   getBookingStats,
+  getBookingSourceAnalytics,
   uploadIdProof,
-  createBookingWorkflowLog
+  createBookingWorkflowLog,
+  sendReceiptEmail
 } from '../controllers/bookingController.js'
 
 const router = express.Router()
@@ -22,11 +24,17 @@ router.get('/', getAllBookings)
 // Get booking statistics
 router.get('/stats', getBookingStats)
 
+// Get booking source analytics
+router.get('/analytics/source', getBookingSourceAnalytics)
+
 // Create new booking
 router.post('/', validateBody(bookingSchema), createBooking)
 
 // Upload booking ID proof image (field name: idProof)
 router.post('/:id/id-proof', upload.single('idProof'), uploadIdProof)
+
+// Send receipt email to guest
+router.post('/:id/send-receipt', sendReceiptEmail)
 
 // Get booking by ID
 router.get('/:id', getBookingById)

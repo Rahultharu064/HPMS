@@ -4,7 +4,31 @@ import fs from 'fs'
 import sharp from 'sharp'
 import { createWorker } from 'tesseract.js'
 import { getIO } from "../socket.js";
-import { sendBookingSuccessEmail } from "./services/emailService.js";
+import { sendBookingSuccessEmail, sendPaymentReceiptEmail } from "./services/emailService.js";
+
+// ... existing code ...
+
+// Send payment receipt email
+export const sendReceiptEmail = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ success: false, error: 'Invalid booking id' });
+    }
+
+    const result = await sendPaymentReceiptEmail(id);
+
+    if (result.success) {
+      res.json({ success: true, message: 'Receipt email sent successfully' });
+    } else {
+      res.status(500).json({ success: false, error: result.error || 'Failed to send email' });
+    }
+  } catch (err) {
+    console.error('sendReceiptEmail error:', err);
+    res.status(500).json({ success: false, error: 'Failed to send receipt email' });
+  }
+};
+
 
 // Helper function to create notification
 const createNotification = async (type, message, sender = null, meta = null) => {
@@ -241,6 +265,35 @@ export const getAllBookings = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: "Failed to fetch bookings" });
+  }
+};
+
+// Get booking source analytics
+export const getBookingSourceAnalytics = async (req, res) => {
+  try {
+    const analytics = await prisma.booking.groupBy({
+      by: ['source'],
+      _count: {
+        id: true
+      }
+    });
+
+    const totalBookings = analytics.reduce((acc, curr) => acc + curr._count.id, 0);
+
+    const formattedData = analytics.map(item => ({
+      source: item.source,
+      count: item._count.id,
+      percentage: totalBookings > 0 ? Math.round((item._count.id / totalBookings) * 100) : 0
+    }));
+
+    res.json({
+      success: true,
+      totalBookings,
+      data: formattedData
+    });
+  } catch (err) {
+    console.error('getBookingSourceAnalytics error:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch booking source analytics' });
   }
 };
 

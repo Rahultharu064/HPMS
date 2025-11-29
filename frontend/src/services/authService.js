@@ -95,6 +95,16 @@ const authService = {
     return response;
   },
 
+  verifyEmail: async (token) => {
+    const response = await api.get(`/api/auth/verify-email?token=${token}`);
+    return response;
+  },
+
+  resendVerificationEmail: async (email) => {
+    const response = await api.post('/api/auth/guest/resend-verification', { email });
+    return response;
+  },
+
   requestAdminOtp: async (email) => {
     const response = await api.post('/api/auth/admin/request-otp', { email });
     return response;

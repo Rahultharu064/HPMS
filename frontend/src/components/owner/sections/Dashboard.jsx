@@ -1,25 +1,61 @@
 import React, { useState, useEffect } from 'react'
 import { guestService } from '../../../services/guestService'
 import { bookingService } from '../../../services/bookingService'
-import { paymentService } from '../../../services/paymentService'
-import { roomService } from '../../../services/roomService'
-import extraServiceService from '../../../services/extraServiceService'
-import { packageService } from '../../../services/packageService'
+import { analyticsService } from '../../../services/analyticsService'
+import { DollarSign, Users, BarChart3, Activity, Loader2 } from 'lucide-react'
 
-import { couponService } from '../../../services/couponService'
-import { hkHousekeeperService } from '../../../services/hkHousekeeperService'
-import { frontOfficeStaffService } from '../../../services/frontOfficeStaffService'
-
-const Dashboard = ({ darkMode, kpis }) => {
+const Dashboard = ({ darkMode }) => {
+  const [bookingSources, setBookingSources] = useState([]);
+  const [totalBookings, setTotalBookings] = useState(0);
   const [userStats, setUserStats] = useState({
     totalUsers: 0,
     verifiedUsers: 0,
     newUsersThisMonth: 0
   });
+  const [analytics, setAnalytics] = useState({
+    totalRevenue: 0,
+    occupancyRate: 0,
+    avgRate: 0,
+    productivity: 0,
+    revenueByDay: []
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchUserStats();
+    const fetchData = async () => {
+      setLoading(true);
+      await Promise.all([
+        fetchUserStats(),
+        fetchBookingSources(),
+        fetchDashboardAnalytics()
+      ]);
+      setLoading(false);
+    };
+    fetchData();
   }, []);
+
+  const fetchDashboardAnalytics = async () => {
+    try {
+      const response = await analyticsService.getDashboardAnalytics();
+      if (response.success) {
+        setAnalytics(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard analytics:', error);
+    }
+  };
+
+  const fetchBookingSources = async () => {
+    try {
+      const response = await bookingService.getSourceAnalytics();
+      if (response.success) {
+        setBookingSources(response.data);
+        setTotalBookings(response.totalBookings);
+      }
+    } catch (error) {
+      console.error('Error fetching booking sources:', error);
+    }
+  };
 
   const fetchUserStats = async () => {
     try {
@@ -47,16 +83,107 @@ const Dashboard = ({ darkMode, kpis }) => {
     }
   };
 
+  // Helper to get color for source
+  const getSourceColor = (source, index) => {
+    const colors = ['blue', 'purple', 'amber', 'emerald', 'rose', 'cyan'];
+    const map = {
+      'public': 'blue',
+      'walk-in': 'purple',
+      'ota': 'amber',
+      'corporate': 'emerald'
+    };
+    return map[source.toLowerCase()] || colors[index % colors.length];
+  };
+
+  // Helper to get hex color
+  const getHexColor = (colorName) => {
+    const map = {
+      'blue': '#3b82f6',
+      'purple': '#8b5cf6',
+      'amber': '#f59e0b',
+      'emerald': '#10b981',
+      'rose': '#f43f5e',
+      'cyan': '#06b6d4'
+    };
+    return map[colorName] || '#9ca3af';
+  };
+
+  // Calculate chart segments
+  const renderChartSegments = () => {
+    if (totalBookings === 0) return <circle cx="96" cy="96" r="80" fill="none" stroke={darkMode ? "#374151" : "#e5e7eb"} strokeWidth="32" />;
+
+    let currentOffset = 0;
+    const circumference = 502; // 2 * PI * 80
+
+    return bookingSources.map((source, index) => {
+      const colorName = getSourceColor(source.source, index);
+      const strokeColor = getHexColor(colorName);
+      const segmentLength = (source.count / totalBookings) * circumference;
+      const dashArray = `${segmentLength} ${circumference}`;
+      const dashOffset = -currentOffset;
+
+      currentOffset += segmentLength;
+
+      return (
+        <circle
+          key={source.source}
+          cx="96"
+          cy="96"
+          r="80"
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth="32"
+          strokeDasharray={dashArray}
+          strokeDashoffset={dashOffset}
+        />
+      );
+    });
+  };
+
+  const kpiData = [
+    {
+      label: 'Total Revenue',
+      value: `NPR ${analytics.totalRevenue.toLocaleString()}`,
+      icon: DollarSign,
+      color: 'blue'
+    },
+    {
+      label: 'Occupancy Rate',
+      value: `${analytics.occupancyRate}%`,
+      icon: Users,
+      color: 'purple'
+    },
+    {
+      label: 'Average Rate',
+      value: `NPR ${analytics.avgRate.toLocaleString()}`,
+      icon: BarChart3,
+      color: 'amber'
+    },
+    {
+      label: 'Productivity',
+      value: `${analytics.productivity}%`,
+      icon: Activity,
+      color: 'emerald'
+    }
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-        {kpis && kpis.map((kpi, idx) => (
+        {kpiData.map((kpi, idx) => (
           <div key={idx} className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 border ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
             <div className="flex justify-between items-start mb-4">
               <div className={`p-3 rounded-2xl bg-${kpi.color}-100`}>
                 <kpi.icon className={`text-${kpi.color}-600`} size={24} />
               </div>
-              <span className={`text-${kpi.color}-600 text-sm font-semibold`}>{kpi.change}</span>
             </div>
             <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>{kpi.label}</p>
             <p className={`text-2xl sm:text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{kpi.value}</p>
@@ -66,19 +193,32 @@ const Dashboard = ({ darkMode, kpis }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-lg border ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-          <h3 className={`text-lg sm:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Revenue Analytics</h3>
+          <h3 className={`text-lg sm:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Revenue Analytics (Last 7 Days)</h3>
           <div className="h-64 flex items-end justify-between gap-2">
-            {[65, 78, 85, 72, 90, 88, 95].map((height, idx) => (
-              <div key={idx} className="flex-1 flex flex-col items-center gap-2">
-                <div
-                  className="w-full bg-gradient-to-t from-blue-500 to-purple-600 rounded-t-2xl transition-all hover:from-blue-400 hover:to-purple-500"
-                  style={{ height: `${height}%` }}
-                ></div>
-                <span className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][idx]}
-                </span>
+            {analytics.revenueByDay.length > 0 ? (
+              analytics.revenueByDay.map((day, idx) => {
+                const maxRevenue = Math.max(...analytics.revenueByDay.map(d => d.revenue));
+                const height = maxRevenue > 0 ? (day.revenue / maxRevenue) * 100 : 0;
+                return (
+                  <div key={idx} className="flex-1 flex flex-col items-center gap-2 group relative">
+                    <div className="absolute bottom-full mb-2 hidden group-hover:block bg-black text-white text-xs p-1 rounded z-10 whitespace-nowrap">
+                      NPR {day.revenue.toLocaleString()}
+                    </div>
+                    <div
+                      className="w-full bg-gradient-to-t from-blue-500 to-purple-600 rounded-t-2xl transition-all hover:from-blue-400 hover:to-purple-500"
+                      style={{ height: `${Math.max(height, 5)}%` }}
+                    ></div>
+                    <span className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {day.day}
+                    </span>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-500">
+                No revenue data available
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -87,29 +227,29 @@ const Dashboard = ({ darkMode, kpis }) => {
           <div className="flex items-center justify-center h-64">
             <div className="relative w-48 h-48">
               <svg className="w-full h-full -rotate-90">
-                <circle cx="96" cy="96" r="80" fill="none" stroke="#3b82f6" strokeWidth="32" strokeDasharray="251 502" />
-                <circle cx="96" cy="96" r="80" fill="none" stroke="#8b5cf6" strokeWidth="32" strokeDasharray="125 502" strokeDashoffset="-251" />
-                <circle cx="96" cy="96" r="80" fill="none" stroke="#f59e0b" strokeWidth="32" strokeDasharray="125 502" strokeDashoffset="-376" />
+                {renderChartSegments()}
               </svg>
               <div className="absolute inset-0 flex items-center justify-center flex-col">
-                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>105</p>
+                <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{totalBookings}</p>
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total Bookings</p>
               </div>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-4 mt-4">
-            <div className="text-center">
-              <div className="w-3 h-3 bg-blue-500 rounded-full mx-auto mb-1"></div>
-              <p className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Direct: 50%</p>
-            </div>
-            <div className="text-center">
-              <div className="w-3 h-3 bg-purple-500 rounded-full mx-auto mb-1"></div>
-              <p className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>OTA: 25%</p>
-            </div>
-            <div className="text-center">
-              <div className="w-3 h-3 bg-amber-500 rounded-full mx-auto mb-1"></div>
-              <p className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Corporate: 25%</p>
-            </div>
+            {bookingSources.map((source, idx) => {
+              const color = getSourceColor(source.source, idx);
+              return (
+                <div key={idx} className="text-center">
+                  <div className={`w-3 h-3 bg-${color}-500 rounded-full mx-auto mb-1`}></div>
+                  <p className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} capitalize`}>
+                    {source.source}: {source.percentage}%
+                  </p>
+                </div>
+              );
+            })}
+            {bookingSources.length === 0 && (
+              <div className="col-span-3 text-center text-sm text-gray-500">No data available</div>
+            )}
           </div>
         </div>
 

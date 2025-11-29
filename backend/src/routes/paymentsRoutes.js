@@ -8,13 +8,17 @@ import {
   handleKhaltiReturn,
   handleEsewaReturn,
   markPaymentCompleted,
-  cleanupDuplicatePayments
+  cleanupDuplicatePayments,
+  getAllPayments
 } from '../controllers/paymentController.js'
 
 const router = express.Router()
 
 // Get available payment gateways
 router.get('/gateways', getPaymentGateways)
+
+// Get all payments (admin)
+router.get('/', getAllPayments)
 
 // Create payment
 router.post('/', createPayment)

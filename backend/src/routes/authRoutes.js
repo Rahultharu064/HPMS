@@ -2,6 +2,7 @@ import express from 'express';
 import {
   registerGuest,
   verifyEmail,
+  resendVerificationEmail,
   loginGuest,
   forgotPassword,
   resetPassword,
@@ -56,6 +57,7 @@ const upload = multer({
 // Public routes
 router.post('/guest/register', registerGuest);
 router.get('/verify-email', verifyEmail);
+router.post('/guest/resend-verification', resendVerificationEmail);
 router.post('/guest/login', loginGuest);
 router.post('/guest/forgot-password', forgotPassword);
 router.post('/guest/reset-password', resetPassword);

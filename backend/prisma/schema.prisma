@@ -300,6 +300,7 @@ model Guest {
   password          String?   // Hashed password for auth
   isVerified        Boolean   @default(false) // Email verification
   verificationToken String?   // Token for email verification
+  verificationTokenExpiry DateTime? // Token expiration time
   googleId          String?   @unique // Google OAuth ID
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @default(now())

@@ -42,6 +42,7 @@ import HKReports from './components/housekeeping/sections/Reports'
 import HKSettings from './components/housekeeping/sections/Settings'
 import Register from './components/auth/Register'
 import Login from './components/auth/Login'
+import VerifyEmail from './pages/VerifyEmail'
 import AdminLogin from './components/auth/AdminLogin'
 import StaffLogin from './components/auth/StaffLogin'
 import HousekeepingLogin from './components/auth/HousekeepingLogin'
@@ -55,6 +56,7 @@ import ProtectedStaffRoute from './components/auth/ProtectedStaffRoute'
 import ProtectedHousekeepingRoute from './components/auth/ProtectedHousekeepingRoute'
 import ProtectedGuestRoute from './components/auth/ProtectedGuestRoute'
 import Staff from './components/owner/sections/Staff'
+import Payments from './components/owner/sections/Payments'
 
 
 
@@ -122,6 +124,10 @@ const App = () => {
       element: <Login />
     },
     {
+      path: "/verify-email",
+      element: <VerifyEmail />
+    },
+    {
       path: "/admin/login",
       element: <AdminLogin />
     },
@@ -170,7 +176,8 @@ const App = () => {
         { path: "service-categories", element: <ServiceCategories /> },
         { path: "coupons", element: <Coupons /> },
         { path: "users", element: <Users /> },
-        { path: "staff", element: <Staff /> }
+        { path: "staff", element: <Staff /> },
+        { path: "payments", element: <Payments /> }
       ]
     },
     //frontoffice routes

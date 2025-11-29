@@ -11,6 +11,18 @@ export const paymentService = {
     }
   },
 
+  // Get all payments (admin)
+  async getAllPayments(params = {}) {
+    try {
+      const query = new URLSearchParams(params).toString()
+      const url = query ? `/api/payments?${query}` : '/api/payments'
+      return await apiRequest(url)
+    } catch (error) {
+      apiDebug.error('Error fetching all payments:', error)
+      throw error
+    }
+  },
+
   // Manually mark a payment as completed
   async completePayment(paymentId) {
     try {

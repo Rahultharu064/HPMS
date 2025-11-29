@@ -35,6 +35,7 @@ export const registerGuest = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     const guest = await prisma.guest.create({
       data: {
@@ -45,6 +46,7 @@ export const registerGuest = async (req, res) => {
         password: hashedPassword,
         isVerified: false,
         verificationToken,
+        verificationTokenExpiry,
       },
     });
 
@@ -74,19 +76,39 @@ export const registerGuest = async (req, res) => {
 export const verifyEmail = async (req, res) => {
   const { token } = req.query;
 
+  if (!token) {
+    return res.status(400).json({ error: 'Verification token is required' });
+  }
+
   try {
-    // In a real app, store token in DB with expiration
-    // For simplicity, assume token is valid
-    const guest = await prisma.guest.findFirst({ where: { isVerified: false } });
-    if (!guest) return res.status(400).json({ error: 'Invalid token' });
+    const guest = await prisma.guest.findFirst({
+      where: {
+        verificationToken: token,
+        isVerified: false
+      }
+    });
+
+    if (!guest) {
+      return res.status(400).json({ error: 'Invalid or expired verification token' });
+    }
+
+    // Check if token has expired
+    if (guest.verificationTokenExpiry && new Date() > guest.verificationTokenExpiry) {
+      return res.status(400).json({ error: 'Verification token has expired. Please request a new one.' });
+    }
 
     await prisma.guest.update({
       where: { id: guest.id },
-      data: { isVerified: true },
+      data: {
+        isVerified: true,
+        verificationToken: null,
+        verificationTokenExpiry: null
+      },
     });
 
-    res.json({ message: 'Email verified successfully' });
+    res.json({ message: 'Email verified successfully. You can now log in.' });
   } catch (error) {
+    console.error('Email verification error:', error);
     res.status(500).json({ error: 'Verification failed' });
   }
 };
@@ -111,10 +133,14 @@ export const loginGuest = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Temporarily disable email verification for testing
-    // if (!guest.isVerified) {
-    //   return res.status(401).json({ error: 'Please verify your email first' });
-    // }
+    // Check if email is verified
+    if (!guest.isVerified) {
+      return res.status(401).json({
+        error: 'Please verify your email first',
+        requiresVerification: true,
+        email: guest.email
+      });
+    }
 
     const token = jwt.sign({ id: guest.id, role: 'guest' }, JWT_SECRET, { expiresIn: '7d' });
     res.json({
@@ -130,6 +156,96 @@ export const loginGuest = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Login failed' });
+  }
+};
+
+// Resend verification email
+export const resendVerificationEmail = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    const guest = await prisma.guest.findUnique({ where: { email } });
+
+    if (!guest) {
+      return res.status(404).json({ error: 'Email not found' });
+    }
+
+    if (guest.isVerified) {
+      return res.status(400).json({ error: 'Email is already verified' });
+    }
+
+    // Generate new verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await prisma.guest.update({
+      where: { id: guest.id },
+      data: {
+        verificationToken,
+        verificationTokenExpiry
+      }
+    });
+
+    // Send verification email
+    try {
+      const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+      await transporter.sendMail({
+        from: EMAIL_USER,
+        to: email,
+        subject: 'Verify Your Email - Hotel Management System',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>Verify Your Email</title>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+              .button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+              .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🏨 Welcome to Our Hotel</h1>
+              </div>
+              <div class="content">
+                <p>Hello ${guest.firstName},</p>
+                <p>Thank you for registering with us! Please verify your email address to complete your registration.</p>
+                <p style="text-align: center;">
+                  <a href="${verificationUrl}" class="button">Verify Email Address</a>
+                </p>
+                <p>Or copy and paste this link into your browser:</p>
+                <p style="word-break: break-all; color: #667eea;">${verificationUrl}</p>
+                <p><strong>This link will expire in 24 hours.</strong></p>
+                <p>If you didn't create an account, please ignore this email.</p>
+                <p>Best regards,<br>Hotel Management Team</p>
+              </div>
+              <div class="footer">
+                <p>This is an automated message. Please do not reply to this email.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+      });
+
+      res.json({ message: 'Verification email sent. Please check your inbox.' });
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
+      res.status(500).json({ error: 'Failed to send verification email' });
+    }
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({ error: 'Failed to resend verification email' });
   }
 };
 

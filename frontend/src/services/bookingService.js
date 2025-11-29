@@ -7,6 +7,10 @@ export const bookingService = {
     return await apiRequest(url)
   },
 
+  async getSourceAnalytics() {
+    return await apiRequest('/api/bookings/analytics/source')
+  },
+
   async createBooking(bookingData) {
     return await apiRequest('/api/bookings', {
       method: 'POST',
@@ -59,6 +63,12 @@ export const bookingService = {
     return await apiRequest(`/api/bookings/${bookingId}/id-proof`, {
       method: 'POST',
       body: form
+    })
+  },
+
+  async sendReceiptEmail(id) {
+    return await apiRequest(`/api/bookings/${id}/send-receipt`, {
+      method: 'POST'
     })
   }
 }

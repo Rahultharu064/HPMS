@@ -491,7 +491,7 @@ const GuestFolio = () => {
 
                                 <div>
                                     <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                       
+
                                         Room Charges
                                     </h3>
                                     <div className="bg-gray-50 rounded-lg p-4">
@@ -512,7 +512,7 @@ const GuestFolio = () => {
                                 {extraServices.length > 0 && (
                                     <div>
                                         <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                           
+
                                             Extra Services
                                         </h3>
                                         <div className="space-y-3">
@@ -733,7 +733,21 @@ const GuestFolio = () => {
                                         <FileText size={18} />
                                         Download as PDF
                                     </button>
-                                    <button className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <button
+                                        onClick={async () => {
+                                            if (!bookingDetails) return;
+                                            const toastId = toast.loading('Sending receipt email...');
+                                            try {
+                                                await bookingService.sendReceiptEmail(bookingDetails.id);
+                                                toast.success('Receipt email sent to guest', { id: toastId });
+                                            } catch (error) {
+                                                console.error('Failed to send email:', error);
+                                                toast.error(error.message || 'Failed to send email', { id: toastId });
+                                            }
+                                        }}
+                                        className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <div className="w-4 h-4" /> {/* Spacer for alignment if needed, or add icon */}
                                         Email to Guest
                                     </button>
                                 </div>

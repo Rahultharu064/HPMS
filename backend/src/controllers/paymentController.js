@@ -728,6 +728,63 @@ const verifyEsewaPayment = async (paymentData) => {
   }
 };
 
+// Get all payments (for admin/owner dashboard)
+export const getAllPayments = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const { status, method, startDate, endDate } = req.query;
+
+    const where = {};
+    if (status) where.status = status;
+    if (method) where.method = method;
+    if (startDate && endDate) {
+      where.createdAt = {
+        gte: new Date(startDate),
+        lte: new Date(endDate)
+      };
+    }
+
+    const [payments, total] = await Promise.all([
+      prisma.payment.findMany({
+        where,
+        include: {
+          booking: {
+            include: {
+              guest: true,
+              room: true
+            }
+          },
+          serviceOrder: {
+            include: {
+              guest: true
+            }
+          }
+        },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.payment.count({ where })
+    ]);
+
+    res.json({
+      success: true,
+      payments,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (err) {
+    console.error('getAllPayments error:', err);
+    res.status(500).json({ success: false, error: "Failed to fetch all payments" });
+  }
+};
+
 // Get payment history
 export const getPaymentHistory = async (req, res) => {
   try {
