@@ -327,7 +327,7 @@ const BookingConfirmation = () => {
               )}
               <div className="flex justify-between items-center pt-4 border-t-2 border-green-300">
                 <span className="text-xl font-bold text-gray-800">Total Amount</span>
-                <span className="text-3xl font-bold text-green-600">₹{data.totalAmount.toLocaleString()}</span>
+                <span className="text-3xl font-bold text-green-600">NPR{data.totalAmount.toLocaleString()}</span>
               </div>
             </div>
 

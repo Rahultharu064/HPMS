@@ -312,6 +312,7 @@ model Guest {
   nationality       String?
   idType            String?
   idNumber          String?
+  idImage           String?   // URL for government ID proof image
   // Admin fields
   role              String?   @default("guest") // guest, admin, owner
   isActive          Boolean   @default(true)

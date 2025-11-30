@@ -6,11 +6,13 @@ import { roomService } from '../../../services/roomService'
 import { housekeeperService } from '../../../services/housekeeperService'
 import { API_BASE_URL } from '../../../utils/api'
 import authService from '../../../services/authService'
+import ReportIssueModal from '../modals/ReportIssueModal'
 
 const Dashboard = ({ darkMode, setActiveTab }) => {
   const [loading, setLoading] = useState(true)
   const [rooms, setRooms] = useState([])
   const [housekeepers, setHousekeepers] = useState([])
+  const [showReportModal, setShowReportModal] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -59,14 +61,14 @@ const Dashboard = ({ darkMode, setActiveTab }) => {
       occupied: 0,
       maintenance: 0
     }
-    
+
     for (const room of rooms) {
       const status = String(room.status || 'available')
       if (statusCounts.hasOwnProperty(status)) {
         statusCounts[status]++
       }
     }
-    
+
     return statusCounts
   }, [rooms])
 
@@ -148,7 +150,7 @@ const Dashboard = ({ darkMode, setActiveTab }) => {
           <button onClick={() => setActiveTab('staff')} className="px-6 py-3 bg-gradient-to-r from-purple-500 to-violet-600 text-white rounded-xl font-medium hover:shadow-lg transition-all">
             Staff Assignment
           </button>
-          <button className={`${darkMode ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} px-6 py-3 rounded-xl font-medium transition-all`}>
+          <button onClick={() => setShowReportModal(true)} className={`${darkMode ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} px-6 py-3 rounded-xl font-medium transition-all`}>
             Report Issue
           </button>
         </div>
@@ -168,7 +170,7 @@ const Dashboard = ({ darkMode, setActiveTab }) => {
             </select>
           </div>
         </div>
-        
+
         {loading ? (
           <div className={`text-center py-8 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Loading rooms...</div>
         ) : (
@@ -180,20 +182,19 @@ const Dashboard = ({ darkMode, setActiveTab }) => {
                 <div key={room.id} className={`${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border rounded-xl p-4 hover:shadow-md transition-all`}>
                   <div className="flex items-center justify-between mb-2">
                     <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>#{room.roomNumber}</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      room.status === 'clean' ? 'bg-green-100 text-green-800' :
-                      room.status === 'needs-cleaning' ? 'bg-red-100 text-red-800' :
-                      room.status === 'occupied' ? 'bg-blue-100 text-blue-800' :
-                      room.status === 'maintenance' ? 'bg-orange-100 text-orange-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${room.status === 'clean' ? 'bg-green-100 text-green-800' :
+                        room.status === 'needs-cleaning' ? 'bg-red-100 text-red-800' :
+                          room.status === 'occupied' ? 'bg-blue-100 text-blue-800' :
+                            room.status === 'maintenance' ? 'bg-orange-100 text-orange-800' :
+                              'bg-gray-100 text-gray-800'
+                      }`}>
                       {room.status?.replace('-', ' ') || 'Unknown'}
                     </span>
                   </div>
                   <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     Floor {room.floor || 'N/A'}
                   </div>
-                  <div 
+                  <div
                     className="mt-2 flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 p-2 rounded-lg transition-colors"
                     onClick={() => {
                       // For now, just show a simple assignment
@@ -235,7 +236,7 @@ const Dashboard = ({ darkMode, setActiveTab }) => {
             })}
             {rooms.length > 8 && (
               <div className={`${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border rounded-xl p-4 flex items-center justify-center`}>
-                <button 
+                <button
                   onClick={() => setActiveTab('rooms')}
                   className={`text-sm font-medium ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'}`}
                 >
@@ -246,6 +247,13 @@ const Dashboard = ({ darkMode, setActiveTab }) => {
           </div>
         )}
       </div>
+
+
+      <ReportIssueModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        darkMode={darkMode}
+      />
     </div>
   )
 }

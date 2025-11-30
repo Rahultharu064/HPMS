@@ -246,7 +246,7 @@ const Rooms = ({ darkMode, onSelectRoom }) => {
                           </span>
                         </td>
                         <td className="py-4 px-4">
-                          <p className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>₹{room.price.toLocaleString()}</p>
+                          <p className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>NPR{room.price.toLocaleString()}</p>
                         </td>
                         <td className="py-4 px-4">
                           <div className={`${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>

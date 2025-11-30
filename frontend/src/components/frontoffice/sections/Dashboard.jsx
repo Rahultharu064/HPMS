@@ -118,7 +118,7 @@ const Dashboard = ({ darkMode = false }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-emerald-100 text-sm">Revenue (Today)</p>
-              <p className="text-3xl font-bold">₹{stats.revenue.toLocaleString()}</p>
+              <p className="text-3xl font-bold">NPR{stats.revenue.toLocaleString()}</p>
             </div>
             <ArrowUp size={32} className="text-emerald-200" />
           </div>

@@ -189,7 +189,7 @@ const Reservations = () => {
         </div>
         <div className="rounded-2xl border bg-white p-4">
           <div className="text-sm text-gray-500">Revenue</div>
-          <div className="text-2xl font-bold text-blue-600">₹{(stats?.totalRevenue ?? 0).toLocaleString()}</div>
+          <div className="text-2xl font-bold text-blue-600">NPR{(stats?.totalRevenue ?? 0).toLocaleString()}</div>
         </div>
       </div>
 
@@ -314,7 +314,7 @@ const Reservations = () => {
                     </div>
                   </td>
                   <td className="p-3">{getPaidMethod(b)}</td>
-                  <td className="p-3 font-semibold">₹{(b.totalAmount ?? 0).toLocaleString()}</td>
+                  <td className="p-3 font-semibold">NPR{(b.totalAmount ?? 0).toLocaleString()}</td>
                   <td className="p-3">
                     <div className="flex gap-2 items-center flex-wrap">
                       <button className="px-3 py-1 rounded-lg border text-blue-600" onClick={() => navigate(`/front-office/reservations/${b.id}`)}>View</button>

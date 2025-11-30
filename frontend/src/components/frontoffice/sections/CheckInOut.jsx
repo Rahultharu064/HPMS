@@ -225,7 +225,7 @@ const CheckInOut = () => {
                     <div className="text-right">
                       <p className="text-sm text-gray-600">Room {g.room} • {g.type}</p>
                       <p className="text-sm text-gray-500">{g.checkIn} to {g.checkOut}</p>
-                      <p className="text-sm font-medium text-gray-900">₹{g.amount.toLocaleString()}</p>
+                      <p className="text-sm font-medium text-gray-900">NPR{g.amount.toLocaleString()}</p>
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -279,7 +279,7 @@ const CheckInOut = () => {
                     <div className="text-right">
                       <p className="text-sm text-gray-600">Room {g.room} • {g.type}</p>
                       <p className="text-sm text-gray-500">Stayed: {g.checkIn} to {g.checkOut}</p>
-                      <p className="text-sm font-medium text-gray-900">₹{g.amount.toLocaleString()}</p>
+                      <p className="text-sm font-medium text-gray-900">NPR{g.amount.toLocaleString()}</p>
                     </div>
                     <button
                       onClick={()=>open('checkout', g)}
@@ -334,7 +334,7 @@ const CheckInOut = () => {
                 </div>
                 <div>
                   <span className="text-gray-500">Amount:</span>
-                  <span className="ml-2 font-medium">₹{modal.item?.amount?.toLocaleString()}</span>
+                  <span className="ml-2 font-medium">NPR{modal.item?.amount?.toLocaleString()}</span>
                 </div>
               </div>
             </div>

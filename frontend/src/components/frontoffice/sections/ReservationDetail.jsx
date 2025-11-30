@@ -71,7 +71,7 @@ const ReservationDetail = () => {
           <div className="text-sm text-gray-500">Status</div>
           <div className="font-semibold capitalize">{booking.status}</div>
           <div className="text-sm text-gray-500 mt-1">Total</div>
-          <div className="font-semibold">₹{(booking.totalAmount||0).toLocaleString()}</div>
+          <div className="font-semibold">NPR{(booking.totalAmount||0).toLocaleString()}</div>
         </div>
         <div className="rounded-2xl border bg-white p-4">
           <div className="text-sm text-gray-500">Guest</div>
@@ -103,7 +103,7 @@ const ReservationDetail = () => {
                     <tr key={p.id} className="border-t">
                       <td className="p-2">{p.id}</td>
                       <td className="p-2">{String(p.method||'').toUpperCase()}</td>
-                      <td className="p-2">₹{(p.amount||0).toLocaleString()}</td>
+                      <td className="p-2">NPR{(p.amount||0).toLocaleString()}</td>
                       <td className="p-2 capitalize">{p.status}</td>
                       <td className="p-2">{new Date(p.createdAt).toLocaleString()}</td>
                     </tr>

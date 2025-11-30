@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Loader2 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
+
 import { roomService } from '../../../services/roomService'
 import { allowedStatuses } from '../../../constants/roomStatus'
 import { toast } from 'react-hot-toast'
@@ -12,7 +12,22 @@ const Rooms = ({ darkMode }) => {
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterFloor, setFilterFloor] = useState('all')
   const [pendingStatus, setPendingStatus] = useState({})
-  const navigate = useNavigate()
+  const [floors, setFloors] = useState([])
+
+
+  useEffect(() => {
+    let mounted = true
+    const fetchFloors = async () => {
+      try {
+        const res = await roomService.getFloors()
+        if (mounted) setFloors(res.data || [])
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    fetchFloors()
+    return () => { mounted = false }
+  }, [])
 
   useEffect(() => {
     let mounted = true
@@ -58,7 +73,7 @@ const Rooms = ({ darkMode }) => {
   }, [filterStatus, filterFloor])
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'clean': return 'from-emerald-400 to-green-500'
       case 'needs-cleaning': return 'from-red-400 to-rose-500'
       case 'occupied': return 'from-blue-400 to-indigo-500'
@@ -81,12 +96,12 @@ const Rooms = ({ darkMode }) => {
           </select>
           <select value={filterFloor} onChange={e => setFilterFloor(e.target.value)} className={`${darkMode ? 'bg-gray-800 text-white border-gray-700' : 'bg-white border-gray-200'} px-4 py-2 border rounded-xl font-medium`}>
             <option value="all">All Floors</option>
-            <option value="1">Floor 1</option>
-            <option value="2">Floor 2</option>
-            <option value="3">Floor 3</option>
+            {floors.map(floor => (
+              <option key={floor} value={String(floor)}>Floor {floor}</option>
+            ))}
           </select>
           <button onClick={() => { setFilterStatus('all'); setFilterFloor('all') }} className={`px-4 py-2 rounded-xl border ${darkMode ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}>Clear</button>
-          <button onClick={() => navigate('/owner-admin/create-room')} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700"><Plus size={16}/>Create Room</button>
+
         </div>
       </div>
 

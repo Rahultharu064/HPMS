@@ -172,42 +172,52 @@ export const roomService = {
     }
   },
 
+  // Get all floors
+  async getFloors() {
+    try {
+      return await apiRequest('/api/rooms/floors')
+    } catch (error) {
+      apiDebug.error('Error fetching floors:', error)
+      throw error
+    }
+  },
+
   // Update room
   async updateRoom(id, roomData) {
     try {
       const formData = new FormData()
-      
+
       // Add text fields
       Object.keys(roomData).forEach(key => {
         if (key !== 'images' && key !== 'videos') {
           formData.append(key, roomData[key])
         }
       })
-      
+
       // Add files
       if (roomData.images) {
         roomData.images.forEach(image => {
           formData.append('images', image)
         })
       }
-      
+
       if (roomData.videos) {
         roomData.videos.forEach(video => {
           formData.append('videos', video)
         })
       }
-      
+
       const response = await fetch(`${API_BASE_URL}/api/rooms/${id}`, {
         method: 'PUT',
         body: formData
       })
-      
+
       const data = await response.json()
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to update room')
       }
-      
+
       return data
     } catch (error) {
       console.error('Error updating room:', error)

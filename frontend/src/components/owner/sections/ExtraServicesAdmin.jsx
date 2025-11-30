@@ -326,7 +326,7 @@ const ExtraServicesAdmin = ({ darkMode }) => {
                     </td>
                     <td className="py-4 px-4">
                       <p className={`font-bold ${darkMode ? 'text-blue-300' : 'text-blue-600'}`}>
-                        Rs. {service.price}
+                        NPR. {service.price}
                       </p>
                     </td>
                     <td className="py-4 px-4">
@@ -424,7 +424,7 @@ const ExtraServicesAdmin = ({ darkMode }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm mb-1">Price (Rs.) *</label>
+                <label className="block text-sm mb-1">Price (NPR.) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -545,7 +545,7 @@ const ExtraServicesAdmin = ({ darkMode }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm mb-1">Price (Rs.) *</label>
+                <label className="block text-sm mb-1">Price (NPR.) *</label>
                 <input
                   type="number"
                   step="0.01"

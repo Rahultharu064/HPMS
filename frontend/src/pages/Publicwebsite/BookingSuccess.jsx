@@ -375,7 +375,7 @@ const BookingSuccess = () => {
                           {p.status}
                         </span>
                       </div>
-                      <span className="font-bold text-2xl text-gray-800">₹{p.amount.toLocaleString()}</span>
+                      <span className="font-bold text-2xl text-gray-800">NPR{p.amount.toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
@@ -384,7 +384,7 @@ const BookingSuccess = () => {
               )}
               <div className="flex justify-between items-center pt-6 border-t-2 border-emerald-300 bg-white/50 rounded-2xl p-6">
                 <span className="text-2xl font-bold text-gray-800">Total Amount</span>
-                <span className="text-4xl font-bold text-emerald-600">₹{data.totalAmount.toLocaleString()}</span>
+                <span className="text-4xl font-bold text-emerald-600">NPR{data.totalAmount.toLocaleString()}</span>
               </div>
             </div>
 

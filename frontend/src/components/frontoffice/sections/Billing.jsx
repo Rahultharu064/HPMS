@@ -153,7 +153,7 @@ const Billing = () => {
                     <div className="text-xs text-gray-500">Room {p.room}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{p.bookingId}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹{p.amount.toLocaleString()}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">NPR{p.amount.toLocaleString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap"><span className={`px-2 py-1 rounded-full text-xs font-medium ${methodBadge(p.method)}`}>{p.method?.toUpperCase()}</span></td>
                   <td className="px-6 py-4 whitespace-nowrap"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusBadge(p.status)}`}>{p.status}</span></td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{p.txn}</td>
@@ -177,7 +177,7 @@ const Billing = () => {
               <div className="flex justify-between"><span>Guest</span><span>{selected.guest}</span></div>
               <div className="flex justify-between"><span>Booking</span><span>{selected.bookingId}</span></div>
               <div className="flex justify-between"><span>Room</span><span>{selected.room}</span></div>
-              <div className="flex justify-between"><span>Amount</span><span>₹{selected.amount.toLocaleString()}</span></div>
+              <div className="flex justify-between"><span>Amount</span><span>NPR{selected.amount.toLocaleString()}</span></div>
               <div className="flex justify-between"><span>Method</span><span>{selected.method.toUpperCase()}</span></div>
               <div className="flex justify-between"><span>Status</span><span>{selected.status}</span></div>
               <div className="flex justify-between"><span>Transaction</span><span>{selected.txn}</span></div>

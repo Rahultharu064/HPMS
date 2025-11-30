@@ -27,7 +27,9 @@ const OfflineReservation = () => {
     checkOut: '',
     adults: 1,
     children: 0,
-    specialRequests: ''
+    children: 0,
+    specialRequests: '',
+    idProof: null
   })
 
   const [availableRooms, setAvailableRooms] = useState([])
@@ -148,6 +150,16 @@ const OfflineReservation = () => {
       }
 
       if (res?.success) {
+        // Upload ID Proof if provided
+        if (formData.idProof && res.booking && res.booking.id) {
+          try {
+            await bookingService.uploadIdProof(res.booking.id, formData.idProof)
+          } catch (uploadError) {
+            console.error('Failed to upload ID proof', uploadError)
+            toast.error('Booking saved, but ID proof upload failed')
+          }
+        }
+
         toast.success(isEditing ? 'Booking updated successfully!' : 'Booking created successfully!')
         setSuccess(isEditing ? 'Booking updated successfully!' : 'Booking created successfully!')
         if (!isEditing) {
@@ -331,6 +343,16 @@ const OfflineReservation = () => {
             required
           />
         </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Government ID Proof</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleInputChange('idProof', e.target.files[0])}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2F5233] focus:border-transparent"
+          />
+          <p className="text-xs text-gray-500 mt-1">Upload ID image (Max 5MB)</p>
+        </div>
       </div>
     </div>
   )
@@ -451,11 +473,10 @@ const OfflineReservation = () => {
                 <button
                   type="button"
                   onClick={() => handleInputChange('roomId', room.id)}
-                  className={`w-full py-2 px-4 rounded-lg text-sm font-medium ${
-                    formData.roomId === room.id
-                      ? 'bg-[#2F5233] text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
+                  className={`w-full py-2 px-4 rounded-lg text-sm font-medium ${formData.roomId === room.id
+                    ? 'bg-[#2F5233] text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
                 >
                   {formData.roomId === room.id ? 'Selected' : 'Select'}
                 </button>
@@ -567,15 +588,13 @@ const OfflineReservation = () => {
     <div className="flex justify-center mb-8">
       {[1, 2, 3, 4].map(step => (
         <div key={step} className="flex items-center">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-            step <= currentStep ? 'bg-[#2F5233] text-white' : 'bg-gray-200 text-gray-600'
-          }`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step <= currentStep ? 'bg-[#2F5233] text-white' : 'bg-gray-200 text-gray-600'
+            }`}>
             {step}
           </div>
           {step < 4 && (
-            <div className={`w-12 h-1 mx-2 ${
-              step < currentStep ? 'bg-[#2F5233]' : 'bg-gray-200'
-            }`} />
+            <div className={`w-12 h-1 mx-2 ${step < currentStep ? 'bg-[#2F5233]' : 'bg-gray-200'
+              }`} />
           )}
         </div>
       ))}
@@ -626,11 +645,10 @@ const OfflineReservation = () => {
           <button
             onClick={prevStep}
             disabled={currentStep === 1}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
-              currentStep === 1
-                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : 'bg-white text-[#2F5233] border border-[#2F5233] hover:bg-[#F8FFF4]'
-            }`}
+            className={`px-6 py-3 rounded-lg font-medium transition-all ${currentStep === 1
+              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              : 'bg-white text-[#2F5233] border border-[#2F5233] hover:bg-[#F8FFF4]'
+              }`}
           >
             Previous
           </button>

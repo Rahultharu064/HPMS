@@ -203,7 +203,7 @@ const ExtraServices = ({ darkMode }) => {
                 </span>
               </div>
               <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                Rs. {service.price}
+                NPR. {service.price}
               </div>
             </div>
           </div>
@@ -262,7 +262,7 @@ const ExtraServices = ({ darkMode }) => {
 
               <div>
                 <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Price (Rs.)
+                  Price (NPR.)
                 </label>
                 <input
                   type="number"

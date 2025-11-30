@@ -100,7 +100,7 @@ const Reports = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-6"><p className="text-sm text-gray-600">Arrivals</p><p className="text-3xl font-bold text-gray-900">{summary.arrivals}</p></div>
         <div className="bg-white rounded-xl border border-gray-200 p-6"><p className="text-sm text-gray-600">Departures</p><p className="text-3xl font-bold text-gray-900">{summary.departures}</p></div>
-        <div className="bg-white rounded-xl border border-gray-200 p-6"><p className="text-sm text-gray-600">Revenue</p><p className="text-3xl font-bold text-gray-900">₹{summary.revenue.toLocaleString()}</p></div>
+        <div className="bg-white rounded-xl border border-gray-200 p-6"><p className="text-sm text-gray-600">Revenue</p><p className="text-3xl font-bold text-gray-900">NPR{summary.revenue.toLocaleString()}</p></div>
         <div className="bg-white rounded-xl border border-gray-200 p-6"><p className="text-sm text-gray-600">Occupancy</p><p className="text-3xl font-bold text-gray-900">{summary.occupancy}%</p></div>
       </div>
 

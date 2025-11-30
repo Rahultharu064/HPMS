@@ -631,6 +631,22 @@ export const updateRoom = async (req, res) => {
   }
 };
 
+// GET /api/rooms/floors → Get all unique floors
+export const getFloors = async (req, res) => {
+  try {
+    const floors = await prisma.room.findMany({
+      select: { floor: true },
+      distinct: ['floor'],
+      orderBy: { floor: 'asc' }
+    });
+    const floorNumbers = floors.map(f => f.floor);
+    res.json({ success: true, data: floorNumbers });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Failed to fetch floors' });
+  }
+};
+
 // GET /api/rooms/availability → Room availability by type for front office
 export const getRoomAvailability = async (req, res) => {
   try {

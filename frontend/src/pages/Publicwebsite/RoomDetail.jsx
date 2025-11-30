@@ -380,7 +380,7 @@ const RoomDetail = () => {
                           <Award className="text-yellow-300" size={16} />
                           <span className="text-sm font-semibold">Best Price Guaranteed</span>
                         </div>
-                        <div className="text-4xl font-black mb-2">₹{room.price.toLocaleString()}</div>
+                        <div className="text-4xl font-black mb-2">NPR{room.price.toLocaleString()}</div>
                         <div className="text-blue-100 font-medium">per night</div>
                       </div>
 
@@ -702,7 +702,7 @@ const RoomDetail = () => {
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-gray-700">Room Rate</span>
-                    <span className="font-semibold text-gray-900">₹{room.price.toLocaleString()}</span>
+                    <span className="font-semibold text-gray-900">NPR{room.price.toLocaleString()}</span>
                   </div>
                   <div className="text-sm text-gray-500">per night</div>
                 </div>
@@ -718,7 +718,7 @@ const RoomDetail = () => {
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-gray-700">Subtotal</span>
-                    <span className="font-semibold text-gray-900">₹{priceBreakdown.basePrice.toLocaleString()}</span>
+                    <span className="font-semibold text-gray-900">NPR{priceBreakdown.basePrice.toLocaleString()}</span>
                   </div>
                   <div className="text-sm text-gray-500">Before taxes</div>
                 </div>
@@ -728,7 +728,7 @@ const RoomDetail = () => {
                 <div className="border-t border-gray-300 pt-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-xl font-bold text-gray-900">Total Amount</span>
-                    <span className="text-2xl font-bold text-blue-600">₹{priceBreakdown.total.toLocaleString()}</span>
+                    <span className="text-2xl font-bold text-blue-600">NPR{priceBreakdown.total.toLocaleString()}</span>
                   </div>
                   <div className="text-sm text-gray-500 text-center">All inclusive pricing</div>
                 </div>
@@ -809,7 +809,7 @@ const RoomDetail = () => {
                       <div className="text-sm text-gray-600">Guest{bookingData.adults + bookingData.children > 1 ? 's' : ''}</div>
                     </div>
                     <div className="p-3 bg-white rounded-lg">
-                      <div className="text-xl font-bold text-blue-600 mb-1">₹{(room.price * bookingData.nights).toLocaleString()}</div>
+                      <div className="text-xl font-bold text-blue-600 mb-1">NPR{(room.price * bookingData.nights).toLocaleString()}</div>
                       <div className="text-sm text-gray-600">Estimated Total</div>
                     </div>
                   </div>
@@ -969,7 +969,7 @@ const RoomDetail = () => {
                           className="w-full h-40 object-cover"
                         />
                         <div className="absolute top-3 right-3 bg-blue-600 text-white px-2 py-1 rounded text-sm font-medium">
-                          ₹{room.price.toLocaleString()}
+                          NPR{room.price.toLocaleString()}
                         </div>
                       </div>
                       <div className="p-4">
