@@ -440,7 +440,7 @@ const GuestProfile = () => {
                               <CreditCard className="w-4 h-4 text-gray-400" />
                               <div>
                                 <p className="text-sm font-medium text-gray-900">Total Amount</p>
-                                <p className="text-sm text-gray-600">${booking.finalAmount || booking.totalAmount}</p>
+                                <p className="text-sm text-gray-600">NPR{booking.finalAmount || booking.totalAmount}</p>
                               </div>
                             </div>
                           </div>

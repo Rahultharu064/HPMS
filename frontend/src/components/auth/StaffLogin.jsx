@@ -53,8 +53,8 @@ const StaffLogin = () => {
         <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Hash className="w-8 h-8 text-white" />
+            <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <img src="/INCHOTEL.png" alt="IncHotel Logo" className="w-16 h-16 object-contain" />
             </div>
             <h2 className="text-3xl font-bold text-white mb-2">Staff Login</h2>
             <p className="text-gray-300">Enter your email and password</p>

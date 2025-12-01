@@ -1,5 +1,44 @@
 import prisma from '../config/client.js';
 
+// Get public stats for register page
+export const getPublicStats = async (req, res) => {
+    try {
+        // Get total active guests
+        const totalGuests = await prisma.guest.count({
+            where: {
+                isActive: true
+            }
+        });
+
+        // Get total rooms
+        const totalRooms = await prisma.room.count();
+
+        // Calculate average rating from testimonials (which includes review ratings)
+        const ratingData = await prisma.testimonial.aggregate({
+            _avg: {
+                rating: true
+            }
+        });
+
+        const avgRating = ratingData._avg.rating ? Math.round(ratingData._avg.rating * 10) / 10 : 4.8;
+
+        res.json({
+            success: true,
+            data: {
+                totalGuests,
+                totalRooms,
+                avgRating
+            }
+        });
+    } catch (error) {
+        console.error('Public stats error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch public stats'
+        });
+    }
+};
+
 // Get dashboard analytics
 export const getDashboardAnalytics = async (req, res) => {
     try {

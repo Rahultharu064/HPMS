@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, Star, Shield, Award, CheckCircle } from 'lucide-react';
 import authService from '../../services/authService';
+import { analyticsService } from '../../services/analyticsService';
 import Header from '../Publicwebsite/Layout/Header';
 import Footer from '../Publicwebsite/Layout/Footer';
 
@@ -14,8 +15,33 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [stats, setStats] = useState({
+    totalGuests: 0,
+    totalRooms: 0,
+    avgRating: 0
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Fetch public stats on component mount
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await analyticsService.getPublicStats();
+        if (response.success) {
+          setStats(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching public stats:', error);
+        // Keep default values if fetch fails
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   // Handle URL parameters for Google OAuth callback
   useEffect(() => {
@@ -122,7 +148,7 @@ const Login = () => {
               </h1>
 
               <p className="text-xl text-gray-600 leading-relaxed mb-8">
-                Continue your luxury journey with IncStay. Access your personalized dashboard and exclusive offers.
+                Continue your luxury journey with INCHOTEL. Access your personalized dashboard and exclusive offers.
               </p>
             </div>
 
@@ -162,15 +188,21 @@ const Login = () => {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 pt-8">
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">500+</div>
+                <div className="text-3xl font-bold text-blue-600">
+                  {statsLoading ? '...' : `${stats.totalGuests}+`}
+                </div>
                 <div className="text-sm text-gray-600">Happy Guests</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600">50+</div>
+                <div className="text-3xl font-bold text-purple-600">
+                  {statsLoading ? '...' : stats.totalRooms}
+                </div>
                 <div className="text-sm text-gray-600">Luxury Rooms</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-pink-600">4.8</div>
+                <div className="text-3xl font-bold text-pink-600">
+                  {statsLoading ? '...' : stats.avgRating}
+                </div>
                 <div className="text-sm text-gray-600">Star Rating</div>
               </div>
             </div>
@@ -181,11 +213,19 @@ const Login = () => {
             <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8">
               {/* Header */}
               <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <User className="w-8 h-8 text-white" />
+                <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg border-2 border-gray-200">
+                  <img
+                    src="/INCHOTEL.png"
+                    alt="IncHotel Logo"
+                    className="w-16 h-16 object-contain"
+                    onError={(e) => {
+                      console.error('Logo failed to load');
+                      e.target.style.display = 'none';
+                    }}
+                  />
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-                <p className="text-gray-600">Sign in to your IncStay account</p>
+                <p className="text-gray-600">Sign in to your INCHOTEL account</p>
               </div>
 
               {/* Form */}

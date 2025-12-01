@@ -27,7 +27,6 @@ const OfflineReservation = () => {
     checkOut: '',
     adults: 1,
     children: 0,
-    children: 0,
     specialRequests: '',
     idProof: null
   })

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, Phone, Star, Shield, Award, CheckCircle, UserPlus } from 'lucide-react';
 import authService from '../../services/authService';
+import { analyticsService } from '../../services/analyticsService';
 import Header from '../Publicwebsite/Layout/Header';
 import Footer from '../Publicwebsite/Layout/Footer';
 
@@ -19,7 +20,32 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [stats, setStats] = useState({
+    totalGuests: 0,
+    totalRooms: 0,
+    avgRating: 0
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
   const navigate = useNavigate();
+
+  // Fetch public stats on component mount
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await analyticsService.getPublicStats();
+        if (response.success) {
+          setStats(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching public stats:', error);
+        // Keep default values if fetch fails
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -84,7 +110,7 @@ const Register = () => {
               </h1>
 
               <p className="text-xl text-gray-600 leading-relaxed mb-8">
-                Join thousands of satisfied guests who trust IncStay for their luxury accommodation needs. Get exclusive access to member benefits.
+                Join thousands of satisfied guests who trust INCHOTEL for their luxury accommodation needs. Get exclusive access to member benefits.
               </p>
             </div>
 
@@ -124,16 +150,22 @@ const Register = () => {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 pt-8">
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">500+</div>
+                <div className="text-3xl font-bold text-blue-600">
+                  {statsLoading ? '...' : `${stats.totalGuests}+`}
+                </div>
                 <div className="text-sm text-gray-600">Happy Members</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600">24/7</div>
-                <div className="text-sm text-gray-600">Support</div>
+                <div className="text-3xl font-bold text-purple-600">
+                  {statsLoading ? '...' : stats.totalRooms}
+                </div>
+                <div className="text-sm text-gray-600">Luxury Rooms</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-pink-600">4.8</div>
-                <div className="text-sm text-gray-600">Satisfaction</div>
+                <div className="text-3xl font-bold text-pink-600">
+                  {statsLoading ? '...' : stats.avgRating}
+                </div>
+                <div className="text-sm text-gray-600">Star Rating</div>
               </div>
             </div>
           </div>
@@ -143,10 +175,10 @@ const Register = () => {
             <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 p-8">
               {/* Header */}
               <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <UserPlus className="w-8 h-8 text-white" />
+                <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <img src="/INCHOTEL.png" alt="IncHotel Logo" className="w-16 h-16 object-contain" />
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">Join IncStay</h2>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Join INCHOTEL</h2>
                 <p className="text-gray-600">Create your account and start your luxury journey</p>
               </div>
 

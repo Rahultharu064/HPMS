@@ -124,8 +124,8 @@ const Header = () => {
                 <Link
                   to="/login"
                   className={`p-2 rounded-full transition-colors border-2 ${isScrolled
-                    ? 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
-                    : 'bg-white/20 text-white border-white/30 hover:bg-white/30'
+                    ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 hover:border-blue-700'
+                    : 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600 hover:border-blue-600'
                     }`}
                 >
                   <User size={20} />
