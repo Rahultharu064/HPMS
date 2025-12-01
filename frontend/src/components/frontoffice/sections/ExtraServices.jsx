@@ -117,6 +117,17 @@ const ExtraServices = ({ bookingId, onServicesChange }) => {
       await extraServiceService.removeServiceFromBooking(bookingServiceId);
       await extraServiceService.addServiceToBooking(bookingId, service.extraServiceId, newQuantity);
       await fetchBookingServices();
+
+      // Notify parent component that services have changed
+      if (onServicesChange) {
+        onServicesChange();
+      }
+
+      // Dispatch custom event to notify other components (like GuestFolio)
+      window.dispatchEvent(new CustomEvent('servicesUpdated', {
+        detail: { bookingId }
+      }));
+
       toast.success('Service quantity updated');
     } catch (error) {
       console.error('Error updating quantity:', error);

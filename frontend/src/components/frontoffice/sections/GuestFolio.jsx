@@ -36,12 +36,35 @@ const GuestFolio = () => {
         }
     }, [selectedBooking]);
 
+    // Refresh booking data when window regains focus or when services are updated elsewhere
+    useEffect(() => {
+        const handleFocus = () => {
+            if (selectedBooking) {
+                fetchBookingDetails(selectedBooking);
+            }
+        };
+
+        const handleServicesUpdated = (event) => {
+            // Only refresh if this is the relevant booking
+            if (selectedBooking && event.detail?.bookingId === selectedBooking) {
+                fetchBookingDetails(selectedBooking);
+            }
+        };
+
+        window.addEventListener('focus', handleFocus);
+        window.addEventListener('servicesUpdated', handleServicesUpdated);
+
+        return () => {
+            window.removeEventListener('focus', handleFocus);
+            window.removeEventListener('servicesUpdated', handleServicesUpdated);
+        };
+    }, [selectedBooking]);
+
     useEffect(() => {
         if (bookingDetails) {
             setDiscountPercent(bookingDetails.discountPercentage || 0);
             setAllowDiscount(bookingDetails.discountPercentage > 0);
 
-            // Enforce fixed defaults even if DB has 0 or undefined
             // The user wants these fixed for all guests
             setTaxPercent(13);
             setServiceChargePercent(10);
@@ -81,6 +104,13 @@ const GuestFolio = () => {
             toast.error('Failed to load booking details');
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Function to refresh booking data when services are added
+    const refreshBookingData = async () => {
+        if (selectedBooking) {
+            await fetchBookingDetails(selectedBooking);
         }
     };
 
@@ -196,6 +226,12 @@ const GuestFolio = () => {
         return (taxableAmount * taxPercent) / 100;
     };
 
+    // Helper function to clean room number (remove parentheses and content)
+    const cleanRoomNumber = (roomNumber) => {
+        if (!roomNumber) return '';
+        return String(roomNumber).replace(/\s*\([^)]*\)/g, '').trim();
+    };
+
     const calculateGrandTotal = () => {
         const subtotal = calculateSubtotal();
         const discount = calculateDiscountAmount();
@@ -292,7 +328,7 @@ const GuestFolio = () => {
             }
         }
 
-        doc.text(`${bookingDetails.room?.roomNumber} (${roomTypeName})`, margin + 12, yPos);
+        doc.text(`${cleanRoomNumber(bookingDetails.room?.roomNumber)} (${roomTypeName})`, margin + 12, yPos);
         yPos += 4;
 
         row('Check-in:', new Date(bookingDetails.checkIn).toLocaleDateString(), yPos);
@@ -378,454 +414,519 @@ const GuestFolio = () => {
     };
 
 
+
     return (
         <>
-            <div className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-1 bg-white rounded-xl shadow-md p-6">
-                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                            <FileText size={20} className="text-blue-600" />
-                            Select Booking
-                        </h3>
-
-                        <div className="relative mb-4">
-                            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                            <input
-                                type="text"
-                                placeholder="Search by guest, room, or booking ID..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100 p-4 sm:p-6 lg:p-8">
+                {/* Header */}
+                <div className="mb-6 sm:mb-8">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="p-3 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg">
+                            <FileText size={28} className="text-white" />
                         </div>
+                        <div>
+                            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Guest Folio</h1>
+                            <p className="text-gray-600 text-sm sm:text-base">Manage guest billing and payments</p>
+                        </div>
+                    </div>
+                </div>
 
-                        <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                            {loading && <p className="text-gray-500 text-center py-4">Loading...</p>}
-                            {!loading && filteredBookings.length === 0 && (
-                                <p className="text-gray-500 text-center py-4">No bookings found</p>
-                            )}
-                            {filteredBookings.map((booking) => (
-                                <div
-                                    key={booking.id}
-                                    onClick={() => setSelectedBooking(booking.id)}
-                                    className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${selectedBooking === booking.id
-                                        ? 'border-blue-500 bg-blue-50'
-                                        : 'border-gray-200 hover:border-blue-300'
-                                        }`}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="font-semibold text-gray-900">
-                                                {booking.guest?.firstName} {booking.guest?.lastName}
-                                            </p>
-                                            <p className="text-sm text-gray-600">
-                                                BK-{String(booking.id).padStart(4, '0')}
-                                            </p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-sm font-medium text-gray-700">
-                                                Room {booking.room?.roomNumber}
-                                            </p>
-                                            <span
-                                                className={`inline-block px-2 py-1 text-xs rounded-full ${booking.status === 'confirmed'
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-gray-100 text-gray-800'
-                                                    }`}
-                                            >
-                                                {booking.status}
-                                            </span>
-                                        </div>
-                                    </div>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+                    {/* Left Sidebar - Booking List */}
+                    <div className="lg:col-span-4 xl:col-span-3">
+                        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 sm:p-6">
+                                <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                                    <Search size={20} />
+                                    Select Booking
+                                </h3>
+                            </div>
+
+                            <div className="p-4 sm:p-6">
+                                <div className="relative mb-4">
+                                    <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search guest, room, or ID..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    />
                                 </div>
-                            ))}
+
+                                <div className="space-y-3 max-h-[calc(100vh-320px)] overflow-y-auto pr-2 custom-scrollbar">
+                                    {loading && (
+                                        <div className="text-center py-8">
+                                            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
+                                            <p className="text-gray-500 mt-3">Loading...</p>
+                                        </div>
+                                    )}
+                                    {!loading && filteredBookings.length === 0 && (
+                                        <div className="text-center py-12">
+                                            <FileText size={48} className="mx-auto text-gray-300 mb-3" />
+                                            <p className="text-gray-500">No bookings found</p>
+                                        </div>
+                                    )}
+                                    {filteredBookings.map((booking) => (
+                                        <div
+                                            key={booking.id}
+                                            onClick={() => setSelectedBooking(booking.id)}
+                                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${selectedBooking === booking.id
+                                                ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-blue-100 shadow-md'
+                                                : 'border-gray-200 hover:border-blue-300 bg-white'
+                                                }`}
+                                        >
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-bold text-gray-900 truncate text-sm sm:text-base">
+                                                        {booking.guest?.firstName} {booking.guest?.lastName}
+                                                    </p>
+                                                    <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                                                        BK-{String(booking.id).padStart(4, '0')}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right flex-shrink-0">
+                                                    <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">
+                                                        Room {booking.room?.roomNumber}
+                                                    </p>
+                                                    <span
+                                                        className={`inline-block px-2 py-1 text-xs rounded-full font-medium ${booking.status === 'confirmed'
+                                                            ? 'bg-green-100 text-green-700'
+                                                            : booking.status === 'completed'
+                                                                ? 'bg-blue-100 text-blue-700'
+                                                                : 'bg-gray-100 text-gray-700'
+                                                            }`}
+                                                    >
+                                                        {booking.status}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
-                        {!selectedBooking ? (
-                            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-                                <FileText size={64} className="mb-4" />
-                                <p className="text-lg">Select a booking to view folio</p>
-                            </div>
-                        ) : loading ? (
-                            <div className="flex items-center justify-center py-20">
-                                <p className="text-gray-500">Loading folio...</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-6">
-                                <div className="border-b pb-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                                                <User size={24} className="text-blue-600" />
-                                                {bookingDetails?.guest?.firstName} {bookingDetails?.guest?.lastName}
-                                            </h2>
-                                            <p className="text-gray-600">
-                                                Booking ID: BK-{String(bookingDetails?.id).padStart(4, '0')}
-                                            </p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-sm text-gray-600">Room {bookingDetails?.room?.roomNumber}</p>
-                                            <p className="text-sm text-gray-600">
-                                                {bookingDetails?.room?.roomTypeRef?.name || bookingDetails?.room?.roomType}
-                                            </p>
-                                        </div>
+                    {/* Main Content - Folio Details */}
+                    <div className="lg:col-span-8 xl:col-span-9">
+                        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                            {!selectedBooking ? (
+                                <div className="flex flex-col items-center justify-center py-20 sm:py-32 px-4">
+                                    <div className="p-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full mb-6">
+                                        <FileText size={64} className="text-gray-400" />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4 mt-4">
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <Calendar size={16} className="text-gray-500" />
-                                            <span className="text-gray-600">Check-in:</span>
-                                            <span className="font-medium">
-                                                {new Date(bookingDetails?.checkIn).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <Calendar size={16} className="text-gray-500" />
-                                            <span className="text-gray-600">Check-out:</span>
-                                            <span className="font-medium">
-                                                {new Date(bookingDetails?.checkOut).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                    </div>
+                                    <p className="text-xl sm:text-2xl font-semibold text-gray-600 mb-2">No Booking Selected</p>
+                                    <p className="text-gray-500 text-center">Select a booking from the list to view folio details</p>
                                 </div>
-
-                                <div>
-                                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-
-                                        Room Charges
-                                    </h3>
-                                    <div className="bg-gray-50 rounded-lg p-4">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-gray-700">
-                                                {bookingDetails?.room?.roomTypeRef?.name || bookingDetails?.room?.roomType} × {getNights()} night(s)
-                                            </span>
-                                            <span className="font-semibold text-gray-900">
-                                                NPR. {calculateRoomCharges().toLocaleString()}
-                                            </span>
-                                        </div>
-                                        <p className="text-sm text-gray-500">
-                                            @ NPR. {bookingDetails?.room?.roomTypeRef?.basePrice || bookingDetails?.room?.price || 0} per night
-                                        </p>
-                                    </div>
+                            ) : loading ? (
+                                <div className="flex flex-col items-center justify-center py-20 sm:py-32">
+                                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mb-4"></div>
+                                    <p className="text-gray-600 font-medium">Loading folio details...</p>
                                 </div>
-
-                                {extraServices.length > 0 && (
-                                    <div>
-                                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-
-                                            Extra Services
-                                        </h3>
-                                        <div className="space-y-3">
-                                            {extraServices.map((service) => (
-                                                <div
-                                                    key={service.id}
-                                                    className="bg-gray-50 rounded-lg p-4"
-                                                >
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <div className="flex-1">
-                                                            <p className="font-semibold text-gray-900">
-                                                                {service.extraService?.name}
-                                                            </p>
-                                                            <p className="text-sm text-gray-600">
-                                                                {service.extraService?.description}
-                                                            </p>
-                                                            <div className="flex items-center gap-3 mt-1">
-                                                                <span className="px-2 py-1 bg-gray-200 text-xs rounded">
-                                                                    {service.extraService?.category?.name}
-                                                                </span>
-                                                                <span className="text-xs text-gray-500">
-                                                                    {new Date(service.createdAt || service.addedAt).toLocaleDateString()}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="mt-3 space-y-1 text-sm border-t pt-2">
-                                                        <div className="flex justify-between text-gray-600">
-                                                            <span>Base ({service.quantity} × Rs. {service.unitPrice})</span>
-                                                            <span>NPR. {Number(service.basePrice || service.totalPrice).toLocaleString()}</span>
-                                                        </div>
-                                                    </div>
+                            ) : (
+                                <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+                                    {/* Guest Header */}
+                                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 sm:p-8 text-white shadow-lg">
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                            <div className="flex items-start gap-4">
+                                                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                                                    <User size={32} className="text-white" />
                                                 </div>
-                                            ))}
-                                        </div>
-                                        <div className="mt-3 pt-3 border-t flex justify-between items-center">
-                                            <span className="font-medium text-gray-700">Services Subtotal:</span>
-                                            <span className="font-bold text-gray-900">
-                                                NPR. {calculateServicesTotal().toLocaleString()}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Financial Adjustments Section */}
-                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 no-print">
-                                    <h3 className="font-semibold text-blue-800 mb-3">Billing Adjustments</h3>
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={allowDiscount}
-                                                onChange={(e) => {
-                                                    setAllowDiscount(e.target.checked);
-                                                    if (!e.target.checked) setDiscountPercent(0);
-                                                }}
-                                                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                            />
-                                            <span className="text-sm font-medium text-gray-700">Allow Discount</span>
-                                        </label>
-                                    </div>
-
-                                    {allowDiscount && (
-                                        <div className="mb-4">
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Discount %</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="100"
-                                                value={discountPercent}
-                                                onChange={(e) => setDiscountPercent(Number(e.target.value))}
-                                                className="w-full max-w-xs p-2 border rounded focus:ring-2 focus:ring-blue-500"
-                                            />
-                                        </div>
-                                    )}
-
-                                    {/* Hidden inputs for Tax and Service Charge as they are fixed */}
-                                    <div className="text-xs text-gray-500">
-                                        <p>Service Charge: {serviceChargePercent}% (Fixed)</p>
-                                        <p>GST: {taxPercent}% (Fixed)</p>
-                                    </div>
-
-                                    <div className="mt-3 text-right">
-                                        <button
-                                            onClick={updateBookingFinancials}
-                                            className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-                                        >
-                                            Update Financials
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="border-t-2 border-gray-300 pt-4 space-y-2">
-                                    <div className="flex justify-between items-center text-gray-600">
-                                        <span>Subtotal</span>
-                                        <span>NPR. {calculateSubtotal().toLocaleString()}</span>
-                                    </div>
-
-                                    {allowDiscount && discountPercent > 0 && (
-                                        <div className="flex justify-between items-center text-green-600">
-                                            <span>Discount ({discountPercent}%)</span>
-                                            <span>- NPR. {calculateDiscountAmount().toLocaleString()}</span>
-                                        </div>
-                                    )}
-
-                                    {serviceChargePercent > 0 && (
-                                        <div className="flex justify-between items-center text-gray-600">
-                                            <span>Service Charge ({serviceChargePercent}%)</span>
-                                            <span>+ NPR. {calculateServiceChargeAmount().toLocaleString()}</span>
-                                        </div>
-                                    )}
-
-                                    {taxPercent > 0 && (
-                                        <div className="flex justify-between items-center text-gray-600">
-                                            <span>GST ({taxPercent}%)</span>
-                                            <span>+ NPR. {calculateTaxAmount().toLocaleString()}</span>
-                                        </div>
-                                    )}
-
-                                    <div className="flex justify-between items-center pt-2 border-t">
-                                        <h3 className="text-2xl font-bold text-gray-900">Grand Total:</h3>
-                                        <p className="text-3xl font-bold text-blue-600">
-                                            NPR. {calculateGrandTotal().toLocaleString()}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Payment Section */}
-                                {calculateRemainingBalance() > 0 && (
-                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
-                                        <div className="flex justify-between items-center mb-3">
-                                            <div>
-                                                <h4 className="font-semibold text-gray-900">Outstanding Balance</h4>
-                                                <p className="text-2xl font-bold text-red-600">Rs. {calculateRemainingBalance().toLocaleString()}</p>
-                                                {calculateTotalPaid() > 0 && (
-                                                    <p className="text-sm text-gray-600 mt-1">
-                                                        Total Paid: NPR. {calculateTotalPaid().toLocaleString()}
+                                                <div>
+                                                    <h2 className="text-2xl sm:text-3xl font-bold mb-1">
+                                                        {bookingDetails?.guest?.firstName} {bookingDetails?.guest?.lastName}
+                                                    </h2>
+                                                    <p className="text-blue-100 text-sm sm:text-base">
+                                                        Booking ID: BK-{String(bookingDetails?.id).padStart(4, '0')}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-3 text-right">
+                                                <p className="text-blue-100 text-xs sm:text-sm mb-1">Room Number</p>
+                                                <p className="text-xl sm:text-2xl font-bold">{cleanRoomNumber(bookingDetails?.room?.roomNumber)}</p>
+                                                {bookingDetails?.room?.roomTypeRef?.name && (
+                                                    <p className="text-blue-100 text-xs sm:text-sm mt-1">
+                                                        {bookingDetails?.room?.roomTypeRef?.name}
                                                     </p>
                                                 )}
                                             </div>
+                                        </div>
+
+                                        {/* Check-in/out dates */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-6 border-t border-white/20">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-white/20 rounded-lg">
+                                                    <Calendar size={20} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-blue-100 text-xs">Check-in</p>
+                                                    <p className="font-semibold text-sm sm:text-base">
+                                                        {new Date(bookingDetails?.checkIn).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-white/20 rounded-lg">
+                                                    <Calendar size={20} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-blue-100 text-xs">Check-out</p>
+                                                    <p className="font-semibold text-sm sm:text-base">
+                                                        {new Date(bookingDetails?.checkOut).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Room Charges */}
+                                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200">
+                                        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                            <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+                                            Room Charges
+                                        </h3>
+                                        <div className="bg-white rounded-lg p-4 sm:p-5 shadow-sm">
+                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+                                                <span className="text-gray-700 font-medium">
+                                                    {bookingDetails?.room?.roomTypeRef?.name || 'Room'} × {getNights()} night(s)
+                                                </span>
+                                                <span className="text-xl sm:text-2xl font-bold text-gray-900">
+                                                    NPR. {calculateRoomCharges().toLocaleString()}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-gray-500 flex items-center gap-2">
+                                                <DollarSign size={14} />
+                                                @ NPR. {bookingDetails?.room?.roomTypeRef?.basePrice || bookingDetails?.room?.price || 0} per night
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Extra Services */}
+                                    {extraServices.length > 0 && (
+                                        <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-6 border border-purple-200">
+                                            <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                                <div className="w-1 h-6 bg-purple-600 rounded-full"></div>
+                                                Extra Services
+                                            </h3>
+                                            <div className="space-y-3">
+                                                {extraServices.map((service) => (
+                                                    <div
+                                                        key={service.id}
+                                                        className="bg-white rounded-lg p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow"
+                                                    >
+                                                        <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+                                                            <div className="flex-1">
+                                                                <p className="font-bold text-gray-900 text-base sm:text-lg">
+                                                                    {service.extraService?.name}
+                                                                </p>
+                                                                <p className="text-sm text-gray-600 mt-1">
+                                                                    {service.extraService?.description}
+                                                                </p>
+                                                                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
+                                                                    <span className="px-3 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">
+                                                                        {service.extraService?.category?.name}
+                                                                    </span>
+                                                                    <span className="text-xs text-gray-500">
+                                                                        {new Date(service.createdAt || service.addedAt).toLocaleDateString()}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                                                                    NPR. {Number(service.basePrice || service.totalPrice).toLocaleString()}
+                                                                </p>
+                                                                <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                                                                    {service.quantity} × NPR. {service.unitPrice}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="mt-4 pt-4 border-t-2 border-purple-200 flex justify-between items-center bg-white/50 rounded-lg p-4">
+                                                <span className="font-bold text-gray-700 text-base sm:text-lg">Services Subtotal:</span>
+                                                <span className="text-xl sm:text-2xl font-bold text-purple-700">
+                                                    NPR. {calculateServicesTotal().toLocaleString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Financial Adjustments Section */}
+                                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+                                        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                            <div className="w-1 h-6 bg-indigo-600 rounded-full"></div>
+                                            Billing Adjustments
+                                        </h3>
+                                        <div className="flex items-center gap-4 mb-4">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={allowDiscount}
+                                                    onChange={(e) => {
+                                                        setAllowDiscount(e.target.checked);
+                                                        if (!e.target.checked) setDiscountPercent(0);
+                                                    }}
+                                                    className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                                />
+                                                <span className="text-sm font-medium text-gray-700">Allow Discount</span>
+                                            </label>
+                                        </div>
+
+                                        {allowDiscount && (
+                                            <div className="mb-4">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Discount %</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    value={discountPercent}
+                                                    onChange={(e) => setDiscountPercent(Number(e.target.value))}
+                                                    className="w-full max-w-xs p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Hidden inputs for Tax and Service Charge as they are fixed */}
+                                        <div className="text-xs text-gray-500">
+                                            <p>Service Charge: {serviceChargePercent}% (Fixed)</p>
+                                            <p>GST: {taxPercent}% (Fixed)</p>
+                                        </div>
+
+                                        <div className="mt-3 text-right">
                                             <button
-                                                onClick={() => {
-                                                    setPaymentAmount(calculateRemainingBalance());
-                                                    setShowPaymentModal(true);
-                                                }}
-                                                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 font-semibold"
+                                                onClick={updateBookingFinancials}
+                                                className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
                                             >
-                                                <CreditCard size={20} />
-                                                Pay Now
+                                                Update Financials
                                             </button>
                                         </div>
-                                        {payments.length > 0 && (
-                                            <div className="mt-3 pt-3 border-t border-yellow-300">
-                                                <p className="text-sm font-medium text-gray-700 mb-2">Payment History:</p>
-                                                <div className="space-y-1">
-                                                    {payments.map((payment) => (
-                                                        <div key={payment.id} className="flex justify-between text-sm">
-                                                            <span className="text-gray-600">
-                                                                {new Date(payment.createdAt).toLocaleDateString()} - {payment.method}
-                                                                <span className={`ml-2 px-2 py-0.5 rounded text-xs ${payment.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                                                    payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                                        'bg-red-100 text-red-800'
-                                                                    }`}>
-                                                                    {payment.status}
-                                                                </span>
-                                                            </span>
-                                                            <span className="font-medium text-gray-900">Rs. {Number(payment.amount).toLocaleString()}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
-                                )}
 
-                                {/* Fully Paid Message */}
-                                {calculateRemainingBalance() === 0 && calculateTotalPaid() > 0 && (
-                                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="bg-green-600 text-white rounded-full p-2">
-                                                <CreditCard size={24} />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-semibold text-green-900">Fully Paid</h4>
-                                                <p className="text-sm text-green-700">Total Paid: NPR. {calculateTotalPaid().toLocaleString()}</p>
-                                            </div>
+                                    <div className="border-t-2 border-gray-300 pt-4 space-y-2">
+                                        <div className="flex justify-between items-center text-gray-600">
+                                            <span>Subtotal</span>
+                                            <span>NPR. {calculateSubtotal().toLocaleString()}</span>
                                         </div>
-                                        {payments.length > 0 && (
-                                            <div className="mt-3 pt-3 border-t border-green-300">
-                                                <p className="text-sm font-medium text-gray-700 mb-2">Payment History:</p>
-                                                <div className="space-y-1">
-                                                    {payments.map((payment) => (
-                                                        <div key={payment.id} className="flex justify-between text-sm">
-                                                            <span className="text-gray-600">
-                                                                {new Date(payment.createdAt).toLocaleDateString()} - {payment.method}
-                                                                <span className={`ml-2 px-2 py-0.5 rounded text-xs ${payment.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                                                    payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                                        'bg-red-100 text-red-800'
-                                                                    }`}>
-                                                                    {payment.status}
-                                                                </span>
-                                                            </span>
-                                                            <span className="font-medium text-gray-900">Rs. {Number(payment.amount).toLocaleString()}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
+
+                                        {allowDiscount && discountPercent > 0 && (
+                                            <div className="flex justify-between items-center text-green-600">
+                                                <span>Discount ({discountPercent}%)</span>
+                                                <span>- NPR. {calculateDiscountAmount().toLocaleString()}</span>
                                             </div>
                                         )}
-                                    </div>
-                                )}
 
-                                <div className="flex gap-3 pt-4 no-print">
+                                        {serviceChargePercent > 0 && (
+                                            <div className="flex justify-between items-center text-gray-600">
+                                                <span>Service Charge ({serviceChargePercent}%)</span>
+                                                <span>+ NPR. {calculateServiceChargeAmount().toLocaleString()}</span>
+                                            </div>
+                                        )}
+
+                                        {taxPercent > 0 && (
+                                            <div className="flex justify-between items-center text-gray-600">
+                                                <span>GST ({taxPercent}%)</span>
+                                                <span>+ NPR. {calculateTaxAmount().toLocaleString()}</span>
+                                            </div>
+                                        )}
+
+                                        <div className="flex justify-between items-center pt-2 border-t">
+                                            <h3 className="text-2xl font-bold text-gray-900">Grand Total:</h3>
+                                            <p className="text-3xl font-bold text-blue-600">
+                                                NPR. {calculateGrandTotal().toLocaleString()}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Payment Section */}
+                                    {calculateRemainingBalance() > 0 && (
+                                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
+                                            <div className="flex justify-between items-center mb-3">
+                                                <div>
+                                                    <h4 className="font-semibold text-gray-900">Outstanding Balance</h4>
+                                                    <p className="text-2xl font-bold text-red-600">NPR. {calculateRemainingBalance().toLocaleString()}</p>
+                                                    {calculateTotalPaid() > 0 && (
+                                                        <p className="text-sm text-gray-600 mt-1">
+                                                            Total Paid: NPR. {calculateTotalPaid().toLocaleString()}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        setPaymentAmount(calculateRemainingBalance());
+                                                        setShowPaymentModal(true);
+                                                    }}
+                                                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 font-semibold"
+                                                >
+                                                    <CreditCard size={20} />
+                                                    Pay Now
+                                                </button>
+                                            </div>
+                                            {payments.length > 0 && (
+                                                <div className="mt-3 pt-3 border-t border-yellow-300">
+                                                    <p className="text-sm font-medium text-gray-700 mb-2">Payment History:</p>
+                                                    <div className="space-y-1">
+                                                        {payments.map((payment) => (
+                                                            <div key={payment.id} className="flex justify-between text-sm">
+                                                                <span className="text-gray-600">
+                                                                    {new Date(payment.createdAt).toLocaleDateString()} - {payment.method}
+                                                                    <span className={`ml-2 px-2 py-0.5 rounded text-xs ${payment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                                        payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                                            'bg-red-100 text-red-800'
+                                                                        }`}>
+                                                                        {payment.status}
+                                                                    </span>
+                                                                </span>
+                                                                <span className="font-medium text-gray-900">NPR. {Number(payment.amount).toLocaleString()}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Fully Paid Message */}
+                                    {calculateRemainingBalance() === 0 && calculateTotalPaid() > 0 && (
+                                        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="bg-green-600 text-white rounded-full p-2">
+                                                    <CreditCard size={24} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-semibold text-green-900">Fully Paid</h4>
+                                                    <p className="text-sm text-green-700">Total Paid: NPR. {calculateTotalPaid().toLocaleString()}</p>
+                                                </div>
+                                            </div>
+                                            {payments.length > 0 && (
+                                                <div className="mt-3 pt-3 border-t border-green-300">
+                                                    <p className="text-sm font-medium text-gray-700 mb-2">Payment History:</p>
+                                                    <div className="space-y-1">
+                                                        {payments.map((payment) => (
+                                                            <div key={payment.id} className="flex justify-between text-sm">
+                                                                <span className="text-gray-600">
+                                                                    {new Date(payment.createdAt).toLocaleDateString()} - {payment.method}
+                                                                    <span className={`ml-2 px-2 py-0.5 rounded text-xs ${payment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                                        payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                                            'bg-red-100 text-red-800'
+                                                                        }`}>
+                                                                        {payment.status}
+                                                                    </span>
+                                                                </span>
+                                                                <span className="font-medium text-gray-900">NPR. {Number(payment.amount).toLocaleString()}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <div className="flex gap-3 pt-4 no-print">
+                                        <button
+                                            onClick={handleDownloadPDF}
+                                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                                        >
+                                            <FileText size={18} />
+                                            Download as PDF
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                if (!bookingDetails) return;
+                                                const toastId = toast.loading('Sending receipt email...');
+                                                try {
+                                                    await bookingService.sendReceiptEmail(bookingDetails.id);
+                                                    toast.success('Receipt email sent to guest', { id: toastId });
+                                                } catch (error) {
+                                                    console.error('Failed to send email:', error);
+                                                    toast.error(error.message || 'Failed to send email', { id: toastId });
+                                                }
+                                            }}
+                                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                                        >
+                                            <div className="w-4 h-4" /> {/* Spacer for alignment if needed, or add icon */}
+                                            Email to Guest
+                                        </button>
+                                    </div>
+                                </div >
+                            )}
+                        </div >
+                    </div >
+                </div >
+
+                {/* Payment Modal */}
+                {
+                    showPaymentModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                            <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                        <CreditCard size={24} className="text-green-600" />
+                                        Record Payment
+                                    </h3>
                                     <button
-                                        onClick={handleDownloadPDF}
-                                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                                        onClick={() => setShowPaymentModal(false)}
+                                        className="text-gray-400 hover:text-gray-600"
                                     >
-                                        <FileText size={18} />
-                                        Download as PDF
-                                    </button>
-                                    <button
-                                        onClick={async () => {
-                                            if (!bookingDetails) return;
-                                            const toastId = toast.loading('Sending receipt email...');
-                                            try {
-                                                await bookingService.sendReceiptEmail(bookingDetails.id);
-                                                toast.success('Receipt email sent to guest', { id: toastId });
-                                            } catch (error) {
-                                                console.error('Failed to send email:', error);
-                                                toast.error(error.message || 'Failed to send email', { id: toastId });
-                                            }
-                                        }}
-                                        className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                                    >
-                                        <div className="w-4 h-4" /> {/* Spacer for alignment if needed, or add icon */}
-                                        Email to Guest
+                                        <X size={24} />
                                     </button>
                                 </div>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Payment Amount
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={paymentAmount}
+                                            onChange={(e) => setPaymentAmount(Number(e.target.value))}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                            placeholder="Enter amount"
+                                        />
+                                        <p className="text-sm text-gray-500 mt-1">
+                                            Outstanding: NPR. {calculateRemainingBalance().toLocaleString()}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Payment Method
+                                        </label>
+                                        <select
+                                            value={paymentMethod}
+                                            onChange={(e) => setPaymentMethod(e.target.value)}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                        >
+                                            <option value="cash">Cash</option>
+                                            <option value="card">Card</option>
+                                            <option value="esewa">eSewa</option>
+                                            <option value="khalti">Khalti</option>
+                                            <option value="bank_transfer">Bank Transfer</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="flex gap-3 pt-4">
+                                        <button
+                                            onClick={() => setShowPaymentModal(false)}
+                                            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handlePayment}
+                                            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold"
+                                        >
+                                            Record Payment
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                        )}
-                    </div>
-                </div>
+                        </div>
+                    )
+                }
             </div>
-
-            {/* Payment Modal */}
-            {showPaymentModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                <CreditCard size={24} className="text-green-600" />
-                                Record Payment
-                            </h3>
-                            <button
-                                onClick={() => setShowPaymentModal(false)}
-                                className="text-gray-400 hover:text-gray-600"
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Payment Amount
-                                </label>
-                                <input
-                                    type="number"
-                                    value={paymentAmount}
-                                    onChange={(e) => setPaymentAmount(Number(e.target.value))}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                    placeholder="Enter amount"
-                                />
-                                <p className="text-sm text-gray-500 mt-1">
-                                    Outstanding: NPR. {calculateRemainingBalance().toLocaleString()}
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Payment Method
-                                </label>
-                                <select
-                                    value={paymentMethod}
-                                    onChange={(e) => setPaymentMethod(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                >
-                                    <option value="cash">Cash</option>
-                                    <option value="card">Card</option>
-                                    <option value="esewa">eSewa</option>
-                                    <option value="khalti">Khalti</option>
-                                    <option value="bank_transfer">Bank Transfer</option>
-                                </select>
-                            </div>
-
-                            <div className="flex gap-3 pt-4">
-                                <button
-                                    onClick={() => setShowPaymentModal(false)}
-                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handlePayment}
-                                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold"
-                                >
-                                    Record Payment
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </>
     );
 };

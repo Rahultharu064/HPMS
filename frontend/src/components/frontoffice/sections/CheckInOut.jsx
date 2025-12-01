@@ -303,7 +303,14 @@ const CheckInOut = () => {
               <h3 className="text-lg font-semibold text-gray-900">Extra Services for {modal.item?.guest}</h3>
               <button onClick={close} className="text-gray-400 hover:text-gray-600">✕</button>
             </div>
-            <ExtraServices bookingId={modal.item?.id} />
+            <ExtraServices
+              bookingId={modal.item?.id}
+              onServicesChange={() => {
+                // Trigger data refresh when services are added
+                console.log('Services changed, refreshing data...');
+                loadData();
+              }}
+            />
           </div>
         </div>
       )}
@@ -409,5 +416,3 @@ const CheckInOut = () => {
 }
 
 export default CheckInOut
-
-

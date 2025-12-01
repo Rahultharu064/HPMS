@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Users, ArrowUp, ArrowDown, TrendingUp, Calendar as CalIcon, Plus, CheckCircle, XCircle } from 'lucide-react'
 import { roomService } from '../../../services/roomService'
 import { bookingService } from '../../../services/bookingService'
+import { getSocket } from '../../../utils/socket'
 
 const Dashboard = ({ darkMode = false }) => {
+  const navigate = useNavigate()
   const [stats, setStats] = useState({ arrivals: 0, departures: 0, inHouse: 0, occupancy: 0, revenue: 0 })
   const [arrivals, setArrivals] = useState([])
   const [departures, setDepartures] = useState([])
@@ -37,7 +40,7 @@ const Dashboard = ({ darkMode = false }) => {
         }))
 
         // Today arrivals/departures
-        const today = new Date().toISOString().slice(0,10)
+        const today = new Date().toISOString().slice(0, 10)
         const [ciPending, ciConfirmed, coConfirmed, coCompleted] = await Promise.all([
           bookingService.getAllBookings({ checkIn: today, status: 'pending', limit: 100 }),
           bookingService.getAllBookings({ checkIn: today, status: 'confirmed', limit: 100 }),
@@ -60,7 +63,7 @@ const Dashboard = ({ darkMode = false }) => {
           id: b.id,
           guest: [b.guest?.firstName, b.guest?.lastName].filter(Boolean).join(' ') || '—',
           room: b.room?.roomNumber || b.roomId,
-          time: `${(b.checkIn||'').slice(11,16)}-${(b.checkOut||'').slice(11,16)}`.replace(/^-/,'') || '—',
+          time: `${(b.checkIn || '').slice(11, 16)}-${(b.checkOut || '').slice(11, 16)}`.replace(/^-/, '') || '—',
           status: b.status
         })
 
@@ -80,7 +83,42 @@ const Dashboard = ({ darkMode = false }) => {
     }
 
     loadRoomStatus()
-    return () => { mounted = false }
+
+    // Setup Socket.IO listeners for real-time updates
+    const socket = getSocket()
+
+    const handleBookingCreated = () => {
+      console.log('New booking created - refreshing dashboard')
+      loadRoomStatus()
+    }
+
+    const handleBookingUpdated = () => {
+      console.log('Booking updated - refreshing dashboard')
+      loadRoomStatus()
+    }
+
+    const handleBookingCancelled = () => {
+      console.log('Booking cancelled - refreshing dashboard')
+      loadRoomStatus()
+    }
+
+    const handleBookingDeleted = () => {
+      console.log('Booking deleted - refreshing dashboard')
+      loadRoomStatus()
+    }
+
+    socket.on('fo:booking:created', handleBookingCreated)
+    socket.on('fo:booking:updated', handleBookingUpdated)
+    socket.on('fo:booking:cancelled', handleBookingCancelled)
+    socket.on('fo:booking:deleted', handleBookingDeleted)
+
+    return () => {
+      mounted = false
+      socket.off('fo:booking:created', handleBookingCreated)
+      socket.off('fo:booking:updated', handleBookingUpdated)
+      socket.off('fo:booking:cancelled', handleBookingCancelled)
+      socket.off('fo:booking:deleted', handleBookingDeleted)
+    }
   }, [])
 
   const badge = (status) => {
@@ -98,7 +136,13 @@ const Dashboard = ({ darkMode = false }) => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Front Office Dashboard</h2>
         <div className="flex items-center gap-2">
-          <button className="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2"><Plus size={16}/>New Reservation</button>
+          <button
+            onClick={() => navigate('/front-office/new-reservation')}
+            className="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2"
+          >
+            <Plus size={16} />
+            New Reservation
+          </button>
           <button className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50">Check-in</button>
           <button className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50">Check-out</button>
         </div>
@@ -183,10 +227,10 @@ const Dashboard = ({ darkMode = false }) => {
           </div>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center"><CalIcon className="text-blue-600 mr-2"/> Mini Calendar</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center"><CalIcon className="text-blue-600 mr-2" /> Mini Calendar</h3>
           <div className="grid grid-cols-7 gap-2 text-center text-sm">
             {[...Array(28)].map((_, i) => (
-              <div key={i} className={`py-2 rounded-md border ${i===new Date().getDate()-1 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-700'}`}>{i+1}</div>
+              <div key={i} className={`py-2 rounded-md border ${i === new Date().getDate() - 1 ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-700'}`}>{i + 1}</div>
             ))}
           </div>
           <div className="mt-4 text-xs text-gray-600">
